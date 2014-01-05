@@ -2,7 +2,8 @@ import zlib
 
 import sys, os
 import struct
-
+import shutil
+import binascii
 
 def ascii85encode(data):
     result = ''
@@ -64,21 +65,30 @@ def main():
     dirname = os.path.dirname(sys.argv[0])
     dirname = os.path.abspath(dirname)
     waspdir = os.path.join(dirname, 'src')
-    # TEST:...
-    fname = os.path.join(waspdir, 'wasp', '__init__.py')
-    #import ipdb; ipdb.set_trace()
     target = os.path.join(dirname, 'wasp')
-    os.shutil.copy(os.path.join(dirname, 'wasp-prebuild'), target)
+    shutil.copy(os.path.join(dirname, 'wasp-prebuild'), target)
     with open(target, 'a') as out:
         out.write('\n\nwasp_packed=[')
         for fpath in recursive_list(waspdir):
             relpath = os.path.relpath(fpath, start=waspdir)
-            with open(fname, 'rb') as f:
+            with open(fpath, 'rb') as f:
                 data = f.read()
                 data = zlib.compress(data)
-                data = ascii85encode(data)
-                out.write('\n{ "{0}" : """\n{1}\n"""},'.format(relpath. data))
-        out.write('\n]')
+                data = binascii.b2a_base64(data)
+                out.write('\n( "')
+                out.write(relpath)
+                out.write('" , """\n')
+                out.write(data.encode('UTF-8'))
+                out.write('\n"""),')
+        out.write('\n]\n\n')
+        out.write("""
+
+if __name__ == '__main__':
+    main()
+
+
+""")
+
 
 
 if __name__ == '__main__':

@@ -12,6 +12,7 @@ repositories.
 
 import sys, os
 import zlib
+import binascii
 
 UNPACK_DIR='.wasp'
 
@@ -55,7 +56,7 @@ def unpack(unpack_dir):
                 os.mkdir(dirname)
         fname = os.path.join(unpack_dir, filename)
         with open(fname, 'w') as f:
-            compressed = ascii85decode(content)
+            compressed = binascii.a2b_base64(content)
             data = zlib.decompress(compressed)
             f.write(data)
 
@@ -64,6 +65,7 @@ def main():
     script = os.path.abspath(script)
     cur_dir = os.path.dirname(script)
     unpack_dir = os.path.join(cur_dir, UNPACK_DIR)
+    unpack(unpack_dir)
     sys.path.append(unpack_dir)
     try:
         wasp = __import__('wasp')
@@ -76,9 +78,3 @@ def main():
     else:
         raise FileNotFoundError('You require a "build.py" file to do anything useful with wasp')
 
-if __name__ == '__main__':
-    main()
-
-wasp_packed=[
-
-        ]
