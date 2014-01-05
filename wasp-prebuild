@@ -20,28 +20,6 @@ class WaspInstallationError(RuntimeError):
     def __init__(self, msg):
         super().__init__(msg)
 
-
-def ascii85decode(data):
-    n = b = 0
-    out = b''
-    for c in data:
-        if '!' <= c and c <= 'u':
-            n += 1
-            b = b*85+(ord(c)-ord('!'))
-            if n == 5:
-                out += struct.pack('>L', b)
-                n = b = 0
-        elif c == 'z':
-            assert n == 0
-            out += '\0\0\0\0'
-        elif c == '~':
-            if n:
-                for _ in range(5-n):
-                    b = b*85+84
-                out += struct.pack('>L', b)[:n-1]
-            break
-    return out
-
 def unpack(unpack_dir):
     if os.path.exists(unpack_dir):
         return
