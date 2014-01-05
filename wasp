@@ -22,11 +22,11 @@ class WaspInstallationError(RuntimeError):
 
 def ascii85decode(data):
     n = b = 0
-    out = ''
+    out = b''
     for c in data:
         if '!' <= c and c <= 'u':
             n += 1
-            b = b*85+(ord(c)-33)
+            b = b*85+(ord(c)-ord('!'))
             if n == 5:
                 out += struct.pack('>L', b)
                 n = b = 0
