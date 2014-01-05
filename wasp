@@ -1,0 +1,84 @@
+#!/usr/bin/env python
+# encoding: UTF-8
+"""
+This code is public domain.
+ascii85 decode is from:
+https://github.com/euske/pdfminer/blob/master/pdfminer/ascii85.py
+which is also public domain.
+
+This script unpacks the wasp build tool and should be checked into vcs
+repositories.
+"""
+
+import sys, os
+import zlib
+
+UNPACK_DIR='.wasp'
+
+class WaspInstallationError(RuntimeError):
+    def __init__(self, msg):
+        super().__init__(msg)
+
+
+def ascii85decode(data):
+    n = b = 0
+    out = ''
+    for c in data:
+        if '!' <= c and c <= 'u':
+            n += 1
+            b = b*85+(ord(c)-33)
+            if n == 5:
+                out += struct.pack('>L', b)
+                n = b = 0
+        elif c == 'z':
+            assert n == 0
+            out += '\0\0\0\0'
+        elif c == '~':
+            if n:
+                for _ in range(5-n):
+                    b = b*85+84
+                out += struct.pack('>L', b)[:n-1]
+            break
+    return out
+
+def unpack(unpack_dir):
+    if os.path.exists(unpack_dir):
+        return
+    os.mkdir(unpack_dir)
+    for item in wasp_packed:
+        filename, content = item
+        dirname = os.path.dirname(filename)
+        if dirname != '':
+            dirname = os.path.join(unpack_dir, dirname)
+            if not os.path.exists(dirname):
+                # TODO: does not support multiple nesting levels??
+                os.mkdir(dirname)
+        fname = os.path.join(unpack_dir, filename)
+        with open(fname, 'w') as f:
+            compressed = ascii85decode(content)
+            data = zlib.decompress(compressed)
+            f.write(data)
+
+def main():
+    script = sys.argv[0]
+    script = os.path.abspath(script)
+    cur_dir = os.path.dirname(script)
+    unpack_dir = os.path.join(cur_dir, UNPACK_DIR)
+    sys.path.append(unpack_dir)
+    try:
+        wasp = __import__('wasp')
+    except ImportError:
+        raise WaspInstallationError('Something went wrong during the installation. Does {0} directory with all wasp files exist?'.format(UNPACK_DIR))
+    scriptname = os.path.join(cur_dir, 'build.py')
+    if os.path.exists(scriptname):
+        from wasp.main import run_file
+        run_file(scriptname)
+    else:
+        raise FileNotFoundError('You require a "build.py" file to do anything useful with wasp')
+
+if __name__ == '__main__':
+    main()
+
+wasp_packed=[
+
+        ]

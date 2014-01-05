@@ -1,0 +1,69 @@
+Ideas
+=========
+
+ * decorators
+ * allow calls in subdirs ... maybe hard to implement
+ 
+
+
+
+
+ =================================
+
+
+import wasp
+
+wasp.require_version('0.1')
+wasp.load('dlang', 'wasp-tools')
+
+@wasp.init
+def init(ctx):
+    # add options...
+    ctx.options += wasp.EnableOption('asdfasdf'..)
+    
+@wasp.depends('.d')
+def compile_d_file(ctx, sources):
+    target = ctx.builddir.join(sources, append='.o')
+    task = wasp.tasks.DCompile(ctx, source=sources, target=target)
+    return task
+
+@wasp.depends('.d.o', type='program')
+def link_d_files(ctx, sources, target):
+    if target is None:
+        target = ctx.projectname
+    task = wasp.tasks.DLink(ctx, source=sources, target=ctx.builddir.join(target))
+    return task
+
+@wasp.configure
+def configure(ctx):
+    ctx.store['env'] = ctx.env
+
+@wasp.build
+def build(ctx):
+    files = ctx.dir.source.find_all('*.d')
+    objfiles = ctx.generate(files)
+    executable = ctx.generate(objfiles, target='bloxr', type='program')
+    ctx.run(executable)
+
+#equivalent to @wasp.install
+@wasp.command('install', require='build')
+def install(ctx):
+    task = wasp.tasks.Install(ctx, source=ctx.builddir.join('bloxr'), target=ctx.prefix.join('bloxr'))
+    ctx.run(task)
+
+class DCompile(wasp.Task):
+    def __init__(self, ctx, source=[], target=[]):
+        super(self, wasp.Task).__init__(ctx, source, target)
+
+    def run(self, ctx):
+        pass
+
+
+wasp.exec(projectname='bloxr')
+
+
+
+
+
+
+ ================================
