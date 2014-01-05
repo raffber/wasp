@@ -49,19 +49,37 @@ def ascii85decode(data):
             break
     return out
 
+def recursive_list(dirname):
+    lst = [f for f in os.listdir(dirname)]
+    ret = []
+    for f in lst:
+        absf = os.path.join(dirname, f)
+        if os.path.isdir(absf):
+            ret.extend(recursive_list(absf))
+        else:
+            ret.append(absf)
+    return ret
+
 def main():
     dirname = os.path.dirname(sys.argv[0])
     dirname = os.path.abspath(dirname)
     waspdir = os.path.join(dirname, 'src')
     # TEST:...
-    fname = os.path.join(waspdir, 'wasp/__init__.py')
-    with open(fname, 'rb') as f:
-        data = f.read()
-        data = zlib.compress(data)
-        data = ascii85encode(data)
-        data = ascii85decode(data)
-        data = zlib.decompress(data)
-        print(data)
+    fname = os.path.join(waspdir, 'wasp', '__init__.py')
+    #import ipdb; ipdb.set_trace()
+    target = os.path.join(dirname, 'wasp')
+    os.shutil.copy(os.path.join(dirname, 'wasp-prebuild'), target)
+    with open(target, 'a') as out:
+        out.write('\n\nwasp_packed=[')
+        for fpath in recursive_list(waspdir):
+            relpath = os.path.relpath(fpath, start=waspdir)
+            with open(fname, 'rb') as f:
+                data = f.read()
+                data = zlib.compress(data)
+                data = ascii85encode(data)
+                out.write('\n{ "{0}" : """\n{1}\n"""},'.format(relpath. data))
+        out.write('\n]')
+
 
 if __name__ == '__main__':
     main()
