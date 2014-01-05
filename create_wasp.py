@@ -70,17 +70,16 @@ def main():
     with open(target, 'a') as out:
         out.write('\n\nwasp_packed=[')
         for fpath in recursive_list(waspdir):
+            ext = os.path.splitext(fpath)[1]
+            if ext != '.py':
+                continue
             relpath = os.path.relpath(fpath, start=waspdir)
             with open(fpath, 'rb') as f:
                 data = f.read()
                 data = zlib.compress(data)
                 data = binascii.b2a_base64(data)
-                out.write('\n( "')
-                out.write(relpath)
-                out.write('" , """\n')
-                out.write(data.encode('UTF-8'))
-                out.write('\n"""),')
-        out.write('\n]\n\n')
+                out.write('\n("{0}", {1}),'.format(relpath, data))
+        out.write('\n]\n')
         out.write("""
 
 if __name__ == '__main__':

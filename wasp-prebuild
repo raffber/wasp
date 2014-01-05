@@ -58,7 +58,8 @@ def unpack(unpack_dir):
         with open(fname, 'w') as f:
             compressed = binascii.a2b_base64(content)
             data = zlib.decompress(compressed)
-            f.write(data)
+            s = data.decode('UTF-8')
+            f.write(s)
 
 def main():
     script = sys.argv[0]
