@@ -1,24 +1,23 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: UTF-8
 """
 This code is public domain.
-ascii85 decode is from:
-https://github.com/euske/pdfminer/blob/master/pdfminer/ascii85.py
-which is also public domain.
 
 This script unpacks the wasp build tool and should be checked into vcs
 repositories.
 """
 
-import sys, os
+import sys,os
 import zlib
 import binascii
 
 UNPACK_DIR='.wasp'
 
+
 class WaspInstallationError(RuntimeError):
     def __init__(self, msg):
         super().__init__(msg)
+
 
 def unpack(unpack_dir):
     if os.path.exists(unpack_dir):
@@ -30,8 +29,7 @@ def unpack(unpack_dir):
         if dirname != '':
             dirname = os.path.join(unpack_dir, dirname)
             if not os.path.exists(dirname):
-                # TODO: does not support multiple nesting levels??
-                os.mkdir(dirname)
+                os.mkdirs(dirname, exist_ok=True)
         fname = os.path.join(unpack_dir, filename)
         with open(fname, 'w') as f:
             compressed = binascii.a2b_base64(content)
