@@ -62,8 +62,18 @@ class FileNode(object):
     def __init__(self, path):
         if not os.path.isabs(path):
             path = os.path.abspath(path)
+        self._path = path
+        self._extension = os.path.splitext(path)[1]
         self._signature_cache = None
         super().__init__(path)
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def extension(self):
+        return self._extension
 
     @property
     def signature(self):

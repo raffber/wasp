@@ -80,3 +80,5 @@ class Context(object):
     @property
     def options(self):
         return self._options
+
+ctx = None
