@@ -1,6 +1,8 @@
 import json
 from .directory import WaspDirectory
 from .ui import log
+
+
 CACHE_FILE = 'c4che.json'
 
 
@@ -25,12 +27,22 @@ class Cache(object):
 
     def get(self, cachename, key, *args):
         if len(args) > 1:
-            raise ArgumentError('At most one additional argument is allowed.')
+            raise TypeError('At most one additional argument is allowed.')
         default = args[0] if len(args) == 1 else None
         cache = self.d.get(cachename, None)
         if cache is not None:
             return cache.get(key, default)
         return None
+
+    def getcache(self, cachename):
+        if not cachename in self.d:
+            cache = {}
+            self.d[cachename] = cache
+            return cache
+        return self.d[cachename]
+
+    def setcache(self, cachename, cache):
+        self.d[cachename] = cache
 
     def flush(self):
         # that should not fail, since we ensured the existance

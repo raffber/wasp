@@ -1,8 +1,5 @@
-
 from .node import FileNode
-
-
-generators = []
+from .decorators import decorators
 
 
 class TaskGenerator(object):
@@ -16,7 +13,7 @@ class TaskGenerator(object):
         raise NotImplementedError
 
 
-def FileDecoratorGenerator(object):
+class FileDecoratorGenerator(object):
     def __init__(self, extensions, fun):
         super().__init__()
         if isinstance(extensions, str):
@@ -41,5 +38,5 @@ class generate(object):
         self._extension = extensions
 
     def __call__(self, f):
-        generators.append(FileDecoratorGenerator(self._extensions, f))
+        decorators.generators.append(FileDecoratorGenerator(self._extensions, f))
         return f

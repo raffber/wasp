@@ -1,10 +1,11 @@
-
 from .node import make_nodes, remove_duplicates
 from uuid import uuid4 as uuid
-from .context import ctx
+import subprocess
+from io import StringIO
+from .util import run_command
+
 
 class Task(object):
-
     def __init__(self, sources=[], targets=[], children=[]):
         self._sources = make_nodes(sources)
         self._targets = make_nodes(targets)
@@ -38,6 +39,26 @@ class Task(object):
     def identifier(self):
         return self._id
 
+    def run(self):
+        raise NotImplementedError
+
 
 class ShellTask(object):
-    pass
+    def __init__(self, sources=[], targets=[], children=[]):
+        super().__init__(sources=sources, targets=targets, children=children)
+
+    @property
+    def cmd(self):
+        raise NotImplementedError
+
+    def finished(self, exit_code, out, err):
+        pass
+
+    def run(self):
+        commandstring = self.cmd
+        out = StringIO()
+        err = StringIO()
+        exit_code = run_command(commandstring, stdout=out, stderr=err)
+        self.finished(exit_code, out.read(), err.read())
+
+
