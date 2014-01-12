@@ -1,8 +1,7 @@
 from .node import make_nodes, remove_duplicates
 from uuid import uuid4 as uuid
-import subprocess
 from io import StringIO
-from .util import run_command
+from .util import run_command, Factory
 
 
 class Task(object):
@@ -62,3 +61,23 @@ class ShellTask(object):
         self.finished(exit_code, out.read(), err.read())
 
 
+class TaskResult(object):
+    def to_json(self):
+        return None
+
+    @staticmethod
+    def from_json(self, d):
+        assert('name' in d, 'Invalid json for TaskResult. Delete cache!')
+        return task_result_factory.create(d['name'], **d)
+
+
+task_result_factory = Factory(TaskResult)
+
+
+class register_task(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, cls):
+        task_result_factory.register(cls)
+        return cls

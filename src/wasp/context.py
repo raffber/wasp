@@ -2,6 +2,7 @@ from .directory import WaspDirectory
 from .options import OptionsCollection
 from .cache import Cache
 from .hooks import Hooks
+from .node import NodeDb
 import os
 
 
@@ -80,6 +81,7 @@ class Context(object):
         self._cache = Cache(self._cachedir)
         self._commands = []
         self._hooks = Hooks()
+        self._nodes = NodeDb(self._cache)
 
     @property
     def hooks(self):

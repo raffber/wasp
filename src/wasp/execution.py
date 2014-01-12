@@ -1,3 +1,5 @@
+from .util import EventLoop, Event
+from threading import Thread
 
 
 class TaskContainer(object):
@@ -97,4 +99,44 @@ class RunnableDependencyTree(object):
             if not task.has_run:
                 task_left.append(task)
         s_task_left = ', '.join(task_left.short_description())
-        raise DependencyCycleError('There is a cycle in your dependencies: Tasks left to process: {0}'.format(s_task_left))
+        raise DependencyCycleError('There is a cycle in your dependencies:'
+                                   'Tasks left to process: {0}'.format(s_task_left))
+
+
+class TaskExecutor(Thread):
+    def __init__(self, task, loop):
+        self._task = task
+        self._finished_event = Event(loop)
+
+    @property
+    def finished(self):
+        return self._finished_event
+
+    def run(self):
+        self._task.execute()
+
+
+class TaskExecutionPool(object):
+    def __init__(self, dependency_tree, num_jobs=1):
+        self._num_jobs = num_jobs
+        self._tasks = dependency_tree
+        self._loop = EventLoop()
+        self._running_tasks = 0
+
+    def _start_next_task(self):
+        task = self._tasks.get_runnable_task()
+        if task is None and self._running_tasks == 0:
+            self._loop.cancel()
+        executor = TaskExecutor(task, self._loop)
+        executor.finished.connect(self._on_task_finished)
+        executor.start()
+        self._running_tasks += 1
+
+    def _on_task_finished(self):
+        self._running_tasks -= 1
+        self._start_next_task()
+
+    def run(self):
+        for i in range(self._num_jobs):
+            self._start_next_task()
+        self._loop.run()

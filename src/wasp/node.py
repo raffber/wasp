@@ -1,10 +1,10 @@
 from uuid import uuid4 as generate_uuid
-try:
-    from hashlib import md5
-except:
-    from md5 import md5
-
+from hashlib import md5
 import os
+
+
+class NodeDb(object):
+    pass
 
 
 class Signature(object):
