@@ -3,6 +3,8 @@ from .options import OptionsCollection
 from .cache import Cache
 from .hooks import Hooks
 from .node import NodeDb
+from .arguments import Argument
+from .execution import TaskExecutionPool, RunnableDependencyTree
 import os
 
 
@@ -82,6 +84,10 @@ class Context(object):
         self._commands = []
         self._hooks = Hooks()
         self._nodes = NodeDb(self._cache)
+        self._checks = {}
+
+    def store_result(self, result):
+        raise NotImplementedError
 
     @property
     def hooks(self):
@@ -120,6 +126,10 @@ class Context(object):
         return self._store
 
     @property
+    def checks(self):
+        return self._checks
+
+    @property
     def commands(self):
         return self._commands
 
@@ -132,5 +142,11 @@ class Context(object):
             return
         for d in subdirs:
             self._recures_single(d)
+
+    def run(self):
+        tree = RunnableDependencyTree(self.tasks)
+        jobs = Argument('jobs').require_type(int).retrieve(self.env, self.options, default=1)
+        executor = TaskExecutionPool(tree, num_jobs=int(jobs))
+        return executor.run()
 
 ctx = None

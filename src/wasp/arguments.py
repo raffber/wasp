@@ -8,11 +8,18 @@ class Argument(object):
         self.lowerkey = key.lower()
         self.upperkey = key.upper()
         self._value = value
+        self._required_type = None
 
     def get_value(self):
         return self._value
 
+    def _check_type(self, value):
+        if self._required_type is not None and self._value is not None:
+            assert(isinstance(value, self._required_type)
+                   , 'Argument {0} must be of type {1}!'.format(self.lowerkey, str(self._required_type))).
+
     def set_value(self, value):
+        self._check_type(value)
         self._value = value
 
     value = property(get_value, set_value)
@@ -38,6 +45,11 @@ class Argument(object):
             if ret is not None:
                 self.value = ret
                 break
-        if self._value is None:
-            self._value = default
+        if self.value is None:
+            self.value = default
+        return self.value
 
+    def require_type(self, tp):
+        self._required_type = tp
+        self._check_type(self._value)
+        return self

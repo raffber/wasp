@@ -26,6 +26,9 @@ class Task(object):
     def __ne__(self, other):
         return not (other.identfier == self._id)
 
+    def prepare(self):
+        pass
+
     @property
     def targets(self):
         ret = []
@@ -37,6 +40,10 @@ class Task(object):
     @property
     def identifier(self):
         return self._id
+
+    @property
+    def result(self):
+        return None
 
     def run(self):
         raise NotImplementedError
@@ -71,10 +78,35 @@ class TaskResult(object):
         return task_result_factory.create(d['name'], **d)
 
 
+class Check(TaskResult):
+    def __init__(self, name=None, description='', success=False):
+        assert(name is not None, 'A check must be given a unique name')
+        self._description = description
+        self._success = success
+        self._name = name
+
+    @property
+    def success(self):
+        return self._success
+
+    @property
+    def description(self):
+        return self._description
+
+    @property
+    def name(self):
+        return self._name
+
+    def to_json(self):
+        return {'name': 'Check',
+                'success': self.success,
+                'description': self.description}
+
+
 task_result_factory = Factory(TaskResult)
 
 
-class register_task(object):
+class register_task_result(object):
     def __init__(self):
         pass
 

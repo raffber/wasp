@@ -1,5 +1,7 @@
 from .util import EventLoop, Event
 from threading import Thread
+from .context import ctx
+from .task import Check
 
 
 class TaskContainer(object):
@@ -33,6 +35,10 @@ class TaskContainer(object):
     @property
     def has_run(self):
         return self._task.has_run
+
+    @property
+    def task(self):
+        return self._task
 
 
 class DependencyCycleError(Exception):
@@ -92,7 +98,7 @@ class RunnableDependencyTree(object):
             return None
         for task in self._tasks:
             if not task.has_run and task.runnable:
-                return task
+                return task.task
         # well crap... we got a dependency cycle
         task_left = []
         for task in self._tasks:
@@ -114,6 +120,7 @@ class TaskExecutor(Thread):
 
     def run(self):
         self._task.execute()
+        self._finished_event.invoke(self._task)
 
 
 class TaskExecutionPool(object):
@@ -122,21 +129,33 @@ class TaskExecutionPool(object):
         self._tasks = dependency_tree
         self._loop = EventLoop()
         self._running_tasks = 0
+        self._results = []
 
     def _start_next_task(self):
         task = self._tasks.get_runnable_task()
         if task is None and self._running_tasks == 0:
             self._loop.cancel()
+        task.prepare()
         executor = TaskExecutor(task, self._loop)
         executor.finished.connect(self._on_task_finished)
         executor.start()
         self._running_tasks += 1
 
-    def _on_task_finished(self):
+    def _on_task_finished(self, task):
+        ctx.store_result(task.result)
         self._running_tasks -= 1
         self._start_next_task()
+        self._tasks.task_finished(task)
+        result = task.result
+        if not isinstance(result, list):
+            result = [result]
+        for res in result:
+            if isinstance(res, Check):
+                ctx.checks[res.name] = res
+            self._results[task.identifier] = res
 
     def run(self):
         for i in range(self._num_jobs):
             self._start_next_task()
         self._loop.run()
+        return self._results
