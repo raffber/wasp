@@ -1,0 +1,68 @@
+
+Welcome To wasp
+===============
+
+"wasp" is yet another build tool! It was started as a private research project,
+since the author had a vision of build tool that did not exist and wanted to find
+out what was so difficult about that vision that nobody had done it before.
+
+What is special about wasp:
+ * wasp does not invent yet another language: it uses plain python. It can
+   therefore be integrated with other python libraries.
+ * The wasp-script can be checked into version control systems and
+   extracts itself. The only requirement for its use is a python3
+   installation. python2 is not supported, since it would bloat the code.
+ * wasp is also a library and build scripts are programs. Therefore
+   nothing is obscured from the user and everything is invoked explicitly.
+ * No magic happens; explicity is everything! What you write happens,
+   nothing more and nothing less! Complex tasks are wrapped as classes and therefore
+   require little code, while still being customizable with simple
+   inheritance for more complex use-cases.
+ * If there is a tradeoff between simplicitly and explicitness, the more
+   explicit way is chosen.
+ * Since wasp is a library, customization of the build tasks can be done
+   on many levels and therefore existing code can be effectively reused.
+ * wasp tries to simplify complex tasks, while making simple tasks simple.
+   However, since in wasp you define everything explicitly, very simple tasks
+   are more verbose than in other build system. Still there is less boilerplate
+   code involved and what you write makes more sense and should be easy to understand.
+   As your build system grows more complex, wasp allows you to keep your code compact and clean.
+ * wasp attempts to be generally useful by breaking down the aspects of a build system to
+   a few basic concepts. This may slightly increase the size of build scripts, but helps
+   to keep them more maintainable and better extensible.
+
+
+Ideas for more features
+=======================
+
+ * create an internal package manager similiar to pip, npm or maven
+ * create a declarative interface, reducing build.py to sth like wasp.from_json('build.json')
+ * create an extension api and allow fetching extensions with the package manager
+ * integrate the build system with vcs-tools such as git (providing hooks)
+ * create an extension for code checkers
+ * allow outputting projects for IDEs
+ * create a flask web app for managing unittests and more
+ * create a curses-gui for project configuration (sth like kconfig of linux kernel??)
+ * create an extension for deployment tasks (e.g. directly deploy a web app to the server)
+
+
+Why yet another build system
+============================
+
+The author had a vision of a build system that in his eyes did not exist so far.
+The main goals are:
+ * The language should be python, such that a real programming language could be used.
+ * The build scripts should be structured the same way the build actually happens, meaning
+   every line should actually make sense.
+ * Everything should work explicitly, such that no obscure magic happens between the line.
+ * The library should be broken down in basic components to create a generally useful
+   build tool.
+ * There should be no boilerplate code by choosing sane default configurations.
+ * The author found most build systems in various opensource projects to be unneccessarily
+   difficult to use and set up.
+
+
+The vision
+==========
+
+To sum it up: An easily customizable, simple and generally useful build tool that just works.
