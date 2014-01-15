@@ -4,5 +4,3 @@ class Log(object):
 
     def warning(self, msg):
         pass
-
-log = Log()

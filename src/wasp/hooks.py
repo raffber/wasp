@@ -21,3 +21,12 @@ class init(object):
     def __call__(self, f):
         decorators.init.append(f)
         return f
+
+
+class create_context(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, f):
+        decorators.create_context = f
+        return f

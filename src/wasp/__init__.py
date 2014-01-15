@@ -1,4 +1,7 @@
 
+ctx = None
+
+
 class WaspVersion(object):
     def __init__(self, major, minor, point):
         self.major = major
@@ -32,3 +35,11 @@ def require_version(self, *args):
         point = args[2]
     VERSION.is_compatible(major, minor, point)
 
+from .context import Context
+from .options import options, configure_options
+from .arguments import Argument
+from .command import build, configure, install, command
+from .hooks import init, create_context
+from .directory import WaspDirectory
+from .generator import generate
+from .task import register_task_result, Check, TaskResult, ShellTask, Task

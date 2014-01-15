@@ -5,6 +5,7 @@ class DecoratorStore(object):
         self.generators = []
         self.configure_options = []
         self.options = []
+        self.create_context = None
 
 
 decorators = DecoratorStore()

@@ -1,2 +1,5 @@
+from .util import load_module_by_path
+
+
 def run_file(fpath):
-    pass
+    module = load_module_by_path(fpath)

@@ -5,38 +5,16 @@ from .decorators import decorators
 class OptionsCollection(object):
     def __init__(self, cache):
         self._cache = cache
-        self._default_enable_require_configure = False
-
-    def set_default_enable_require_configure(self, require_configure):
-        self._default_enable_require_configure = require_configure
-
-    def get_default_enable_require_configure(self):
-        return self._default_enable_require_configure
-
-    default_enable_require_configure = property(get_default_enable_require_configure
-                                                , set_default_enable_require_configure)
+        self._options = {}
 
     def add_option(self, option):
-        pass
-
-    def add_enable_option(self):
-        pass
-
-    def add_string_option(self):
-        pass
-
-    def add_int_option(self):
-        pass
-
-    def add_flag_option(self):
-        pass
+        self._options[option.name] = option
 
     def __getitem__(self, item):
-        pass
+        return self._options[item]
 
-    def __setitem__(self, key, value):
-        # TODO: should this exist?
-        pass
+    def get(self, item, *args):
+        return self._options.get(item, *args)
 
     def save_options(self):
         pass
@@ -46,10 +24,9 @@ class OptionsCollection(object):
 
 
 class Option(object):
-    def __init__(self, name, description, require_configure=False):
+    def __init__(self, name, description):
         self._name = name
         self._description = description
-        self._require_configure = require_configure
 
     @property
     def name(self):
@@ -59,29 +36,23 @@ class Option(object):
     def description(self):
         return self._description
 
-    def set_require_configure(self, require_configure):
-        self._require_configure = require_configure
-
-    def get_require_configure(self):
-        return self._require_configure
-
-    require_configure = property(get_require_configure, set_require_configure)
-
     @property
     def typename(self):
         raise NotImplementedError
 
     def to_json(self):
-        raise NotImplementedError
+        return {'key': self._key
+                , 'description': self._description
+                , 'type': self.typename}
 
     def add_to_argparse(self):
         raise NotImplementedError
 
     @staticmethod
     def from_json(cls, d):
-        assert('name' in d, 'Invalid json for options parsing! Delete cache!')
-        name = d['name']
-        return options_factory.create(name, **d)
+        assert('type' in d, 'Invalid json for options parsing! Delete cache!')
+        type_ = d['type']
+        return options_factory.create(type_, **d)
 
 
 options_factory = Factory(Option)
@@ -92,7 +63,51 @@ def make_option_name_compliant(key):
 
 
 class FlagOption(Option):
-    pass
+    def __init__(self, name, description):
+        super().__init__(name, description)
+        self._value = False
+
+    def set_value(self, v):
+        assert(isinstance(v, bool), 'You can only set a flag option to True or False')
+        self._value = v
+
+    def get_value(self):
+        return self._value
+
+    value = property(get_value, set_value)
+
+    def add_to_arparse(self, args):
+        key = make_option_name_compliant(self._key)
+        args.add_option('--' + key, action='store_true', default=False,
+            help=self._description, dest=key)
+
+    def from_argparse(self, args):
+        key = make_option_name_compliant(self._key)
+        val = False
+        if getattr(args, '--' + key):
+            val = True
+        self._value = val
+
+    @classmethod
+    def from_json(cls, json_dict):
+        description = json_dict.get('description', None)
+        assert(description)
+        key = json_dict.get('key', None)
+        assert(key)
+        value = json_dict.get('value', False)
+        assert(value)
+        ret = cls(key, description)
+        ret.value = value
+        return ret
+
+    def to_json(self):
+        ret = super().to_json()
+        ret['value'] = self.value
+        return ret
+
+    @property
+    def type_(self):
+        return 'FlagOption'
 
 
 options_factory.register(FlagOption)

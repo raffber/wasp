@@ -50,12 +50,13 @@ class Task(object):
 
 
 class ShellTask(object):
-    def __init__(self, sources=[], targets=[], children=[]):
+    def __init__(self, sources=[], targets=[], children=[], cmd=''):
         super().__init__(sources=sources, targets=targets, children=children)
+        self._cmd = cmd
 
     @property
     def cmd(self):
-        raise NotImplementedError
+        return self._cmd
 
     def finished(self, exit_code, out, err):
         pass

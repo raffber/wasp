@@ -1,7 +1,6 @@
 import json
 from .directory import WaspDirectory
-from .ui import log
-
+from . import ctx
 
 CACHE_FILE = 'c4che.json'
 
@@ -20,7 +19,7 @@ class Cache(object):
         else:
             cache = self.d[cachename]
         if not isinstance(cache, dict):
-            log.warning('Cachefile is invalid. Ignoring')
+            ctx.log.warning('Cachefile is invalid. Ignoring')
             cache = {}
             self.d[cachename] = cache
         cache[key] = value
@@ -48,7 +47,7 @@ class Cache(object):
         # that should not fail, since we ensured the existance
         # of self._cachedir
         with open(self._cachedir.join(CACHE_FILE), 'w') as f:
-            json.dump(f)
+            json.dump(self.d, f)
 
     def load(self):
         try:
@@ -56,7 +55,7 @@ class Cache(object):
                 self.d = json.load(f)
             if not isinstance(self.d, dict):
                 # invalid cache file, ignore
-                log.warning('Cachefile is invalid. Ignoring')
+                ctx.log.warning('Cachefile is invalid. Ignoring')
                 self.d = {}
         except FileNotFoundError:
             # nvm, cachefile was probably never written

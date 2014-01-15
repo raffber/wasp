@@ -5,6 +5,7 @@ from .hooks import Hooks
 from .node import NodeDb
 from .arguments import Argument
 from .execution import TaskExecutionPool, RunnableDependencyTree
+from .ui import Log
 import os
 
 
@@ -78,13 +79,15 @@ class Context(object):
         # dynamically loaded stuff:
         self._env = Environment(os.environ)
         self._prefix = WaspDirectory(os.environ.get('PREFIX', '/usr'))
-        self._options = OptionsCollection(self.cachedir)
+        self._options = OptionsCollection(None)
+        self._configure_options = OptionsCollection(self._cache)
         self._store = Store(self._cache)
         self._cache = Cache(self._cachedir)
         self._commands = []
         self._hooks = Hooks()
         self._nodes = NodeDb(self._cache)
         self._checks = {}
+        self._log = Log()
 
     def store_result(self, result):
         raise NotImplementedError
@@ -121,6 +124,9 @@ class Context(object):
     def options(self):
         return self._options
 
+    def configure_options(self):
+        return self._configure_options
+
     @property
     def store(self):
         return self._store
@@ -148,5 +154,3 @@ class Context(object):
         jobs = Argument('jobs').require_type(int).retrieve(self.env, self.options, default=1)
         executor = TaskExecutionPool(tree, num_jobs=int(jobs))
         return executor.run()
-
-ctx = None

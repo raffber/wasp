@@ -1,6 +1,6 @@
 from .util import EventLoop, Event
 from threading import Thread
-from .context import ctx
+from . import ctx
 from .task import Check
 
 
