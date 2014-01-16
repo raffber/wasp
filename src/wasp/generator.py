@@ -18,8 +18,8 @@ class FileDecoratorGenerator(object):
         super().__init__()
         if isinstance(extensions, str):
             extensions = [extensions]
-        assert(isinstance(extensions, list), 'File extensions for generator decorator must '
-                                             'either be given as list of string or string')
+        assert isinstance(extensions, list), 'File extensions for generator decorator must '\
+                                             'either be given as list of string or string'
         self._extensions = extensions
         self._fun = fun
 

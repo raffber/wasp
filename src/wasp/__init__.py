@@ -43,3 +43,4 @@ from .hooks import init, create_context
 from .directory import WaspDirectory
 from .generator import generate
 from .task import register_task_result, Check, TaskResult, ShellTask, Task
+from .directory import WaspDirectory

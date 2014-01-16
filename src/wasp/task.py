@@ -8,7 +8,7 @@ class Task(object):
     def __init__(self, sources=[], targets=[], children=[]):
         self._sources = make_nodes(sources)
         self._targets = make_nodes(targets)
-        assert(isinstance(children, list))
+        assert isinstance(children, list)
         self.children = children
         self._id = uuid()
 
@@ -75,13 +75,13 @@ class TaskResult(object):
 
     @staticmethod
     def from_json(self, d):
-        assert('name' in d, 'Invalid json for TaskResult. Delete cache!')
+        assert 'name' in d, 'Invalid json for TaskResult. Delete cache'
         return task_result_factory.create(d['name'], **d)
 
 
 class Check(TaskResult):
     def __init__(self, name=None, description='', success=False):
-        assert(name is not None, 'A check must be given a unique name')
+        assert name is not None, 'A check must be given a unique name'
         self._description = description
         self._success = success
         self._name = name

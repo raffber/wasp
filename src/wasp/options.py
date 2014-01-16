@@ -3,7 +3,7 @@ from .decorators import decorators
 
 
 class OptionsCollection(object):
-    def __init__(self, cache):
+    def __init__(self, cache=None):
         self._cache = cache
         self._options = {}
 
@@ -50,7 +50,7 @@ class Option(object):
 
     @staticmethod
     def from_json(cls, d):
-        assert('type' in d, 'Invalid json for options parsing! Delete cache!')
+        assert 'type' in d, 'Invalid json for options parsing! Delete cache!'
         type_ = d['type']
         return options_factory.create(type_, **d)
 
@@ -91,11 +91,11 @@ class FlagOption(Option):
     @classmethod
     def from_json(cls, json_dict):
         description = json_dict.get('description', None)
-        assert(description)
+        assert description is not None
         key = json_dict.get('key', None)
-        assert(key)
+        assert key is not None
         value = json_dict.get('value', False)
-        assert(value)
+        assert value is not None
         ret = cls(key, description)
         ret.value = value
         return ret

@@ -7,8 +7,8 @@ CACHE_FILE = 'c4che.json'
 
 class Cache(object):
     def __init__(self, cachedir):
-        assert(isinstance(cachedir, WaspDirectory))
-        cachedir.ensure_exits()
+        assert isinstance(cachedir, WaspDirectory)
+        cachedir.ensure_exists()
         self._cachedir = cachedir
         self.d = {}
 

@@ -6,42 +6,8 @@ from .node import NodeDb
 from .arguments import Argument
 from .execution import TaskExecutionPool, RunnableDependencyTree
 from .ui import Log
+from .environment import Environment
 import os
-
-
-class Environment(object):
-    def __init__(self, cache):
-        self._cache = cache
-        self._env = []
-        self.load_from_cache()
-    
-    def __getitem__(self, key):
-        return self._env[key]
-
-    def __setitem__(self, key, value):
-        self._env[key] = value
-
-    def __hasitem__(self, key):
-        if key in self._env:
-            return True
-        return False
-
-    def get(self, key, *args):
-        if key in self._env:
-            return self._env[key]
-        if len(args) == 0:
-            return None
-        return args[0]
-
-    def load_from_cache(self):
-        # copy, such that we don't change the cache
-        self._env = dict(self._cache.getcache('env'))
-
-    def load_from_env(self):
-        self._env = dict(os.environ)
-
-    def save(self):
-        self._cache.setcache('env', self._env)
 
 
 class Store(object):
@@ -70,31 +36,28 @@ class Store(object):
 
 class Context(object):
 
-    def __init__(self, topdir, builddir, projectname):
+    def __init__(self, projectname, topdir='.', builddir='build', prefix='/usr'):
         self._topdir = WaspDirectory(topdir)
+        assert self._topdir.valid, 'The given topdir must exist!!'
         self._builddir = WaspDirectory(builddir)
-        self._cachedir = self._builddir.join('c4che')
-        assert(isinstance(projectname, str), 'projectname must be a string!')
+        self._builddir.ensure_exists()
+        self._cachedir = WaspDirectory(self._builddir.join('c4che'))
+        assert isinstance(projectname, str), 'projectname must be a string!'
         self._projectname = projectname
         # dynamically loaded stuff:
-        self._env = Environment(os.environ)
-        self._prefix = WaspDirectory(os.environ.get('PREFIX', '/usr'))
-        self._options = OptionsCollection(None)
-        self._configure_options = OptionsCollection(self._cache)
-        self._store = Store(self._cache)
         self._cache = Cache(self._cachedir)
+        self._prefix = WaspDirectory(os.environ.get('PREFIX', prefix))
+        self._options = OptionsCollection()
+        self._configure_options = OptionsCollection(cache=self._cache)
+        self._store = Store(self._cache)
+        self._env = Environment(self._cache)
         self._commands = []
-        self._hooks = Hooks()
         self._nodes = NodeDb(self._cache)
         self._checks = {}
         self._log = Log()
 
     def store_result(self, result):
         raise NotImplementedError
-
-    @property
-    def hooks(self):
-        return self._hooks
 
     @property
     def topdir(self):

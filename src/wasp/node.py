@@ -4,7 +4,8 @@ import os
 
 
 class NodeDb(object):
-    pass
+    def __init__(self, cache):
+        pass
 
 
 class Signature(object):
@@ -43,7 +44,7 @@ class Node(object):
         if identifier is None:
             identifier = generate_uuid()
         else:
-            assert(isinstance(identifier, str), 'Identifier for Node must be a string')
+            assert isinstance(identifier, str), 'Identifier for Node must be a string'
         self._id = identifier
 
     @property

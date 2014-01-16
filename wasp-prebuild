@@ -29,7 +29,7 @@ def unpack(unpack_dir):
         if dirname != '':
             dirname = os.path.join(unpack_dir, dirname)
             if not os.path.exists(dirname):
-                os.mkdirs(dirname, exist_ok=True)
+                os.makedirs(dirname, exist_ok=True)
         fname = os.path.join(unpack_dir, filename)
         with open(fname, 'w') as f:
             compressed = binascii.a2b_base64(content)
