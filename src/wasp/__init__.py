@@ -1,5 +1,6 @@
 
-ctx = None
+from .util import Proxy
+ctx = Proxy(object)
 
 
 class WaspVersion(object):

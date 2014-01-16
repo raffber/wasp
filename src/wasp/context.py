@@ -1,7 +1,6 @@
 from .directory import WaspDirectory
 from .options import OptionsCollection
 from .cache import Cache
-from .hooks import Hooks
 from .node import NodeDb
 from .arguments import Argument
 from .execution import TaskExecutionPool, RunnableDependencyTree
