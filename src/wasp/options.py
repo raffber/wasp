@@ -16,12 +16,11 @@ class OptionsCollection(object):
     def get(self, item, *args):
         return self._options.get(item, *args)
 
-    def save_options(self):
+    def add_to_argparse(self, args):
         pass
 
-    def load_options(self):
+    def retrieve_from_dict(self, args):
         pass
-
 
 class Option(object):
     def __init__(self, name, description):
@@ -45,7 +44,7 @@ class Option(object):
                 , 'description': self._description
                 , 'type': self.typename}
 
-    def add_to_argparse(self):
+    def add_to_argparse(self, args):
         raise NotImplementedError
 
     @staticmethod

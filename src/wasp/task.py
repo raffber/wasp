@@ -70,6 +70,14 @@ class ShellTask(object):
 
 
 class TaskResult(object):
+    def __init__(self, success):
+        assert isinstance(success, bool), 'success has to be either True or False'
+        self._success = success
+
+    @property
+    def success(self):
+        return self._succes
+
     def to_json(self):
         return None
 

@@ -6,6 +6,7 @@ from .arguments import Argument
 from .execution import TaskExecutionPool, RunnableDependencyTree
 from .ui import Log
 from .environment import Environment
+from .util import load_module_by_path
 import os
 
 
@@ -54,6 +55,7 @@ class Context(object):
         self._nodes = NodeDb(self._cache)
         self._checks = {}
         self._log = Log()
+        self._tasks = []
 
     def store_result(self, result):
         raise NotImplementedError
@@ -102,7 +104,8 @@ class Context(object):
         return self._commands
 
     def _recurse_single(self, d):
-        raise NotImplementedError
+        fpath = os.path.join(d, 'build.py')
+        load_module_by_path(fpath)
 
     def recurse(self, subdirs):
         if isinstance(subdirs, str):
@@ -111,7 +114,11 @@ class Context(object):
         for d in subdirs:
             self._recures_single(d)
 
-    def run(self):
+    @property
+    def tasks(self):
+        return self._tasks
+
+    def run_tasks(self):
         tree = RunnableDependencyTree(self.tasks)
         jobs = Argument('jobs').require_type(int).retrieve(self.env, self.options, default=1)
         executor = TaskExecutionPool(tree, num_jobs=int(jobs))
