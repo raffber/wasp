@@ -1,12 +1,13 @@
 from .directory import WaspDirectory
 from .options import OptionsCollection
 from .cache import Cache
-from .node import NodeDb
+from .node import NodeDb, FileSignature
 from .arguments import Argument
 from .execution import TaskExecutionPool, RunnableDependencyTree
 from .ui import Log
 from .environment import Environment
 from .util import load_module_by_path
+from .task import TaskResultCollection
 import os
 
 
@@ -53,9 +54,13 @@ class Context(object):
         self._env = Environment(self._cache)
         self._commands = []
         self._nodes = NodeDb(self._cache)
-        self._checks = {}
         self._log = Log()
-        self._tasks = []
+        self._tasks = {}
+        self._results = TaskResultCollection()
+        self._checks = TaskResultCollection()
+        # the current build script
+        fname = self._topdir.join('build.py')
+        self._scripts_signatures = {fname: FileSignature(fname)}
 
     def store_result(self, result):
         raise NotImplementedError
@@ -106,6 +111,7 @@ class Context(object):
     def _recurse_single(self, d):
         fpath = os.path.join(d, 'build.py')
         load_module_by_path(fpath)
+        self._scripts_signatures[fpath] = FileSignature(fpath)
 
     def recurse(self, subdirs):
         if isinstance(subdirs, str):
@@ -113,6 +119,30 @@ class Context(object):
             return
         for d in subdirs:
             self._recures_single(d)
+
+    def save(self):
+        d = self.cache.getcache('script-signatures')
+        for fpath, signature in self._scripts_signatures:
+            d[fpath] = signature.to_json()
+        self.cache.save()
+
+    def load(self):
+        cache = Cache(self._cachedir)
+        cache.load()
+        signatures = cache.getcache('script-signatures')
+        invalid = False
+        for fpath, signature in self._scripts_signatures:
+            ser_sig = signatures.get(fpath, None)
+            if ser_sig is None:
+                invalid = True
+                break
+            old_sig = FileSignature.from_json(ser_sig)
+            if old_sig != signature.value:
+                invalid = True
+                break
+        if not invalid:
+            self._cache = cache
+        # else leave the already generated cache
 
     @property
     def tasks(self):

@@ -24,19 +24,33 @@ class Signature(object):
     def __ne__(self, other):
         return not other.valid or not self._valid or self.value != other.value
 
-    def tojson(self):
-        return {'value' : self.value, 'valid' : self.valid }
+    def to_json(self):
+        return {'value': self.value, 'valid': self.valid}
 
 
-class FileSignature(object):
+class FileSignature(Signature):
 
-    def __init__(self, path):
+    def __init__(self, path, value=None):
         self.path = path
-        m = md5()
-        f = open(path, 'rb')
-        m.update(f.read())
-        f.close()
-        super().__init__(m.digest(), valid=True)
+        if value is None:
+            m = md5()
+            f = open(path, 'rb')
+            m.update(f.read())
+            f.close()
+            value = m.digest()
+        super().__init__(value, valid=True)
+
+    def to_json(self):
+        d = super().to_json()
+        d['path'] = self.path
+
+    @classmethod
+    def from_json(cls, d):
+        assert 'value' in d, 'Invalid signature serialization'
+        assert 'valid' in d, 'Invalid signature serialization'
+        assert d['valid'], 'File signatures are always valid'
+        assert 'path' in d, 'Invalid FileSignature serialization'
+        return cls(d['path'], value=d['value'])
 
 
 class Node(object):

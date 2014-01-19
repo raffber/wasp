@@ -69,50 +69,76 @@ class ShellTask(object):
         self.finished(exit_code, out.read(), err.read())
 
 
+class TaskResultCollection(dict):
+    def by_name(self, name):
+        ret = []
+        for result in self:
+            if result.name == name:
+                ret.append(result)
+        return ret
+
+    def add(self, result):
+        self[result.id] = result
+
+    def to_json(self):
+        ret = {}
+        for result in self:
+            ret[result.id] = result.to_json()
+        return ret
+
+
 class TaskResult(object):
     def __init__(self, success):
         assert isinstance(success, bool), 'success has to be either True or False'
         self._success = success
+        self._id = uuid()
 
     @property
-    def success(self):
-        return self._succes
-
-    def to_json(self):
-        return None
-
-    @staticmethod
-    def from_json(self, d):
-        assert 'name' in d, 'Invalid json for TaskResult. Delete cache'
-        return task_result_factory.create(d['name'], **d)
-
-
-class Check(TaskResult):
-    def __init__(self, name=None, description='', success=False):
-        assert name is not None, 'A check must be given a unique name'
-        self._description = description
-        self._success = success
-        self._name = name
+    def id(self):
+        return self._id
 
     @property
     def success(self):
         return self._success
 
-    @property
-    def description(self):
-        return self._description
+
+class SerializableTaskResult(TaskResult):
+    def __init__(self, success, name):
+        super().__init__(success)
+        self._name = name
 
     @property
     def name(self):
         return self._name
 
     def to_json(self):
-        return {'name': 'Check',
+        return {'name': self.name,
                 'success': self.success,
-                'description': self.description}
+                'id': self.id}
+
+    @staticmethod
+    def from_json(cls, d):
+        assert 'type' in d, 'Invalid json for TaskResult. Delete cache'
+        return task_result_factory.create(d['type'], **d)
 
 
-task_result_factory = Factory(TaskResult)
+class Check(SerializableTaskResult):
+    def __init__(self, success, name, description=''):
+        super().__init__(success, name)
+        self._description = description
+
+    @property
+    def description(self):
+        return self._description
+
+    def to_json(self):
+        d = super().to_json()
+        d['description'] = self.description
+        d['type'] = 'Check'
+        return d
+
+
+task_result_factory = Factory(SerializableTaskResult)
 
 
 class register_task_result(object):

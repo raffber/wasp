@@ -1,6 +1,10 @@
 from .decorators import decorators
 
 
+class CommandFailedError(Exception):
+    pass
+
+
 class Command(object):
     def __init__(self, name, fun, depends=[], description=None):
         self._depends = depends

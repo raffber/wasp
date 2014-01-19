@@ -43,7 +43,7 @@ class Cache(object):
     def setcache(self, cachename, cache):
         self.d[cachename] = cache
 
-    def flush(self):
+    def save(self):
         # that should not fail, since we ensured the existance
         # of self._cachedir
         with open(self._cachedir.join(CACHE_FILE), 'w') as f:
