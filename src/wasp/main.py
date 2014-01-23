@@ -6,6 +6,7 @@ from .command import CommandFailedError
 import argparse
 from . import ctx
 import sys
+import os
 
 
 class CommandAction(argparse.Action):
@@ -43,19 +44,35 @@ def create_context(module):
         context = decorators.create_context()
         assert isinstance(context, Context), 'create_context: You really need to provide a subclass of wasp.Context'
     else:
-        if not hasattr(module, 'PROJECTNAME'):
+        recurse = []
+        if not hasattr(module, 'recurse'):
+            recurse = getattr(module, 'recurse')
+            assert isinstance(recurse, list), 'recurse must be a list of directories'
+        for d in recurse:
+            d = os.path.abspath(d)
+            fpath = os.path.join(d, 'build.py')
+            load_module_by_path(fpath)
+        if not hasattr(module, 'projectname'):
             projname = 'myproject'
         else:
-            projname = getattr(module, 'PROJECTNAME')
-        context = Context(projname)
+            projname = getattr(module, 'projectname')
+            assert isinstance(projname, str), 'projectname must be a string'
+        context = Context(projname, recurse_files=recurse)
     import wasp
     object.__setattr__(wasp.ctx, "_obj", context)
+
+
+def handle_no_command(options):
+    pass
 
 
 def handle_commands(options):
     str_commands = []
     if 'commands' in options:
         str_commands = options.commands
+    if len(str_commands) == 0:
+        handle_no_command(options)
+        return
     commands_to_run = []
     for scom in str_commands:
         for com in ctx.commands:
@@ -93,6 +110,8 @@ def handle_commands(options):
         serialized_checks = ctx.results.to_json()
         serialized = {'results': serialized_results, 'checks': serialized_checks}
         ctx.cache.set('results', name, serialized)
+        commands_cache = ctx.cache.getcache('commands')
+        commands_cache[name] = {'success': True}
 
 
 def run_file(fpath):

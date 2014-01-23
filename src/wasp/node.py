@@ -1,18 +1,51 @@
 from uuid import uuid4 as generate_uuid
 from hashlib import md5
 import os
+from .util import Factory
+from . import ctx
 
 
-class NodeDb(object):
+class SignatureDb(object):
     def __init__(self, cache):
-        pass
+        self._cache = cache
+        self._signaturedb = cache.getcache('signaturedb')
+
+    def add(self, signature):
+        self._signaturedb[signature.identifier] = signature
+
+    def get(self, signature):
+        return self._signaturedb.get(signature.identifier)
+
+    def save(self):
+        ret = {}
+        for signature in self._signaturedb:
+            if signature.valid:
+                ret[signature.identifier] = signature.to_json()
+
+
+class PreviousSignatureDb(object):
+    def __init__(self, cache):
+        # copy the dict, so that the cache can be written to
+        self._nodedb = dict(cache.getcache('nodedb'))
+
+    def get(self, id_):
+        d = self._nodedb.get(id_)
+        signature_factory.create(d['type'], **d)
 
 
 class Signature(object):
 
-    def __init__(self, value=-1, valid=False):
+    def __init__(self, value=None, valid=False, identifier=None):
         self.value = value
         self._valid = valid
+        if identifier is not None:
+            self._id = identifier
+        else:
+            self._id = generate_uuid()
+
+    @property
+    def identifier(self):
+        return self._id
 
     @property
     def valid(self):
@@ -25,32 +58,33 @@ class Signature(object):
         return not other.valid or not self._valid or self.value != other.value
 
     def to_json(self):
-        return {'value': self.value, 'valid': self.valid}
+        return {'value': self.value, 'valid': self.valid,
+                'type': self.__class__.__name__, 'identifier': self.identifier}
 
 
 class FileSignature(Signature):
-
-    def __init__(self, path, value=None):
+    def __init__(self, path=None, value=None, valid=True):
+        assert path is not None, 'Path must be given for file signature'
+        if not os.path.exists(path):
+            valid = False
         self.path = path
-        if value is None:
+        if value is None and valid:
             m = md5()
             f = open(path, 'rb')
             m.update(f.read())
             f.close()
             value = m.digest()
-        super().__init__(value, valid=True)
+        super().__init__(value, valid=valid, identifier=path)
 
     def to_json(self):
         d = super().to_json()
         d['path'] = self.path
+        d['type'] = self.__class__.__name__
 
-    @classmethod
-    def from_json(cls, d):
-        assert 'value' in d, 'Invalid signature serialization'
-        assert 'valid' in d, 'Invalid signature serialization'
-        assert d['valid'], 'File signatures are always valid'
-        assert 'path' in d, 'Invalid FileSignature serialization'
-        return cls(d['path'], value=d['value'])
+
+signature_factory = Factory(Signature)
+signature_factory.register(Signature)
+signature_factory.register(FileSignature)
 
 
 class Node(object):
@@ -60,13 +94,17 @@ class Node(object):
         else:
             assert isinstance(identifier, str), 'Identifier for Node must be a string'
         self._id = identifier
+        # make sure that signature is created and or added to db
+        # this enables signatures to lazily generate their signatures
+        # which improves performance
+        self.signature()
 
     @property
     def signature(self):
         return Signature()
 
-    def has_changed(self, oldsignature):
-        return self.signature != oldsignature
+    def has_changed(self):
+        raise NotImplementedError
 
     @property
     def identifier(self):
@@ -74,12 +112,15 @@ class Node(object):
 
 
 class FileNode(object):
-    def __init__(self, path):
+    def __init__(self, path, signature=None):
         if not os.path.isabs(path):
             path = os.path.abspath(path)
         self._path = path
         self._extension = os.path.splitext(path)[1]
-        self._signature_cache = None
+        if signature is not None:
+            self._signature_cache = signature
+        else:
+            self._signature_cache = None
         super().__init__(path)
 
     @property
@@ -90,10 +131,23 @@ class FileNode(object):
     def extension(self):
         return self._extension
 
+    def has_changed(self):
+        sig = ctx.previous_signatures.get(self._path)
+        if sig is None:
+            return True
+        if sig != self.signature:
+            return True
+        return False
+
     @property
     def signature(self):
         if self._signature_cache is None:
-            self._signature_cache = FileSignature(path)
+            sig = ctx.signatures.get(self._path)
+            if sig is None:
+                self._signature_cache = FileSignature(path=self._path)
+                ctx.signatures.add(self._signature_cache)
+            else:
+                self._signature_cache = sig
         return self._signature_cache
 
 
@@ -110,5 +164,7 @@ def make_nodes(lst_or_string):
         raise TypeError('Invalid type passed to make_nodes, expected Node, string or list thereof.')
     return lst
 
-def remove_duplicates(lst):
-    pass
+
+def remove_duplicates(nodes):
+    # TODO: implement and conserve odering
+    raise NotImplementedError

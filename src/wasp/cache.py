@@ -49,6 +49,9 @@ class Cache(object):
         with open(self._cachedir.join(CACHE_FILE), 'w') as f:
             json.dump(self.d, f)
 
+    def clear(self):
+        self.d = {}
+
     def load(self):
         try:
             with open(self._cachedir.join(CACHE_FILE), 'r') as f:

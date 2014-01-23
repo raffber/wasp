@@ -4,21 +4,65 @@ from io import StringIO
 from .util import run_command, Factory
 
 
+class PreviousTaskDb(dict):
+    def __init__(self, cache):
+        d = cache.getcache('previous-tasks')
+        super().__init__(d)
+        d.clear()
+
+
+class TaskDb(dict):
+    def __init__(self, cache):
+        self._cache = cache
+
+    def save(self):
+        d = self._cache.getcache('previous-tasks')
+        for task in self._d:
+            result = task.result
+            if task is None:
+                success = False
+            else:
+                success = result.success
+            d[task.identifier] = {'success': success}
+
+    def add(self, task):
+        self[task.identifier] = task
+
+
 class Task(object):
-    def __init__(self, sources=[], targets=[], children=[]):
+    def __init__(self, sources=[], targets=[], children=[], always=False, id_=None):
         self._sources = make_nodes(sources)
         self._targets = make_nodes(targets)
         assert isinstance(children, list)
         self.children = children
-        self._id = uuid()
+        self._has_run_cache = False
+        self._always = always
+        self._result = None
+        self._sources_cache = None
+        if id_ is None:
+            self._id = self._id_from_sources_and_targets()
+        else:
+            self._id = id_
+
+    def _id_from_sources_and_targets(self):
+        return ('-'.join([s.identifier for s in self.sources])
+                + '=>' + '-'.join([t.identifier for t in self.targets]))
+
+    @property
+    def always(self):
+        return self._always
 
     @property
     def sources(self):
+        if self._sources_cache is not None:
+            return self._sources_cache
         ret = []
         for task in self.children:
             ret.extend(task.sources)
         ret.extend(self._sources)
-        return remove_duplicates(ret)
+        ret = remove_duplicates(ret)
+        self._sources_cache = ret
+        return ret
 
     def __eq__(self, other):
         return other.identfier == self._id
@@ -29,8 +73,13 @@ class Task(object):
     def prepare(self):
         pass
 
+    def finish(self, result):
+        self._has_run_cache = True
+        self._result = result
+
     @property
     def targets(self):
+        # TODO: targets cache
         ret = []
         for task in self.children:
             ret.extend(task.targets)
@@ -38,12 +87,31 @@ class Task(object):
         return remove_duplicates(ret)
 
     @property
+    def has_run(self):
+        if self._has_run_cache:
+            return True
+        if self._always:
+            return False
+        # check if all children have run
+        for task in self._children:
+            if not task.has_run():
+                return False
+        # TODO: check if we previously ran this task
+        return False
+        # check if all sources have changed since last build
+        # for s in self.sources:
+        #     if s.changed():
+        #         return False
+        # self._has_run_cache = True
+        # return True
+
+    @property
     def identifier(self):
         return self._id
 
     @property
     def result(self):
-        return None
+        return self._result
 
     def run(self):
         raise NotImplementedError
@@ -78,23 +146,31 @@ class TaskResultCollection(dict):
         return ret
 
     def add(self, result):
-        self[result.id] = result
+        assert isinstance(result, TaskResult), 'argument must be a class of type TaskResult'
+        self[result.identifier] = result
 
     def to_json(self):
         ret = {}
         for result in self:
-            ret[result.id] = result.to_json()
+            if not isinstance(result, SerializableTaskResult):
+                continue
+            tojson = result.to_json()
+            if tojson is not None:
+                ret[result.id] = tojson
         return ret
 
 
 class TaskResult(object):
-    def __init__(self, success):
+    def __init__(self, success, id_=None):
         assert isinstance(success, bool), 'success has to be either True or False'
         self._success = success
-        self._id = uuid()
+        if id is None:
+            self._id = uuid()
+        else:
+            self._id = id_
 
     @property
-    def id(self):
+    def identifier(self):
         return self._id
 
     @property
@@ -103,8 +179,10 @@ class TaskResult(object):
 
 
 class SerializableTaskResult(TaskResult):
-    def __init__(self, success, name):
-        super().__init__(success)
+    def __init__(self, success, name, id_=None):
+        if id_ is None:
+            id_ = name
+        super().__init__(success, id_=id_)
         self._name = name
 
     @property
@@ -112,9 +190,9 @@ class SerializableTaskResult(TaskResult):
         return self._name
 
     def to_json(self):
-        return {'name': self.name,
+        return {'id': self.identifier,
                 'success': self.success,
-                'id': self.id}
+                'name': self.name}
 
     @staticmethod
     def from_json(cls, d):
@@ -123,8 +201,10 @@ class SerializableTaskResult(TaskResult):
 
 
 class Check(SerializableTaskResult):
-    def __init__(self, success, name, description=''):
-        super().__init__(success, name)
+    def __init__(self, success, name, description='', id_=None):
+        if id_ is None:
+            id_ = name
+        super().__init__(success, name, id_=id_)
         self._description = description
 
     @property

@@ -3,4 +3,7 @@ class Log(object):
         pass
 
     def warning(self, msg):
-        pass
+        print('WARNING: ' + msg)
+
+    def info(self, msg):
+        print('INFO: ' + msg)
