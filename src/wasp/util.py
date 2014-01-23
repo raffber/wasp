@@ -4,6 +4,15 @@ import imp
 from subprocess import Popen, PIPE
 import shlex
 from threading import Event as ThreadingEvent
+from binascii import a2b_base64, b2a_base64
+
+
+def a2b(s):
+    return a2b_base64(s)
+
+
+def b2a(b):
+    return b2a_base64(b)[:-1].decode('UTF-8')
 
 
 class Factory(object):

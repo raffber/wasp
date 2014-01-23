@@ -55,7 +55,10 @@ class Cache(object):
     def load(self):
         try:
             with open(self._cachedir.join(CACHE_FILE), 'r') as f:
-                self.d = json.load(f)
+                try:
+                    self.d = json.load(f)
+                except ValueError:
+                    pass
             if not isinstance(self.d, dict):
                 # invalid cache file, ignore
                 ctx.log.warning('Cachefile is invalid. Ignoring')

@@ -1,7 +1,7 @@
 from uuid import uuid4 as generate_uuid
 from hashlib import md5
 import os
-from .util import Factory
+from .util import Factory, b2a
 from . import ctx
 
 
@@ -63,7 +63,7 @@ class Signature(object):
 
 
 class FileSignature(Signature):
-    def __init__(self, path=None, value=None, valid=True):
+    def __init__(self, path=None, value=None, valid=True, **kw):
         assert path is not None, 'Path must be given for file signature'
         if not os.path.exists(path):
             valid = False
@@ -73,13 +73,14 @@ class FileSignature(Signature):
             f = open(path, 'rb')
             m.update(f.read())
             f.close()
-            value = m.digest()
+            value = b2a(m.digest())
         super().__init__(value, valid=valid, identifier=path)
 
     def to_json(self):
         d = super().to_json()
         d['path'] = self.path
         d['type'] = self.__class__.__name__
+        return d
 
 
 signature_factory = Factory(Signature)
@@ -166,5 +167,12 @@ def make_nodes(lst_or_string):
 
 
 def remove_duplicates(nodes):
-    # TODO: implement and conserve odering
-    raise NotImplementedError
+    d = {}
+    ret = []
+    for node in nodes:
+        existing = d.get(node.identifier, None)
+        if existing is None:
+            d[node.identifier] = node
+    for key, value in d.iteritems():
+        ret.append(value)
+    return ret

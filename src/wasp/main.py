@@ -13,7 +13,7 @@ class CommandAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         if not '_commands' in namespace:
             setattr(namespace, '_commands', [])
-        previous = namespace.ordered_args
+        previous = namespace._commands
         previous.append((self.dest, values))
         setattr(namespace, '_commands', previous)
 
@@ -45,7 +45,7 @@ def create_context(module):
         assert isinstance(context, Context), 'create_context: You really need to provide a subclass of wasp.Context'
     else:
         recurse = []
-        if not hasattr(module, 'recurse'):
+        if hasattr(module, 'recurse'):
             recurse = getattr(module, 'recurse')
             assert isinstance(recurse, list), 'recurse must be a list of directories'
         for d in recurse:
@@ -117,7 +117,6 @@ def handle_commands(options):
 def run_file(fpath):
     module = load_module_by_path(fpath)
     create_context(module)
-    ctx.load()
     for hook in decorators.init:
         hook()
     parsed = handle_options()

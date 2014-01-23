@@ -75,8 +75,9 @@ class Context(object):
         self._previous_tasks = PreviousTaskDb(self._cache)
         self._tasks = TaskDb(self._cache)
 
-    def has_changed(self, node):
-        raise NotImplementedError
+    @property
+    def log(self):
+        return self._log
 
     @property
     def topdir(self):
@@ -114,6 +115,7 @@ class Context(object):
     def options(self):
         return self._options
 
+    @property
     def configure_options(self):
         return self._configure_options
 
@@ -131,7 +133,7 @@ class Context(object):
 
     def save(self):
         d = self.cache.getcache('script-signatures')
-        for fpath, signature in self._scripts_signatures:
+        for fpath, signature in self._scripts_signatures.items():
             d[fpath] = signature.to_json()
         self.signatures.save()
         self.tasks.save()
@@ -141,19 +143,19 @@ class Context(object):
         self._cache.load()
         signatures = self._cache.getcache('script-signatures')
         invalid = False
-        for fpath, signature in self._scripts_signatures:
+        for (fpath, signature) in self._scripts_signatures.items():
             ser_sig = signatures.get(fpath, None)
             if ser_sig is None:
                 invalid = True
                 # continue to see if the files have actually changed
                 continue
-            old_sig = FileSignature.from_json(ser_sig)
+            old_sig = FileSignature(**ser_sig)
             if old_sig != signature:
                 self.log.info('Build scripts have changed since last execution! Configure the project again.')
                 invalid = True
                 break
         if invalid:
-            self.cache.clear()
+            self._cache.clear()
 
     @property
     def tasks(self):
@@ -162,6 +164,10 @@ class Context(object):
     @property
     def previous_tasks(self):
         return self._previous_tasks
+
+    @property
+    def cache(self):
+        return self._cache
 
     def run_tasks(self):
         tree = RunnableDependencyTree(self.tasks)

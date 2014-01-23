@@ -2,6 +2,7 @@ from .node import make_nodes, remove_duplicates
 from uuid import uuid4 as uuid
 from io import StringIO
 from .util import run_command, Factory
+from . import ctx
 
 
 class PreviousTaskDb(dict):
@@ -17,7 +18,7 @@ class TaskDb(dict):
 
     def save(self):
         d = self._cache.getcache('previous-tasks')
-        for task in self._d:
+        for task in self:
             result = task.result
             if task is None:
                 success = False
@@ -96,14 +97,17 @@ class Task(object):
         for task in self._children:
             if not task.has_run():
                 return False
-        # TODO: check if we previously ran this task
-        return False
+        previous_task = ctx.cache.previous_tasks.get(self.identifier, None)
+        if previous_task is None:
+            return False
+        if not previous_task['success']:
+            return False
         # check if all sources have changed since last build
-        # for s in self.sources:
-        #     if s.changed():
-        #         return False
-        # self._has_run_cache = True
-        # return True
+        for s in self.sources:
+            if s.changed():
+                return False
+        self._has_run_cache = True
+        return True
 
     @property
     def identifier(self):

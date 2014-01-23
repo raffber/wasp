@@ -16,6 +16,7 @@ class Command(object):
     def depends(self):
         return self._depends
 
+    @property
     def name(self):
         return self._name
 
@@ -46,30 +47,18 @@ class InstallCommand(Command):
 
 
 class build(object):
-    def __init__(self):
-        pass
-
-    def __call__(self, f):
+    def __init__(self, f):
         decorators.commands.append(BuildCommand(f))
-        return f
 
 
 class install(object):
-    def __init__(self):
-        pass
-
-    def __call__(self, f):
+    def __init__(self, f):
         decorators.append(InstallCommand(f))
-        return f
 
 
 class configure(object):
-    def __init__(self):
-        pass
-
-    def __call__(self, f):
+    def __init__(self, f):
         decorators.commands.append(ConfigureCommand(f))
-        return f
 
 
 class command(object):
