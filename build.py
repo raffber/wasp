@@ -1,7 +1,11 @@
 from wasp import *
 
-PROJECTNAME = 'awesome-test'
+class TouchTask(ShellTask):
+    cmd = 'touch {TGT}'
+    always = True
 
 @configure
 def configure():
-    print('CONFIGURE!!!') 
+    print('CONFIGURE!!!')
+    return TouchTask(targets='asdf.txt')
+ 

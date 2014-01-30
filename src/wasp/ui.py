@@ -7,3 +7,6 @@ class Log(object):
 
     def info(self, msg):
         print('INFO: ' + msg)
+
+    def fatal(self, msg):
+        print('FATAL: ' + msg)

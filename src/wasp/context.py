@@ -128,6 +128,10 @@ class Context(object):
         return self._checks
 
     @property
+    def results(self):
+        return self._results
+
+    @property
     def commands(self):
         return self._commands
 
@@ -174,5 +178,4 @@ class Context(object):
         jobs = Argument('jobs').require_type(int).retrieve(self.env, self.options, default=1)
         executor = TaskExecutionPool(tree, num_jobs=int(jobs))
         res = executor.run()
-        self._tasks.clear()
         return res

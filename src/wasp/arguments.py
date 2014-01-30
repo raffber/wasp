@@ -14,7 +14,7 @@ class Argument(object):
         return self._value
 
     def _check_type(self, value):
-        if self._required_type is not None and self._val is not None:
+        if self._required_type is not None and value is not None:
             assert isinstance(value, self._required_type),\
                 'Argument {0} must be of type {1}!'.format(self.lowerkey, str(self._required_type))
 

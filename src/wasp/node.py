@@ -9,27 +9,32 @@ class SignatureDb(object):
     def __init__(self, cache):
         self._cache = cache
         self._signaturedb = cache.getcache('signaturedb')
+        self._db = {}
+        for key, d in self._signaturedb.items():
+            sig = signature_factory.create(d['type'], **d)
+            self._db[sig.identifier] = sig
 
     def add(self, signature):
-        self._signaturedb[signature.identifier] = signature
+        self._db[signature.identifier] = signature
 
-    def get(self, signature):
-        return self._signaturedb.get(signature.identifier)
+    def get(self, signature_identifier):
+        return self._db.get(signature_identifier)
 
     def save(self):
         ret = {}
-        for signature in self._signaturedb:
+        for id_, signature in self._db.items():
             if signature.valid:
                 ret[signature.identifier] = signature.to_json()
+        self._cache.setcache('signaturedb', ret)
 
 
 class PreviousSignatureDb(object):
     def __init__(self, cache):
         # copy the dict, so that the cache can be written to
-        self._nodedb = dict(cache.getcache('nodedb'))
+        self._signaturedb = dict(cache.getcache('signaturedb'))
 
     def get(self, id_):
-        d = self._nodedb.get(id_)
+        d = self._signaturedb.get(id_)
         signature_factory.create(d['type'], **d)
 
 
@@ -98,7 +103,7 @@ class Node(object):
         # make sure that signature is created and or added to db
         # this enables signatures to lazily generate their signatures
         # which improves performance
-        self.signature()
+        self.signature
 
     @property
     def signature(self):
@@ -112,7 +117,7 @@ class Node(object):
         return self._id
 
 
-class FileNode(object):
+class FileNode(Node):
     def __init__(self, path, signature=None):
         if not os.path.isabs(path):
             path = os.path.abspath(path)
@@ -173,6 +178,6 @@ def remove_duplicates(nodes):
         existing = d.get(node.identifier, None)
         if existing is None:
             d[node.identifier] = node
-    for key, value in d.iteritems():
+    for key, value in d.items():
         ret.append(value)
     return ret

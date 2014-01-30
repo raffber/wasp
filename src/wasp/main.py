@@ -1,7 +1,7 @@
 from .util import load_module_by_path
 from .decorators import decorators
 from .context import Context
-from .task import SerializableTaskResult, Check
+from .task import Check, Task, TaskResult
 from .command import CommandFailedError
 import argparse
 from . import ctx
@@ -14,7 +14,7 @@ class CommandAction(argparse.Action):
         if not '_commands' in namespace:
             setattr(namespace, '_commands', [])
         previous = namespace._commands
-        previous.append((self.dest, values))
+        previous.append(values)
         setattr(namespace, '_commands', previous)
 
 
@@ -68,8 +68,8 @@ def handle_no_command(options):
 
 def handle_commands(options):
     str_commands = []
-    if 'commands' in options:
-        str_commands = options.commands
+    if '_commands' in options:
+        str_commands = options._commands
     if len(str_commands) == 0:
         handle_no_command(options)
         return
@@ -79,6 +79,7 @@ def handle_commands(options):
             if com.name == scom:
                 commands_to_run.append(com)
     command_groups = []
+    cur_lst = None
     cur_name = None
     for com in commands_to_run:
         if cur_name != com.name:
@@ -93,19 +94,31 @@ def handle_commands(options):
         name = None
         for com in group:
             name = com.name
-            tasks = com.run()
-            ctx.tasks.extend(tasks)
+            try:
+                tasks = com.run()
+                if isinstance(tasks, list):
+                    ctx.tasks.add(tasks)
+                elif isinstance(tasks, Task):
+                    ctx.tasks.add(tasks)
+                elif tasks is not None:
+                    assert False, 'Unrecognized return value from {0}'.format(name)
+                # else task is None, thats fine
+            except CommandFailedError:
+                # TODO: ...
+                raise
         results = ctx.run_tasks()
         for res in results:
-            if not res.success:
-                # TODO: cancel properly
-                print('{0} failed'.format(com.name))
-                raise CommandFailedError
+            if isinstance(res, Check):
+                ctx.checks.add(res)
             else:
-                if isinstance(res, Check):
-                    ctx.checks.add(res)
-                else:
-                    ctx.results.add(res)
+                ctx.results.add(res)
+        ctx.tasks.save()
+        for key, task in ctx.tasks.items():
+            if not task.success:
+                msg = '{0} failed, result {1}'.format(com.name, res.identifier)
+                ctx.log.fatal(msg)
+                raise CommandFailedError(msg)
+        ctx.tasks.clear()
         serialized_results = ctx.results.to_json()
         serialized_checks = ctx.results.to_json()
         serialized = {'results': serialized_results, 'checks': serialized_checks}
@@ -126,4 +139,5 @@ def run_file(fpath):
 
 
 def recurse_file(fpath):
+    # TODO: handle additional recurse
     load_module_by_path(fpath)

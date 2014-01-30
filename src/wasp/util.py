@@ -89,9 +89,9 @@ def run_command(cmd, stdout=None, stderr=None, timeout=100):
     output, err = process.communicate()
     exit_code = process.wait(timeout=timeout)
     if stdout is not None:
-        stdout.write(output)
+        stdout.write(output.decode('UTF-8'))
     if stderr is not None:
-        stderr.write(err)
+        stderr.write(err.decode('UTF-8'))
     return exit_code
 
 
