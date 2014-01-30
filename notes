@@ -1,9 +1,9 @@
 Ideas
 =========
 
- * decorators
- * allow calls in subdirs ... maybe hard to implement
- 
+
+ * task generators
+ * task.use(...) can give args, string for check or check
 
 
 

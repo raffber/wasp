@@ -8,11 +8,7 @@ from . import ctx
 class SignatureDb(object):
     def __init__(self, cache):
         self._cache = cache
-        self._signaturedb = cache.getcache('signaturedb')
         self._db = {}
-        for key, d in self._signaturedb.items():
-            sig = signature_factory.create(d['type'], **d)
-            self._db[sig.identifier] = sig
 
     def add(self, signature):
         self._db[signature.identifier] = signature
@@ -35,7 +31,7 @@ class PreviousSignatureDb(object):
 
     def get(self, id_):
         d = self._signaturedb.get(id_)
-        signature_factory.create(d['type'], **d)
+        return signature_factory.create(d['type'], **d)
 
 
 class Signature(object):

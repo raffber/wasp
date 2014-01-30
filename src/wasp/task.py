@@ -1,8 +1,9 @@
 from .node import make_nodes, remove_duplicates, FileNode
 from uuid import uuid4 as uuid
 from io import StringIO
-from .util import run_command, Factory
+from .util import run_command, Factory, UnusedArgFormatter
 from . import ctx
+from .arguments import Argument
 
 
 class PreviousTaskDb(dict):
@@ -44,6 +45,7 @@ class Task(object):
         self._result = None
         self._sources_cache = None
         self._success = False
+        self._arguments = []
         if id_ is None:
             self._id = self._id_from_sources_and_targets()
         else:
@@ -115,7 +117,7 @@ class Task(object):
             return False
         # check if all sources have changed since last build
         for s in self.sources:
-            if s.changed():
+            if s.has_changed():
                 return False
         self._has_run_cache = True
         return True
@@ -145,6 +147,28 @@ class Task(object):
     def run(self):
         raise NotImplementedError
 
+    @property
+    def arguments(self):
+        return self._arguments
+
+    def use(self, *args, **kw):
+        for a in args:
+            if isinstance(a, Argument):
+                self.arguments.append(a)
+            elif isinstance(a, Check):
+                args = a.arguments
+                if args is None:
+                    continue
+                for a in args:
+                    self.arguments.append(a)
+            elif isinstance(a, str):
+                arg = Argument(a).retrieve_all()
+                self.arguments.append(arg)
+            elif isinstance(a, list):
+                self.use(*a)
+        for k, a in kw.items():
+            self.arguments.append(Argument(k).assign(a))
+
 
 class ShellTask(Task):
     def __init__(self, sources=[], targets=[], children=[], cmd=''):
@@ -170,7 +194,13 @@ class ShellTask(Task):
                 tgt_list.append(t.path)
         src_str = ' '.join(src_list)
         tgt_str = ' '.join(tgt_list)
-        return cmd_str.format(SRC=src_str, TGT=tgt_str)
+        kw = {'SRC': src_str,
+              'TGT': tgt_str}
+        for arg in self.arguments:
+            kw[arg.upperkey] = str(arg.value)
+        s = UnusedArgFormatter().format(cmd_str, **kw)
+        print(s)
+        return s
 
     def run(self):
         commandstring = self.cmd
@@ -259,6 +289,9 @@ class Check(SerializableTaskResult):
         d['type'] = 'Check'
         return d
 
+    @property
+    def arguments(self):
+        return None
 
 task_result_factory = Factory(SerializableTaskResult)
 

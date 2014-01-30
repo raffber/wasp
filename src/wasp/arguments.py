@@ -1,5 +1,6 @@
 from .environment import Environment
 from .options import OptionsCollection
+from . import ctx
 
 
 class Argument(object):
@@ -25,6 +26,7 @@ class Argument(object):
     value = property(get_value, set_value)
 
     def _retrieve_from_single(self, arg):
+        from .task import TaskResultCollection, Check
         if isinstance(arg, Environment):
             # environment variable
             return arg.get(self.upperkey)
@@ -33,6 +35,21 @@ class Argument(object):
             return arg.get(self.lowerkey, None)
         elif isinstance(arg, OptionsCollection):
             return arg.get(self.lowerkey, None)
+        elif isinstance(arg, TaskResultCollection):
+            for check in arg:
+                if not isinstance(check, Check):
+                    break
+                args = check.arguments
+                if args is not None:
+                    for a in args:
+                        if a.key == self.key:
+                            return a.value
+        elif isinstance(arg, Check):
+            args = arg.arguments
+            if args is not None:
+                for a in args:
+                    if a.key == self.key:
+                        return a.value
         elif isinstance(arg, str):
             return arg
         elif isinstance(arg, list):
@@ -49,7 +66,14 @@ class Argument(object):
             self.value = default
         return self.value
 
+    def retrieve_all(self):
+        self.retrieve(ctx.env, ctx.options, ctx.checks, default=None)
+
     def require_type(self, tp):
         self._required_type = tp
         self._check_type(self._value)
+        return self
+
+    def assign(self, value):
+        self.value = value
         return self

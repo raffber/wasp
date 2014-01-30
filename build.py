@@ -1,11 +1,8 @@
 from wasp import *
 
-class TouchTask(ShellTask):
-    cmd = 'touch {TGT}'
-    always = True
-
 @configure
 def configure():
-    print('CONFIGURE!!!')
-    return TouchTask(targets='asdf.txt')
+    return ShellTask(sources=ctx.builddir.join('src.txt'),
+                     targets=ctx.builddir.join('tgt.txt'),
+                     cmd='cp {CPFLAGS} {SRC} {TGT}')
  

@@ -5,6 +5,7 @@ from subprocess import Popen, PIPE
 import shlex
 from threading import Event as ThreadingEvent
 from binascii import a2b_base64, b2a_base64
+from string import Formatter
 
 
 def a2b(s):
@@ -97,6 +98,16 @@ def run_command(cmd, stdout=None, stderr=None, timeout=100):
 
 module_cache = {}
 
+
+class UnusedArgFormatter(Formatter):
+    def check_unused_args(self, used_args, args, kwargs):
+        pass
+
+    def get_value(self, key, args, kwargs):
+        if isinstance(key, int):
+            return args[key]
+        if isinstance(key, str):
+            return kwargs.get(key, '')
 
 def load_module_by_path(fpath):
     """
