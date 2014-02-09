@@ -7,6 +7,7 @@ from .execution import TaskExecutionPool, RunnableDependencyTree
 from .ui import Log
 from .environment import Environment
 from .task import TaskResultCollection, PreviousTaskDb, TaskDb
+from .util import load_module_by_path
 import os
 
 
@@ -74,6 +75,31 @@ class Context(object):
         self._previous_signatures = PreviousSignatureDb(self._cache)
         self._previous_tasks = PreviousTaskDb(self._cache)
         self._tasks = TaskDb(self._cache)
+        self._tooldir = WaspDirectory('wasp-tools')
+        self._tools = {}
+
+    def get_tooldir(self):
+        return self._tooldir
+
+    def set_tooldir(self, tooldir):
+        if isinstance(tooldir, str):
+            tooldir = WaspDirectory(tooldir)
+        assert isinstance(tooldir, WaspDirectory), 'tooldir must either be a path to a directory or a WaspDirectory'
+        tooldir.ensure_exists()
+        self._tooldir = tooldir
+
+    tooldir = property(get_tooldir, set_tooldir)
+
+    def tool(self, toolname, path=None):
+        if toolname in self._tools:
+            return self._tools[toolname]
+        if path is None:
+            path = self._tooldir.path
+        path = os.path.abspath(path)
+        fpath = os.path.join(path, toolname + '.py')
+        module = load_module_by_path(fpath)
+        self._tools[toolname] = module
+        return module
 
     @property
     def log(self):

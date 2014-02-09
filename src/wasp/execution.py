@@ -104,12 +104,18 @@ class RunnableDependencyTree(object):
     def pop_runnable_task(self):
         if self.finished:
             return None
-        for task in self._tasks:
+        i = 0
+        while i < len(self._tasks):
+            task = self._tasks[i]
             if task.has_run:
                 self._tasks.remove(task)
+                continue
             elif task.runnable:
                 self._tasks.remove(task)
                 return task.task
+            i += 1
+        if len(self._tasks) == 0:
+            return None
         # well crap... we got a dependency cycle
         # TODO: description
         raise DependencyCycleError('There is a cycle in your dependencies')
@@ -126,8 +132,9 @@ class TaskExecutor(Thread):
         return self._finished_event
 
     def run(self):
+        self._task.prepare()
         self._task.run()
-        self._finished_event.invoke(self._task)
+        self._finished_event.fire(self._task)
 
 
 class TaskExecutionPool(object):
@@ -143,6 +150,8 @@ class TaskExecutionPool(object):
         if task is None and self._running_tasks == 0:
             self._loop.cancel()
             return
+        elif task is None:
+            return
         task.prepare()
         executor = TaskExecutor(task, self._loop)
         executor.finished.connect(self._on_task_finished)
@@ -151,8 +160,8 @@ class TaskExecutionPool(object):
 
     def _on_task_finished(self, task):
         self._running_tasks -= 1
-        self._start_next_task()
         self._tasks.task_finished(task)
+        self._start_next_task()
         if not task.success:
             return
         result = task.result

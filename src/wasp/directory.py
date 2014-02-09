@@ -5,8 +5,8 @@ class WaspDirectory(object):
     def __init__(self, path):
         self._path = os.path.abspath(path)
 
-    def join(self, *args):
-        return os.path.join(self.path, *args)
+    def join(self, *args, append=''):
+        return os.path.join(self.path, *args) + append
 
     @property
     def valid(self):

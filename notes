@@ -3,9 +3,7 @@ Ideas
 
 
  * task generators
- * task.use(...) can give args, string for check or check
-
-
+ * one needs to be able to require args
 
 
  =================================

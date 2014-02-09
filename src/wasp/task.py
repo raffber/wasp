@@ -3,7 +3,7 @@ from uuid import uuid4 as uuid
 from io import StringIO
 from .util import run_command, Factory, UnusedArgFormatter
 from . import ctx
-from .arguments import Argument
+from .arguments import Argument, ArgumentCollection
 
 
 class PreviousTaskDb(dict):
@@ -45,7 +45,7 @@ class Task(object):
         self._result = None
         self._sources_cache = None
         self._success = False
-        self._arguments = []
+        self._arguments = ArgumentCollection()
         if id_ is None:
             self._id = self._id_from_sources_and_targets()
         else:
@@ -145,7 +145,7 @@ class Task(object):
     success = property(get_success, set_success)
 
     def run(self):
-        raise NotImplementedError
+        pass
 
     @property
     def arguments(self):
@@ -154,20 +154,37 @@ class Task(object):
     def use(self, *args, **kw):
         for a in args:
             if isinstance(a, Argument):
-                self.arguments.append(a)
+                self.use_arg(a)
             elif isinstance(a, Check):
                 args = a.arguments
                 if args is None:
                     continue
                 for a in args:
-                    self.arguments.append(a)
+                    self.use_arg(a)
             elif isinstance(a, str):
                 arg = Argument(a).retrieve_all()
-                self.arguments.append(arg)
+                self.use_arg(arg)
             elif isinstance(a, list):
                 self.use(*a)
         for k, a in kw.items():
-            self.arguments.append(Argument(k).assign(a))
+            self.use_arg(Argument(k).assign(a))
+
+    def use_arg(self, arg):
+        for c in self.children:
+            c.use_arg(arg)
+        self.arguments.add(arg)
+
+
+class MissingCheckError(Task):
+    pass
+
+
+class FindTask(Task):
+
+    always = True
+
+    def run(self):
+        pass
 
 
 class ShellTask(Task):
@@ -180,10 +197,9 @@ class ShellTask(Task):
         return self._cmd
 
     def finished(self, exit_code, out, err):
-        self.has_run = True
         return None
 
-    def _process_command_string(self, cmd_str):
+    def _process_args(self):
         src_list = []
         for s in self.sources:
             if isinstance(s, FileNode):
@@ -196,19 +212,29 @@ class ShellTask(Task):
         tgt_str = ' '.join(tgt_list)
         kw = {'SRC': src_str,
               'TGT': tgt_str}
-        for arg in self.arguments:
-            kw[arg.upperkey] = str(arg.value)
-        s = UnusedArgFormatter().format(cmd_str, **kw)
-        print(s)
+        for key, arg in self.arguments.items():
+            val = arg.value
+            if isinstance(val, list):
+                val = ' '.join([str(i) for i in list])
+            kw[arg.upperkey] = str(val)
+        return kw
+
+    def prepare_args(self, kw):
+        return kw
+
+    def format_cmd(self, **kw):
+        s = UnusedArgFormatter().format(self.cmd, **kw)
         return s
 
     def run(self):
-        commandstring = self.cmd
-        commandstring = self._process_command_string(commandstring)
+        kw = self._process_args()
+        kw = self.prepare_args(kw)
+        commandstring = self.format_cmd(**kw)
         out = StringIO()
         err = StringIO()
         exit_code = run_command(commandstring, stdout=out, stderr=err)
         self.success = exit_code == 0
+        self.has_run = True
         ret = self.finished(exit_code, out.read(), err.read())
         if ret is not None:
             self._result = ret

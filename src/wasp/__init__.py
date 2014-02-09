@@ -38,10 +38,11 @@ def require_version(self, *args):
 
 from .context import Context
 from .options import options, configure_options
-from .arguments import Argument
+from .arguments import Argument,  MissingArgumentError
 from .command import build, configure, install, command
 from .hooks import init, create_context
 from .directory import WaspDirectory
 from .generator import generate
-from .task import register_task_result, Check, TaskResult, ShellTask, Task
+from .task import (register_task_result, Check, TaskResult,
+                   ShellTask, Task, FindTask, MissingCheckError)
 from .directory import WaspDirectory

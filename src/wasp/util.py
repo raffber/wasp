@@ -6,6 +6,7 @@ import shlex
 from threading import Event as ThreadingEvent
 from binascii import a2b_base64, b2a_base64
 from string import Formatter
+from uuid import uuid4 as uuid
 
 
 def a2b(s):
@@ -109,6 +110,7 @@ class UnusedArgFormatter(Formatter):
         if isinstance(key, str):
             return kwargs.get(key, '')
 
+
 def load_module_by_path(fpath):
     """
     Heavily inspired by waf's load_module
@@ -117,7 +119,7 @@ def load_module_by_path(fpath):
     module = module_cache.get(fpath)
     if module is not None:
         return module
-    module = imp.new_module('buildpy')
+    module = imp.new_module(str(uuid()))
     dirname = os.path.dirname(fpath)
     sys.path.insert(0, dirname)
     with open(fpath, 'r') as f:

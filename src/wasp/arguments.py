@@ -3,6 +3,17 @@ from .options import OptionsCollection
 from . import ctx
 
 
+class MissingArgumentError(Exception):
+    pass
+
+
+class ArgumentCollection(dict):
+
+    def add(self, arg):
+        assert isinstance(arg, Argument), 'Can only add Argument to ArgumentCollection'
+        self[arg.key] = arg
+
+
 class Argument(object):
     def __init__(self, key, value=None):
         self.key = key
@@ -67,12 +78,16 @@ class Argument(object):
         return self.value
 
     def retrieve_all(self):
-        self.retrieve(ctx.env, ctx.options, ctx.checks, default=None)
+        self.retrieve(ctx.env, ctx.options, ctx.configure_options, ctx.checks)
 
     def require_type(self, tp):
         self._required_type = tp
         self._check_type(self._value)
         return self
+
+    @property
+    def is_empty(self):
+        return self.value is None
 
     def assign(self, value):
         self.value = value

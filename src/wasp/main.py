@@ -20,7 +20,12 @@ class CommandAction(argparse.Action):
 
 def handle_options():
     arg = argparse.ArgumentParser(description='Welcome to {0}'.format(ctx.projectname))
+    added_commands = []
     for com in decorators.commands:
+        if com.name in added_commands:
+            ctx.commands.append(com)
+            continue
+        added_commands.append(com.name)
         ctx.commands.append(com)
         # TODO: nicify this by sorting the default commands in a logical sequence
         # i.e. add configure before build and install
@@ -115,7 +120,7 @@ def handle_commands(options):
         ctx.tasks.save()
         for key, task in ctx.tasks.items():
             if not task.success:
-                msg = '{0} failed, result {1}'.format(com.name, res.identifier)
+                msg = '{0} failed'.format(com.name)
                 ctx.log.fatal(msg)
                 raise CommandFailedError(msg)
         ctx.tasks.clear()

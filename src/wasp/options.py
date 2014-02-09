@@ -22,6 +22,7 @@ class OptionsCollection(object):
     def retrieve_from_dict(self, args):
         pass
 
+
 class Option(object):
     def __init__(self, name, description):
         self._name = name
