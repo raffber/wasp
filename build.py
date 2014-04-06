@@ -1,14 +1,18 @@
-from wasp import *
+from wasp import ctx
+import wasp
 
-dtool = None
-
-@init
+@wasp.init
 def init():
-    dtool = ctx.tool('d')
+    ctx.load_tool('d', 'cpp')
 
-@configure
-def configure():
-    return ShellTask(sources=ctx.builddir.join('src.txt'),
+
+@wasp.configure
+@wasp.inject_tool('d', 'cpp')
+def configure(d, cpp):
+    ret = [
+        wasp.ShellTask(sources=ctx.builddir.join('src.txt'),
                      targets=ctx.builddir.join('tgt.txt'),
-                     cmd='cp {CPFLAGS} {SRC} {TGT}')
- 
+                     cmd='cp {CPFLAGS} {SRC} {TGT}'),
+        d.DProgram(ctx.topdir.join('main.d'), 'mydprog')
+    ]
+    return ret

@@ -16,6 +16,10 @@ class WaspDirectory(object):
     def path(self):
         return self._path
 
+    def glob(self, pattern, recusive=False):
+        # TODO: implement
+        raise NotImplementedError
+
     def ensure_exists(self):
         try:
             os.makedirs(self._path)

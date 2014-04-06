@@ -8,6 +8,7 @@ from .ui import Log
 from .environment import Environment
 from .task import TaskResultCollection, PreviousTaskDb, TaskDb
 from .util import load_module_by_path
+from .tools import ToolError, NoSuchToolError
 import os
 
 
@@ -90,16 +91,35 @@ class Context(object):
 
     tooldir = property(get_tooldir, set_tooldir)
 
-    def tool(self, toolname, path=None):
+    def load_tool(self, toolname, *args, path=None):
         if toolname in self._tools:
-            return self._tools[toolname]
-        if path is None:
-            path = self._tooldir.path
-        path = os.path.abspath(path)
-        fpath = os.path.join(path, toolname + '.py')
-        module = load_module_by_path(fpath)
-        self._tools[toolname] = module
-        return module
+            ret =self._tools[toolname]
+        else:
+            if path is None:
+                path = self._tooldir.path
+            path = os.path.abspath(path)
+            fpath = os.path.join(path, toolname + '.py')
+            try:
+                module = load_module_by_path(fpath)
+                self._tools[toolname] = module
+                ret = module
+            except FileNotFoundError:
+                raise NoSuchToolError('No such tool: {0}'.format(toolname))
+        if len(args) > 0:
+            ret = [ret]
+        for arg in args:
+            tool = self.load_tool(arg, path=path)
+            ret.append(tool)
+        if len(args) > 0:
+            return tuple(ret)
+        return ret
+
+    def tool(self, toolname):
+        assert isinstance(toolname, str), 'Toolname must be a string.'
+        if not toolname in self._tools:
+            raise ToolError('No such tool "{0}" loaded. Make sure to load the ' \
+                'tool using load_tool() during initialization time'.format(toolname))
+        return self._tools[toolname]
 
     @property
     def log(self):

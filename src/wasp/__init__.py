@@ -46,3 +46,4 @@ from .generator import generate
 from .task import (register_task_result, Check, TaskResult,
                    ShellTask, Task, FindTask, MissingCheckError)
 from .directory import WaspDirectory
+from .tools import inject_tool

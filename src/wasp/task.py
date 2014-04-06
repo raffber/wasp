@@ -28,8 +28,8 @@ class TaskDb(dict):
             self[task.identifier] = task
         elif isinstance(task, list):
             for t in task:
-                assert isinstance(task, Task), 'Either a list of task or task is required as argument'
-                self[task.identifier] = t
+                assert isinstance(t, Task), 'Either a list of task or task is required as argument'
+                self[t.identifier] = t
         else:
             assert False, 'Either a list of task or task is required as argument'
 
@@ -108,7 +108,7 @@ class Task(object):
             return False
         # check if all children have run
         for task in self.children:
-            if not task.has_run():
+            if not task.has_run:
                 return False
         previous_task = ctx.previous_tasks.get(self.identifier, None)
         if previous_task is None:
@@ -174,8 +174,24 @@ class Task(object):
             c.use_arg(arg)
         self.arguments.add(arg)
 
+    def require(self, arguments=None, checks=None):
+        if arguments is not None:
+            if isinstance(arguments, str):
+                arguments = [arguments]
+            for argname in arguments:
+                if not argname in self._arguments:
+                    arg = Argument(argname)
+                    arg.retrieve_all()
+                    self.arguments.add(arg)
+        if checks is not None:
+            if isinstance(checks, str):
+                checks = [checks]
+            for checkname in checks:
+                if not checkname in ctx.checks:
+                    raise MissingCheckError('"{0}" requires you to check for "{1}"'.format(self.__class__.__name__, checkname))
 
-class MissingCheckError(Task):
+
+class MissingCheckError(RuntimeError):
     pass
 
 
@@ -265,22 +281,27 @@ class TaskResultCollection(dict):
 
 
 class TaskResult(object):
-    def __init__(self, id_=None):
+    def __init__(self, id_=None, success=True):
         if id is None:
             self._id = uuid()
         else:
             self._id = id_
+        self._success = success
 
     @property
     def identifier(self):
         return self._id
 
+    @property
+    def success(self):
+        return self._success
+
 
 class SerializableTaskResult(TaskResult):
-    def __init__(self, success, name, id_=None):
+    def __init__(self, name, success=True, id_=None):
         if id_ is None:
             id_ = name
-        super().__init__(success, id_=id_)
+        super().__init__(id_=id_, success=success)
         self._name = name
 
     @property
@@ -299,11 +320,12 @@ class SerializableTaskResult(TaskResult):
 
 
 class Check(SerializableTaskResult):
-    def __init__(self, success, name, description='', id_=None):
+    def __init__(self, name, arguments=None, success=True, description='', id_=None):
         if id_ is None:
             id_ = name
-        super().__init__(success, name, id_=id_)
+        super().__init__(name, success=success, id_=id_)
         self._description = description
+        self._arguments = arguments
 
     @property
     def description(self):
@@ -317,7 +339,7 @@ class Check(SerializableTaskResult):
 
     @property
     def arguments(self):
-        return None
+        return self._arguments
 
 task_result_factory = Factory(SerializableTaskResult)
 

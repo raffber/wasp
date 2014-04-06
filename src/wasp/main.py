@@ -18,6 +18,10 @@ class CommandAction(argparse.Action):
         setattr(namespace, '_commands', previous)
 
 
+class EmptyCommandOption(object):
+    pass
+
+
 def handle_options():
     arg = argparse.ArgumentParser(description='Welcome to {0}'.format(ctx.projectname))
     added_commands = []

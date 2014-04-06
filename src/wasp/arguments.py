@@ -79,6 +79,7 @@ class Argument(object):
 
     def retrieve_all(self):
         self.retrieve(ctx.env, ctx.options, ctx.configure_options, ctx.checks)
+        return self.value
 
     def require_type(self, tp):
         self._required_type = tp

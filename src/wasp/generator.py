@@ -13,7 +13,7 @@ class TaskGenerator(object):
         raise NotImplementedError
 
 
-class FileDecoratorGenerator(object):
+class FileExtensionGenerator(object):
     def __init__(self, extensions, fun):
         super().__init__()
         if isinstance(extensions, str):
@@ -38,5 +38,5 @@ class generate(object):
         self._extension = extensions
 
     def __call__(self, f):
-        decorators.generators.append(FileDecoratorGenerator(self._extensions, f))
+        decorators.generators.append(FileExtensionGenerator(self._extensions, f))
         return f
