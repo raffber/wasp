@@ -281,27 +281,23 @@ class TaskResultCollection(dict):
 
 
 class TaskResult(object):
-    def __init__(self, id_=None, success=True):
+    def __init__(self, id_=None):
         if id is None:
             self._id = uuid()
         else:
             self._id = id_
-        self._success = success
 
     @property
     def identifier(self):
         return self._id
 
-    @property
-    def success(self):
-        return self._success
-
 
 class SerializableTaskResult(TaskResult):
-    def __init__(self, name, success=True, id_=None):
+    def __init__(self, name, id_=None):
         if id_ is None:
             id_ = name
-        super().__init__(id_=id_, success=success)
+        super().__init__(id_=id_)
+        assert isinstance(name, str), 'Name must be given as string!'
         self._name = name
 
     @property
@@ -310,20 +306,19 @@ class SerializableTaskResult(TaskResult):
 
     def to_json(self):
         return {'id': self.identifier,
-                'success': self.success,
                 'name': self.name}
 
     @staticmethod
     def from_json(cls, d):
-        assert 'type' in d, 'Invalid json for TaskResult. Delete cache'
+        assert 'type' in d, 'Invalid json for TaskResult. No type information present. Delete cache!'
         return task_result_factory.create(d['type'], **d)
 
 
 class Check(SerializableTaskResult):
-    def __init__(self, name, arguments=None, success=True, description='', id_=None):
+    def __init__(self, name, arguments=None, description='', id_=None):
         if id_ is None:
             id_ = name
-        super().__init__(name, success=success, id_=id_)
+        super().__init__(name, id_=id_)
         self._description = description
         self._arguments = arguments
 

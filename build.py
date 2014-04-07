@@ -16,3 +16,7 @@ def configure(d, cpp):
         d.DProgram(ctx.topdir.join('main.d'), 'mydprog')
     ]
     return ret
+
+@wasp.build
+def build():
+    print('BUILD!!!')

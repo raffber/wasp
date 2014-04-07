@@ -33,7 +33,7 @@ def handle_options():
         ctx.commands.append(com)
         # TODO: nicify this by sorting the default commands in a logical sequence
         # i.e. add configure before build and install
-        arg.add_argument(com.name, help=com.description, action=CommandAction)
+        arg.add_argument(com.name, help=com.description, action=CommandAction, default='', nargs='?')
     for option_fun in decorators.options:
         option_fun(ctx.options)
     ctx.options.add_to_argparse(arg)

@@ -7,8 +7,8 @@ class CommandFailedError(Exception):
 
 
 class Command(object):
-    def __init__(self, name, fun, depends=[], description=None):
-        self._depends = depends
+    def __init__(self, name, fun, description=None):
+        self._depends = []
         self._name = name
         self._fun = fun
         self._description = description or name
@@ -23,7 +23,7 @@ class Command(object):
 
     def fail(self, msg):
         ctx.log.fatal(msg)
-        raise CommandFailedError
+        raise CommandFailedError(msg)
 
     def run(self):
         fail = False
@@ -62,7 +62,7 @@ class BuildCommand(Command):
 
 class InstallCommand(Command):
     def __init__(self, fun):
-        super().__init__('install', fun, description='Install the project')
+        super().__init__('install', fun, description='Installs the project')
         self.depends.append('build')
 
 
@@ -90,6 +90,8 @@ class command(object):
         self._description = description
 
     def __call__(self, f):
-        com = Command(self._name, f, depends=self._depends, description=self._description)
+        com = Command(self._name, f, description=self._description)
+        for dep in self._depends:
+            com.depends.append(dep)
         decorators.commands.append(com)
         return f

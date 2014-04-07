@@ -18,6 +18,7 @@ def b2a(b):
 
 
 class Factory(object):
+    # TODO: add checks and require subtype of base
     def __init__(self, base):
         self._base = base
         self.d = {}
