@@ -1,7 +1,7 @@
 from .util import EventLoop, Event
 from threading import Thread
 from . import ctx
-from .task import Check
+from .check import Check
 
 
 class TaskContainer(object):

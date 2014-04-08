@@ -37,7 +37,8 @@ class Argument(object):
     value = property(get_value, set_value)
 
     def _retrieve_from_single(self, arg):
-        from .task import TaskResultCollection, Check
+        from .task import TaskResultCollection
+        from .check import Check
         if isinstance(arg, Environment):
             # environment variable
             return arg.get(self.upperkey)
