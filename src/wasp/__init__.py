@@ -26,7 +26,8 @@ class WaspVersion(object):
 
 VERSION = WaspVersion(0, 1, 0)
 
-def require_version(self, *args):
+
+def require_version(*args):
     major = minor = point = -1
     if len(args) >= 1:
         major = args[0] 
@@ -36,6 +37,7 @@ def require_version(self, *args):
         point = args[2]
     VERSION.is_compatible(major, minor, point)
 
+
 from .context import Context
 from .options import options, configure_options
 from .arguments import Argument,  MissingArgumentError
@@ -43,7 +45,8 @@ from .command import build, configure, install, command
 from .hooks import init, create_context
 from .directory import WaspDirectory
 from .generator import generate
-from .task import (register_task_result, Check, TaskResult,
+from .task import (register_task_result, TaskResult,
                    ShellTask, Task, FindTask, MissingCheckError)
 from .directory import WaspDirectory
 from .tools import inject_tool
+from .check import Check, override_check

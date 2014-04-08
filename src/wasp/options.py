@@ -68,7 +68,7 @@ class FlagOption(Option):
         self._value = False
 
     def set_value(self, v):
-        assert(isinstance(v, bool), 'You can only set a flag option to True or False')
+        assert isinstance(v, bool), 'You can only set a flag option to True or False'
         self._value = v
 
     def get_value(self):
