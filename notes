@@ -3,6 +3,7 @@ Ideas
 
 
  * task generators
+ * automatically configure by default if necessary (build script changed) and communicate this clearly, disable in @init
  * one needs to be able to require args
 
 
