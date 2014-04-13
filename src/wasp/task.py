@@ -42,23 +42,24 @@ class Task(object):
         self.children = children
         self._has_run_cache = False
         self._always = always
-        self._result = None
-        self._sources_cache = None
         self._success = False
         self._arguments = ArgumentCollection()
         if id_ is None:
-            self._id = self._id_from_sources_and_targets()
+            self._id = uuid()
         else:
             self._id = id_
         if self.has_run:
             # check previous tasks if this task was successful
-            d = ctx.previous_tasks.get(self._id)
-            if d is not None:
-                self.success = d.get('success')
+            # TODO: necessary?
+            # TODO: ... ? how?, set target signature valid to false?
+            pass
 
     def _id_from_sources_and_targets(self):
-        return ('-'.join([s.identifier for s in self.sources])
-                + '=>' + '-'.join([t.identifier for t in self.targets]))
+        taskname = self.__class__.__name__
+        targets = '-'.join([t.identifier for t in self.targets])
+        sources = '-'.join([s.identifier for s in self.sources])
+        ret = taskname + ':' + sources + '=>' + targets
+        return ret
 
     @property
     def always(self):
@@ -66,15 +67,7 @@ class Task(object):
 
     @property
     def sources(self):
-        if self._sources_cache is not None:
-            return self._sources_cache
-        ret = []
-        for task in self.children:
-            ret.extend(task.sources)
-        ret.extend(self._sources)
-        ret = remove_duplicates(ret)
-        self._sources_cache = ret
-        return ret
+        return self._sources
 
     def __eq__(self, other):
         return other.identfier == self._id
@@ -85,18 +78,9 @@ class Task(object):
     def prepare(self):
         pass
 
-    def finish(self, result):
-        self._has_run_cache = True
-        self._result = result
-
     @property
     def targets(self):
-        # TODO: targets cache
-        ret = []
-        for task in self.children:
-            ret.extend(task.targets)
-        ret.extend(self._targets)
-        return remove_duplicates(ret)
+        return self._targets
 
     def set_has_run(self, has_run):
         self._has_run_cache = has_run
@@ -104,17 +88,16 @@ class Task(object):
     def get_has_run(self):
         if self._has_run_cache:
             return True
+        # else, recheck
         if self.always:
             return False
         # check if all children have run
         for task in self.children:
             if not task.has_run:
                 return False
-        previous_task = ctx.previous_tasks.get(self.identifier, None)
-        if previous_task is None:
-            return False
-        if not previous_task['success']:
-            return False
+        for t in self.targets:
+            if t.has_changed():
+                return False
         # check if all sources have changed since last build
         for s in self.sources:
             if s.has_changed():
@@ -127,14 +110,6 @@ class Task(object):
     @property
     def identifier(self):
         return self._id
-
-    def set_result(self, result):
-        self._result = result
-
-    def get_result(self):
-        return self._result
-
-    result = property(get_result, set_result)
 
     def set_success(self, suc):
         self._success = suc
@@ -213,7 +188,7 @@ class ShellTask(Task):
         return self._cmd
 
     def finished(self, exit_code, out, err):
-        return None
+        return exit_code == 0
 
     def _process_args(self):
         src_list = []
@@ -252,9 +227,16 @@ class ShellTask(Task):
         self.success = exit_code == 0
         self.has_run = True
         ret = self.finished(exit_code, out.read(), err.read())
+        results = []
         if ret is not None:
-            self._result = ret
-        print('HERE!!!')
+            if not isinstance(ret, list):
+                ret = [ret]
+            for r in ret:
+                if isinstance(r, bool):
+                    self._success = r
+                elif isinstance(r, TaskResult):
+                    results.append(r)
+        return results
 
 
 class TaskResultCollection(dict):
@@ -320,6 +302,14 @@ class Check(SerializableTaskResult):
             id_ = name
         super().__init__(name, id_=id_)
         self._description = description
+        assert isinstance(arguments, Argument) or isinstance(arguments, list), \
+            'Check: arguments must be either of type Argument or a list thereof'
+        if isinstance(arguments, Argument):
+            arguments = [arguments]
+        else:
+            for arg in arguments:
+                assert isinstance(arg, Argument), \
+                    'Check: arguments must be either of type Argument or a list thereof'
         self._arguments = arguments
 
     @property
@@ -330,6 +320,7 @@ class Check(SerializableTaskResult):
         d = super().to_json()
         d['description'] = self.description
         d['type'] = 'Check'
+        # TODO: serialize arguments
         return d
 
     @property

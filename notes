@@ -4,6 +4,7 @@ Ideas
 
  * task generators
  * one needs to be able to require args
+ * argument to disable commands registred by tools
 
 
  =================================

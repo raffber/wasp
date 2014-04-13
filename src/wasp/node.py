@@ -31,6 +31,8 @@ class PreviousSignatureDb(object):
 
     def get(self, id_):
         d = self._signaturedb.get(id_)
+        if d is None:
+            return Signature()
         return signature_factory.create(d['type'], **d)
 
 

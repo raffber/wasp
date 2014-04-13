@@ -1,7 +1,6 @@
 from .util import EventLoop, Event
-from threading import Thread
-from . import ctx
-from .task import Check
+from threading import Thread, Lock
+from .task import TaskResult
 
 
 class TaskContainer(object):
@@ -104,17 +103,22 @@ class RunnableDependencyTree(object):
     def pop_runnable_task(self):
         if self.finished:
             return None
-        i = 0
-        while i < len(self._tasks):
-            task = self._tasks[i]
+        ret = None
+        tasks = []
+        for task in self._tasks:
+            if ret is not None:
+                tasks.append(task)
+                continue
             if task.has_run:
-                self._tasks.remove(task)
                 continue
             elif task.runnable:
-                self._tasks.remove(task)
-                return task.task
-            i += 1
-        if len(self._tasks) == 0:
+                ret = task
+                continue
+            tasks.append(task)
+        self._tasks = tasks
+        if ret is not None:
+            return ret.task
+        if len(tasks) == 0 and ret is None:
             return None
         # well crap... we got a dependency cycle
         # TODO: description
@@ -125,6 +129,7 @@ class TaskExecutor(Thread):
     def __init__(self, task, loop):
         super().__init__()
         self._task = task
+        self._results = []
         self._finished_event = Event(loop)
 
     @property
@@ -133,14 +138,22 @@ class TaskExecutor(Thread):
 
     def run(self):
         self._task.prepare()
-        self._task.run()
-        self._finished_event.fire(self._task)
+        self._results = self._task.run()
+        assert isinstance(self._results, TaskResult) or isinstance(self._results, list) or self._results is None, \
+            'Task.run() must either return a list of TaskResults or a TaskResult'
+        if isinstance(self._results, list):
+            for result in self._results:
+                assert isinstance(result, TaskResult), 'Task.run() must either return a list of TaskResults or a TaskResult'
+        elif isinstance(self._results, TaskResult):
+            self._results = [self._results]
+        self._finished_event.fire(self._task, self._results)
 
 
 class TaskExecutionPool(object):
     def __init__(self, dependency_tree, num_jobs=1):
         self._num_jobs = num_jobs
         self._tasks = dependency_tree
+        self._lock = Lock()
         self._loop = EventLoop()
         self._running_tasks = 0
         self._results = []
@@ -158,13 +171,14 @@ class TaskExecutionPool(object):
         executor.start()
         self._running_tasks += 1
 
-    def _on_task_finished(self, task):
+    def _on_task_finished(self, task, result):
+        self._lock.acquire()
         self._running_tasks -= 1
         self._tasks.task_finished(task)
         self._start_next_task()
+        self._lock.release()
         if not task.success:
             return
-        result = task.result
         if result is None:
             return
         if isinstance(result, list):

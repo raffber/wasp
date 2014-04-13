@@ -32,7 +32,7 @@ class Command(object):
         for dep in self._depends:
             com_info = command_cache.get(dep)
             if com_info is not None:
-                if com_info.get('success', False):
+                if not com_info.get('success', False):
                     fail = True
                     msg = '{0} failed!'.format(dep)
                     break

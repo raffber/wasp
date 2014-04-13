@@ -6,7 +6,7 @@ from .arguments import Argument
 from .execution import TaskExecutionPool, RunnableDependencyTree
 from .ui import Log
 from .environment import Environment
-from .task import TaskResultCollection, PreviousTaskDb, TaskDb
+from .task import TaskResultCollection, TaskDb
 from .util import load_module_by_path
 from .tools import ToolError, NoSuchToolError
 import os
@@ -74,7 +74,6 @@ class Context(object):
         self._commands = []
         self._signatures = SignatureDb(self._cache)
         self._previous_signatures = PreviousSignatureDb(self._cache)
-        self._previous_tasks = PreviousTaskDb(self._cache)
         self._tasks = TaskDb(self._cache)
         self._tooldir = WaspDirectory('wasp-tools')
         self._tools = {}
@@ -186,7 +185,6 @@ class Context(object):
         for fpath, signature in self._scripts_signatures.items():
             d[fpath] = signature.to_json()
         self.signatures.save()
-        self.tasks.save()
         self.cache.save()
 
     def load(self):
@@ -210,10 +208,6 @@ class Context(object):
     @property
     def tasks(self):
         return self._tasks
-
-    @property
-    def previous_tasks(self):
-        return self._previous_tasks
 
     @property
     def cache(self):

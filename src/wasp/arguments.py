@@ -37,17 +37,12 @@ class Argument(object):
     value = property(get_value, set_value)
 
     def _retrieve_from_single(self, arg):
+        # TODO: think about order
         from .task import TaskResultCollection, Check
-        if isinstance(arg, Environment):
-            # environment variable
-            return arg.get(self.upperkey)
-        elif isinstance(arg, dict):
-            # keyword argument
-            return arg.get(self.lowerkey, None)
-        elif isinstance(arg, OptionsCollection):
+        if isinstance(arg, OptionsCollection):
             return arg.get(self.lowerkey, None)
         elif isinstance(arg, TaskResultCollection):
-            for check in arg:
+            for check in arg.values():
                 if not isinstance(check, Check):
                     break
                 args = check.arguments
@@ -55,12 +50,18 @@ class Argument(object):
                     for a in args:
                         if a.key == self.key:
                             return a.value
+        elif isinstance(arg, Environment):
+            # environment variable
+            return arg.get(self.upperkey)
         elif isinstance(arg, Check):
             args = arg.arguments
             if args is not None:
                 for a in args:
                     if a.key == self.key:
                         return a.value
+        elif isinstance(arg, dict):
+            # keyword argument
+            return arg.get(self.lowerkey, None)
         elif isinstance(arg, str):
             return arg
         elif isinstance(arg, list):
@@ -78,7 +79,7 @@ class Argument(object):
         return self.value
 
     def retrieve_all(self):
-        self.retrieve(ctx.env, ctx.options, ctx.configure_options, ctx.checks)
+        self.retrieve(ctx.options, ctx.configure_options, ctx.checks, ctx.env)
         return self.value
 
     def require_type(self, tp):
