@@ -327,6 +327,7 @@ class Check(SerializableTaskResult):
     def arguments(self):
         return self._arguments
 
+
 task_result_factory = Factory(SerializableTaskResult)
 
 

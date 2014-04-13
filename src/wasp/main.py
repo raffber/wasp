@@ -1,7 +1,8 @@
 from .util import load_module_by_path
 from .decorators import decorators
 from .context import Context
-from .task import Check, Task, TaskResult
+from .task import Task, TaskResult
+from .check import Check
 from .command import CommandFailedError
 import argparse
 from . import ctx
