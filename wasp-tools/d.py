@@ -4,7 +4,6 @@ from wasp import ShellTask, FindTask, ctx, Task
 
 @wasp.configure
 def configure():
-    print('Configuring from D-tool')
     return FindDCompiler()
 
 

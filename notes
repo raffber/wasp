@@ -8,8 +8,20 @@ Ideas
  * one needs to be able to require args
  * argument to disable commands registred by tools
 
+Next Tasks
+----------
 
- =================================
+ * write unittests
+ * document code
+ * possibly rewrite some code that is ugly
+ * write clean procedure
+ * write autoconfigure procedure
+ * improve options handling
+ * write some UI code
+
+
+
+=================================
 
 
 import wasp

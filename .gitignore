@@ -5,3 +5,7 @@ __pycache__
 .wasp
 build
 *.sw*
+*.egg-info
+dist
+env
+MANIFEST

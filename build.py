@@ -9,7 +9,6 @@ def init():
 @wasp.build
 @wasp.inject_tool('d', 'cpp')
 def build(d, cpp):
-    print('build!')
     ret =  [
         wasp.ShellTask(sources=ctx.builddir.join('src.txt'),
                  targets=ctx.builddir.join('tgt.txt'),
