@@ -1,5 +1,5 @@
 import wasp
-from wasp import ShellTask, FindTask, ctx
+from wasp import ShellTask, FindTask, ctx, Task
 
 
 @wasp.configure
@@ -18,7 +18,7 @@ class DCompile(DTask):
         self.object_file = ctx.builddir.join(fpath, append='.o')
         super().__init__(sources=fpath, targets=self.object_file)
 
-    cmd = '{DC} {DFLAGS} -c {SRC} {TGT}'
+    cmd = '{DC} {DFLAGS} -c {SRC} -of{TGT}'
 
 
 class DLink(DTask):
@@ -26,10 +26,10 @@ class DLink(DTask):
         self.binary = ctx.builddir.join(binary_name)
         super().__init__(sources=sources, targets=self.binary)
 
-    cmd = '{DC} {LDFLAGS} {SRC} {TGT}'
+    cmd = '{DC} {LDFLAGS} {SRC} -of{TGT}'
 
 
-class DProgram(DTask):
+class DProgram(Task):
     def __init__(self, sources, program_name):
         if not isinstance(sources, list):
             sources = [sources]

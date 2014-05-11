@@ -45,7 +45,7 @@ class Task(object):
         self._success = False
         self._arguments = ArgumentCollection()
         if id_ is None:
-            self._id = uuid()
+            self._id = str(uuid())
         else:
             self._id = id_
         if self.has_run:
@@ -102,6 +102,8 @@ class Task(object):
         for s in self.sources:
             if s.has_changed():
                 return False
+        # Task was successfully run
+        self.success = True
         self._has_run_cache = True
         return True
 
@@ -120,7 +122,7 @@ class Task(object):
     success = property(get_success, set_success)
 
     def run(self):
-        pass
+        self._success = True
 
     @property
     def arguments(self):
@@ -179,8 +181,8 @@ class FindTask(Task):
 
 
 class ShellTask(Task):
-    def __init__(self, sources=[], targets=[], children=[], cmd=''):
-        super().__init__(sources=sources, targets=targets, children=children)
+    def __init__(self, sources=[], targets=[], children=[], cmd='', always=False):
+        super().__init__(sources=sources, targets=targets, children=children, always=always)
         self._cmd = cmd
 
     @property
@@ -224,6 +226,7 @@ class ShellTask(Task):
         out = StringIO()
         err = StringIO()
         exit_code = run_command(commandstring, stdout=out, stderr=err)
+        print(commandstring + ': ' + str(exit_code))
         self.success = exit_code == 0
         self.has_run = True
         ret = self.finished(exit_code, out.read(), err.read())
@@ -294,38 +297,6 @@ class SerializableTaskResult(TaskResult):
     def from_json(cls, d):
         assert 'type' in d, 'Invalid json for TaskResult. No type information present. Delete cache!'
         return task_result_factory.create(d['type'], **d)
-
-
-class Check(SerializableTaskResult):
-    def __init__(self, name, arguments=None, description='', id_=None):
-        if id_ is None:
-            id_ = name
-        super().__init__(name, id_=id_)
-        self._description = description
-        assert isinstance(arguments, Argument) or isinstance(arguments, list), \
-            'Check: arguments must be either of type Argument or a list thereof'
-        if isinstance(arguments, Argument):
-            arguments = [arguments]
-        else:
-            for arg in arguments:
-                assert isinstance(arg, Argument), \
-                    'Check: arguments must be either of type Argument or a list thereof'
-        self._arguments = arguments
-
-    @property
-    def description(self):
-        return self._description
-
-    def to_json(self):
-        d = super().to_json()
-        d['description'] = self.description
-        d['type'] = 'Check'
-        # TODO: serialize arguments
-        return d
-
-    @property
-    def arguments(self):
-        return self._arguments
 
 
 task_result_factory = Factory(SerializableTaskResult)

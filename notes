@@ -2,6 +2,7 @@ Ideas
 =========
 
 
+ * relative/absolute pathhandling is a little fucked up? if path is subpath of topdir, make it relative. Ensure CWD is topdir
  * task generators
  * automatically configure by default if necessary (build script changed) and communicate this clearly, disable in @init
  * one needs to be able to require args

@@ -42,9 +42,6 @@ class Argument(object):
         if isinstance(arg, Environment):
             # environment variable
             return arg.get(self.upperkey)
-        elif isinstance(arg, dict):
-            # keyword argument
-            return arg.get(self.lowerkey, None)
         elif isinstance(arg, OptionsCollection):
             return arg.get(self.lowerkey, None)
         elif isinstance(arg, TaskResultCollection):

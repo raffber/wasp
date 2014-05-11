@@ -1,4 +1,5 @@
 from .task import SerializableTaskResult
+from .arguments import Argument
 from . import ctx
 
 
@@ -8,6 +9,14 @@ class Check(SerializableTaskResult):
             id_ = name
         super().__init__(name, id_=id_)
         self._description = description
+        assert isinstance(arguments, Argument) or isinstance(arguments, list), \
+            'Check: arguments must be either of type Argument or a list thereof'
+        if isinstance(arguments, Argument):
+            arguments = [arguments]
+        else:
+            for arg in arguments:
+                assert isinstance(arg, Argument), \
+                    'Check: arguments must be either of type Argument or a list thereof'
         self._arguments = arguments
 
     @property
@@ -18,6 +27,7 @@ class Check(SerializableTaskResult):
         d = super().to_json()
         d['description'] = self.description
         d['type'] = 'Check'
+        # TODO: serialize arguments
         return d
 
     @property

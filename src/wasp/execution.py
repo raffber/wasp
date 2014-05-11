@@ -120,9 +120,8 @@ class RunnableDependencyTree(object):
             return ret.task
         if len(tasks) == 0 and ret is None:
             return None
-        # well crap... we got a dependency cycle
-        # TODO: description
-        raise DependencyCycleError('There is a cycle in your dependencies')
+        # TODO: detect dependency cycles
+        return None
 
 
 class TaskExecutor(Thread):
@@ -139,6 +138,7 @@ class TaskExecutor(Thread):
     def run(self):
         self._task.prepare()
         self._results = self._task.run()
+        self._task.has_run = True
         assert isinstance(self._results, TaskResult) or isinstance(self._results, list) or self._results is None, \
             'Task.run() must either return a list of TaskResults or a TaskResult'
         if isinstance(self._results, list):

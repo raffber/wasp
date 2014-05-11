@@ -83,8 +83,8 @@ class EventLoop(object):
                 return
             for (evt, args, kw) in self._events:
                 evt.invoke(*args, **kw)
-                # TODO: thread save???
-
+            self._events.clear()
+            # TODO: thread save this
 
 def run_command(cmd, stdout=None, stderr=None, timeout=100):
     cmd = shlex.split(cmd)
