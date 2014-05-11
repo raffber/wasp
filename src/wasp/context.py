@@ -1,7 +1,7 @@
 from .directory import WaspDirectory
 from .options import OptionsCollection
 from .cache import Cache
-from .node import SignatureDb, FileSignature, PreviousSignatureDb
+from .signature import SignatureProvider, FileSignature, SignatureStore
 from .arguments import Argument
 from .execution import TaskExecutionPool, RunnableDependencyTree
 from .ui import Log
@@ -72,8 +72,8 @@ class Context(object):
         self._store = Store(self._cache)
         self._env = Environment(self._cache)
         self._commands = []
-        self._signatures = SignatureDb(self._cache)
-        self._previous_signatures = PreviousSignatureDb(self._cache)
+        self._signatures = SignatureProvider(self._cache)
+        self._previous_signatures = SignatureStore(self._cache)
         self._tasks = TaskDb(self._cache)
         self._tooldir = WaspDirectory('wasp-tools')
         self._tools = {}

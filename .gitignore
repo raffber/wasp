@@ -1,2 +1,7 @@
 tmp
 ext
+__pycache__
+.idea
+.wasp
+build
+*.sw*

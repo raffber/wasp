@@ -40,7 +40,7 @@ class Task(object):
         self._targets = make_nodes(targets)
         assert isinstance(children, list)
         self.children = children
-        self._has_run_cache = False
+        self._has_run = False
         self._always = always
         self._success = False
         self._arguments = ArgumentCollection()
@@ -48,11 +48,6 @@ class Task(object):
             self._id = str(uuid())
         else:
             self._id = id_
-        if self.has_run:
-            # check previous tasks if this task was successful
-            # TODO: necessary?
-            # TODO: ... ? how?, set target signature valid to false?
-            pass
 
     def _id_from_sources_and_targets(self):
         taskname = self.__class__.__name__
@@ -83,14 +78,22 @@ class Task(object):
         return self._targets
 
     def set_has_run(self, has_run):
-        self._has_run_cache = has_run
+        self._has_run = has_run
 
     def get_has_run(self):
-        if self._has_run_cache:
-            return True
-        # else, recheck
+        # returns true if all source and target file signatures were unchanged
+        # from the last run and all child-tasks have successfully
+        # run.
+        # note that each task may change the file signatures
+        # of its targets, as such, it can not be assuemd
+        # that a task may still need to run even though at some
+        # point this function returned True, since other tasks may
+        # change the sources of this task and thus its signatures may
+        # change.
         if self.always:
             return False
+        if self._has_run:
+            return True
         # check if all children have run
         for task in self.children:
             if not task.has_run:

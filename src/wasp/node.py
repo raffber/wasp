@@ -1,94 +1,7 @@
 from uuid import uuid4 as generate_uuid
-from hashlib import md5
 import os
-from .util import Factory, b2a
 from . import ctx
-
-
-class SignatureDb(object):
-    def __init__(self, cache):
-        self._cache = cache
-        self._db = {}
-
-    def add(self, signature):
-        self._db[signature.identifier] = signature
-
-    def get(self, signature_identifier):
-        return self._db.get(signature_identifier)
-
-    def save(self):
-        ret = {}
-        for id_, signature in self._db.items():
-            if signature.valid:
-                ret[signature.identifier] = signature.to_json()
-        self._cache.setcache('signaturedb', ret)
-
-
-class PreviousSignatureDb(object):
-    def __init__(self, cache):
-        # copy the dict, so that the cache can be written to
-        self._signaturedb = dict(cache.getcache('signaturedb'))
-
-    def get(self, id_):
-        d = self._signaturedb.get(id_)
-        if d is None:
-            return Signature()
-        return signature_factory.create(d['type'], **d)
-
-
-class Signature(object):
-
-    def __init__(self, value=None, valid=False, identifier=None):
-        self.value = value
-        self._valid = valid
-        if identifier is not None:
-            self._id = identifier
-        else:
-            self._id = generate_uuid()
-
-    @property
-    def identifier(self):
-        return self._id
-
-    @property
-    def valid(self):
-        return self._valid
-
-    def __eq__(self, other):
-        return not self.__ne__(other)
-
-    def __ne__(self, other):
-        return not other.valid or not self._valid or self.value != other.value
-
-    def to_json(self):
-        return {'value': self.value, 'valid': self.valid,
-                'type': self.__class__.__name__, 'identifier': self.identifier}
-
-
-class FileSignature(Signature):
-    def __init__(self, path=None, value=None, valid=True, **kw):
-        assert path is not None, 'Path must be given for file signature'
-        if not os.path.exists(path):
-            valid = False
-        self.path = path
-        if value is None and valid:
-            m = md5()
-            f = open(path, 'rb')
-            m.update(f.read())
-            f.close()
-            value = b2a(m.digest())
-        super().__init__(value, valid=valid, identifier=path)
-
-    def to_json(self):
-        d = super().to_json()
-        d['path'] = self.path
-        d['type'] = self.__class__.__name__
-        return d
-
-
-signature_factory = Factory(Signature)
-signature_factory.register(Signature)
-signature_factory.register(FileSignature)
+from .signature import FileSignature, Signature
 
 
 class Node(object):
@@ -145,14 +58,12 @@ class FileNode(Node):
 
     @property
     def signature(self):
-        if self._signature_cache is None:
-            sig = ctx.signatures.get(self._path)
-            if sig is None:
-                self._signature_cache = FileSignature(path=self._path)
-                ctx.signatures.add(self._signature_cache)
-            else:
-                self._signature_cache = sig
-        return self._signature_cache
+        signature = ctx.signatures.get(self._path)
+        if signature is None:
+            # signature was either not initialized or it was invalidated
+            signature = FileSignature(path=self._path)
+            ctx.signatures.add(signature)
+        return signature
 
 
 def make_nodes(lst_or_string):

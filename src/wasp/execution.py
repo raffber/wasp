@@ -1,6 +1,7 @@
 from .util import EventLoop, Event
 from threading import Thread, Lock
 from .task import TaskResult
+from . import ctx
 
 
 class TaskContainer(object):
@@ -74,14 +75,12 @@ class RunnableDependencyTree(object):
 
     def task_finished(self, task):
         self._exec_count += 1
+        for target in task.targets:
+            ctx.signatures.invalidate_signature(target.signature)
 
     @property
     def finished(self):
-        task_left = []
-        for task in self._tasks:
-            if not task.has_run:
-                task_left.append(task)
-        return len(task_left) == 0
+        return len(self._tasks) == 0
 
     def _recursive_flatten(self, task):
         task = TaskContainer(task)
@@ -109,9 +108,8 @@ class RunnableDependencyTree(object):
             if ret is not None:
                 tasks.append(task)
                 continue
-            if task.has_run:
-                continue
-            elif task.runnable:
+            if not task.has_run and task.runnable:
+                # return it and don't add it to the list
                 ret = task
                 continue
             tasks.append(task)
@@ -120,7 +118,12 @@ class RunnableDependencyTree(object):
             return ret.task
         if len(tasks) == 0 and ret is None:
             return None
-        # TODO: detect dependency cycles
+        for task in tasks:
+            if not task.has_run:
+                raise DependencyCycleError('You have a cycle in your dependencies')
+        # we are actually finished, since for all tasks the dependencies have
+        # been met...
+        self._tasks = []
         return None
 
 
@@ -177,9 +180,7 @@ class TaskExecutionPool(object):
         self._tasks.task_finished(task)
         self._start_next_task()
         self._lock.release()
-        if not task.success:
-            return
-        if result is None:
+        if not task.success or result is None:
             return
         if isinstance(result, list):
             self._results.extend(result)
