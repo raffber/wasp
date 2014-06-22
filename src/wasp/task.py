@@ -2,10 +2,11 @@ from .node import make_nodes, remove_duplicates, FileNode
 from uuid import uuid4 as uuid
 from io import StringIO
 from .util import run_command, Factory, UnusedArgFormatter
-from . import ctx
 from .arguments import Argument, ArgumentCollection
+from os import remove
 
 
+# TODO: move into own file
 class PreviousTaskDb(dict):
     def __init__(self, cache):
         d = cache.getcache('previous-tasks')
@@ -13,6 +14,8 @@ class PreviousTaskDb(dict):
         d.clear()
 
 
+# TODO: tidy up
+# TODO: move into own file
 class TaskDb(dict):
     def __init__(self, cache):
         self._cache = cache
@@ -48,13 +51,6 @@ class Task(object):
             self._id = str(uuid())
         else:
             self._id = id_
-
-    def _id_from_sources_and_targets(self):
-        taskname = self.__class__.__name__
-        targets = '-'.join([t.identifier for t in self.targets])
-        sources = '-'.join([s.identifier for s in self.sources])
-        ret = taskname + ':' + sources + '=>' + targets
-        return ret
 
     @property
     def always(self):
@@ -135,12 +131,6 @@ class Task(object):
         for a in args:
             if isinstance(a, Argument):
                 self.use_arg(a)
-            elif isinstance(a, Check):
-                args = a.arguments
-                if args is None:
-                    continue
-                for a in args:
-                    self.use_arg(a)
             elif isinstance(a, str):
                 arg = Argument(a).retrieve_all()
                 self.use_arg(arg)
@@ -154,25 +144,19 @@ class Task(object):
             c.use_arg(arg)
         self.arguments.add(arg)
 
-    def require(self, arguments=None, checks=None):
+    def require(self, arguments=None):
         if arguments is not None:
             if isinstance(arguments, str):
                 arguments = [arguments]
             for argname in arguments:
+                # TODO: also retireve from ctx.arguments
                 if not argname in self._arguments:
                     arg = Argument(argname)
                     arg.retrieve_all()
+                    if arg.value is None:
+                        # TODO: ....
+                        raise RuntimeError('AAAAAAAAH! TODO!')
                     self.arguments.add(arg)
-        if checks is not None:
-            if isinstance(checks, str):
-                checks = [checks]
-            for checkname in checks:
-                if not checkname in ctx.checks:
-                    raise MissingCheckError('"{0}" requires you to check for "{1}"'.format(self.__class__.__name__, checkname))
-
-
-class MissingCheckError(RuntimeError):
-    pass
 
 
 class FindTask(Task):
@@ -306,9 +290,7 @@ task_result_factory = Factory(SerializableTaskResult)
 
 
 class register_task_result(object):
-    def __init__(self):
-        pass
-
     def __call__(self, cls):
+        assert isinstance(cls, SerializableTaskResult)
         task_result_factory.register(cls)
         return cls

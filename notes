@@ -1,24 +1,43 @@
+First refactor steps
+====================
+
+ * automatically run task dependencies
+
 Ideas
 =========
 
-
- * relative/absolute pathhandling is a little fucked up? if path is subpath of topdir, make it relative. Ensure CWD is topdir
  * task generators
- * automatically configure by default if necessary (build script changed) and communicate this clearly, disable in @init
- * one needs to be able to require args
  * argument to disable commands registred by tools
+
+ * CWD of all commands should be TOPDIR!
+ * make sure make_nodes correctly handles paths => how does it know from where it is called? => possibly everything relative to topdir?
+ * waf lock
+
+
+Challanges and Questions
+=============================
+
+ * what happens if a task does not have any sources nor targets? always = True implicitly?!
+ * Think about path handling (relative/abssolute, recursion, CWD of commands, ...)
+
 
 Next Tasks
 ----------
 
+ * design refactor steps
  * write unittests
  * document code
  * possibly rewrite some code that is ugly
- * write clean procedure
- * write autoconfigure procedure
- * improve options handling
- * write some UI code
 
+
+Extensions
+-----------
+
+ * declarative (autoload build.{json,yml}, use json subset, if build.py exists as well it takes precedence)
+ * templates (fetch using git from external repo, copy over, keep a template-readme.txt)
+ * metadata (e.g. for package generation)
+ * gui (tkinter)
+ * bashcompletion
 
 
 =================================

@@ -66,6 +66,11 @@ class InstallCommand(Command):
         self.depends.append('build')
 
 
+class CleanCommand(Command):
+    def __init__(self, fun):
+        super().__init__('clean', fun, description='Clean generated files.')
+
+
 class build(object):
     def __init__(self, f):
         decorators.commands.append(BuildCommand(f))
@@ -81,11 +86,17 @@ class configure(object):
         decorators.commands.append(ConfigureCommand(f))
 
 
+class clean(object):
+    def __init__(self, f):
+        decorators.commands.append(CleanCommand(f))
+
+
 class command(object):
     def __init__(self, name, depends=[], description=None):
         self._name = name
         if isinstance(depends, str):
             depends = [depends]
+        assert isinstance(depends, list), 'command dependencies must be given as string or list thereof'
         self._depends = depends
         self._description = description
 

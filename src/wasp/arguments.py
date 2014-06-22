@@ -38,30 +38,14 @@ class Argument(object):
 
     def _retrieve_from_single(self, arg):
         from .task import TaskResultCollection
-        from .check import Check
         if isinstance(arg, Environment):
             # environment variable
             return arg.get(self.upperkey)
         elif isinstance(arg, OptionsCollection):
             return arg.get(self.lowerkey, None)
-        elif isinstance(arg, TaskResultCollection):
-            for check in arg.values():
-                if not isinstance(check, Check):
-                    break
-                args = check.arguments
-                if args is not None:
-                    for a in args:
-                        if a.key == self.key:
-                            return a.value
         elif isinstance(arg, Environment):
             # environment variable
             return arg.get(self.upperkey)
-        elif isinstance(arg, Check):
-            args = arg.arguments
-            if args is not None:
-                for a in args:
-                    if a.key == self.key:
-                        return a.value
         elif isinstance(arg, dict):
             # keyword argument
             return arg.get(self.lowerkey, None)
@@ -82,7 +66,7 @@ class Argument(object):
         return self.value
 
     def retrieve_all(self):
-        self.retrieve(ctx.options, ctx.configure_options, ctx.checks, ctx.env)
+        self.retrieve(ctx.arguments, ctx.options, ctx.configure_options, ctx.env)
         return self.value
 
     def require_type(self, tp):

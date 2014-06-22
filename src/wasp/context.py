@@ -44,7 +44,7 @@ class Context(object):
         # that have no dependencies
         self._log = Log()
         self._results = TaskResultCollection()
-        self._checks = TaskResultCollection()
+        self.projectname = projectname
         # create the directories
         self._topdir = WaspDirectory(topdir)
         assert self._topdir.valid, 'The given topdir must exist!!'
@@ -52,8 +52,6 @@ class Context(object):
         self._builddir.ensure_exists()
         self._cachedir = WaspDirectory(self._builddir.join('c4che'))
         self._prefix = WaspDirectory(os.environ.get('PREFIX', prefix))
-        assert isinstance(projectname, str), 'projectname must be a string!'
-        self._projectname = projectname
         # create the signature for this build script
         # the current build script
         fname = self._topdir.join('build.py')
@@ -68,7 +66,6 @@ class Context(object):
         self.load()
         # initialize options
         self._options = OptionsCollection()
-        self._configure_options = OptionsCollection(cache=self._cache)
         self._store = Store(self._cache)
         self._env = Environment(self._cache)
         self._commands = []
@@ -77,6 +74,8 @@ class Context(object):
         self._tasks = TaskDb(self._cache)
         self._tooldir = WaspDirectory('wasp-tools')
         self._tools = {}
+        self._arguments = {}
+        self._clean_files = []
 
     def get_tooldir(self):
         return self._tooldir
@@ -125,6 +124,10 @@ class Context(object):
         return self._log
 
     @property
+    def clean_files(self):
+        return self._clean_files
+
+    @property
     def topdir(self):
         return self._topdir
 
@@ -145,10 +148,6 @@ class Context(object):
         return self._builddir
 
     @property
-    def projectname(self):
-        return self._projectname
-    
-    @property
     def cachedir(self):
         return self._cachedir
 
@@ -157,20 +156,16 @@ class Context(object):
         return self._env
 
     @property
+    def argumetns(self):
+        return self._arguments
+
+    @property
     def options(self):
         return self._options
 
     @property
-    def configure_options(self):
-        return self._configure_options
-
-    @property
     def store(self):
         return self._store
-
-    @property
-    def checks(self):
-        return self._checks
 
     @property
     def results(self):
@@ -199,7 +194,8 @@ class Context(object):
                 continue
             old_sig = FileSignature(**ser_sig)
             if old_sig != signature:
-                self.log.info('Build scripts have changed since last execution! Configure the project again.')
+                self.log.info('Build scripts have changed since last execution!'\
+                        'All previous configurations have been cleared!')
                 invalid = True
                 break
         if invalid:

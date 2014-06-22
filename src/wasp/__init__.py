@@ -49,4 +49,3 @@ from .task import (register_task_result, TaskResult,
                    ShellTask, Task, FindTask, MissingCheckError)
 from .directory import WaspDirectory
 from .tools import inject_tool
-from .check import Check, override_check

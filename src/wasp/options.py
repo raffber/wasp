@@ -135,18 +135,13 @@ options_factory.register(IntOption)
 
 
 class options(object):
-    def __init__(self):
-        pass
+    def __init__(self, *commands):
+        for com in commands:
+            assert isinstance(com, str), 'commands must be given as strings'
+        self.commands = commands
+        self.fun = None
 
     def __call__(self, f):
-        decorators.options.append(f)
-        return f
-
-
-class configure_options(object):
-    def __init__(self):
-        pass
-
-    def __call__(self, f):
-        decorators.configure_options.append(f)
+        decorators.options.append(self)
+        self.fun = f
         return f

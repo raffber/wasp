@@ -1,13 +1,14 @@
 from .util import load_module_by_path
 from .decorators import decorators
 from .context import Context
-from .task import Task, TaskResult
-from .check import Check
+from .task import Task
+from .tasklib import RemoveFileTask
 from .command import CommandFailedError
 import argparse
 from . import ctx
 import sys
 import os
+from .command import clean
 
 
 class CommandAction(argparse.Action):
@@ -35,17 +36,18 @@ def handle_options():
         # TODO: nicify this by sorting the default commands in a logical sequence
         # i.e. add configure before build and install
         arg.add_argument(com.name, help=com.description, action=CommandAction, default='', nargs='?')
-    for option_fun in decorators.options:
-        option_fun(ctx.options)
+    for option_decorator in decorators.options:
+        if len(option_decorator.commands) != 0:
+            if option_decorator.commands in sys.argv:
+                option_decorator.fun(ctx.options)
+            else:
+                pass  # TODO: unused options collection! such that previous options can still be retrieved
+                # mark the retrieved options as unused and then add them to the optionscollection as well
+        else:
+            option_decorator.fun(ctx.options)
     ctx.options.add_to_argparse(arg)
-    if 'configure' in sys.argv:
-        for config_fun in decorators.configure_options:
-            config_fun(ctx.configure_options)
-        ctx.configure_options.add_to_argparse(arg)
     parsed = arg.parse_args()
     ctx.options.retrieve_from_dict(vars(parsed))
-    if 'configure' in sys.argv:
-        ctx.configure_options.retrieve_from_dict(vars(parsed))
     return parsed
 
 
@@ -117,11 +119,7 @@ def handle_commands(options):
                 # TODO: ...
                 raise
         results = ctx.run_tasks()
-        for res in results:
-            if isinstance(res, Check):
-                ctx.checks.add(res)
-            else:
-                ctx.results.add(res)
+        ctx.results.extend(results)
         ctx.tasks.save()
         for key, task in ctx.tasks.items():
             if not task.success:
@@ -137,11 +135,17 @@ def handle_commands(options):
         commands_cache[name] = {'success': True}
 
 
+@clean
+def auto_clean():
+    return RemoveFileTask(ctx.clean_files)
+
+
 def run_file(fpath):
     module = load_module_by_path(fpath)
     create_context(module)
     for hook in decorators.init:
         hook()
+
     parsed = handle_options()
     handle_commands(parsed)
     ctx.save()
