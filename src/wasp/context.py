@@ -9,6 +9,7 @@ from .environment import Environment
 from .task import TaskResultCollection, TaskDb
 from .util import load_module_by_path
 from .tools import ToolError, NoSuchToolError
+from .tools import proxies
 import os
 
 
@@ -73,6 +74,7 @@ class Context(object):
         self._previous_signatures = SignatureStore(self._cache)
         self._tasks = TaskDb(self._cache)
         self._tooldir = WaspDirectory('wasp-tools')
+        self._results.load()
         self._tools = {}
         self._arguments = {}
         self._clean_files = []
@@ -100,6 +102,9 @@ class Context(object):
             try:
                 module = load_module_by_path(fpath)
                 self._tools[toolname] = module
+                if toolname in proxies.keys():
+                    # inject the tool proxy
+                    object.__setattr__(proxies[toolname], "_obj", module)
                 ret = module
             except FileNotFoundError:
                 raise NoSuchToolError('No such tool: {0}'.format(toolname))

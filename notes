@@ -2,6 +2,16 @@ First refactor steps
 ====================
 
  * automatically run task dependencies
+ * remove taskresults entirely?!
+        * less fundamental?
+        * to keep track of what went wrong
+
+
+Todos
+=======
+
+ * absolutely always save cache, even if exceptions
+
 
 Ideas
 =========
@@ -17,6 +27,7 @@ Ideas
 Challanges and Questions
 =============================
 
+ * dummy nodes => Node('id'), how is it invalidated?!
  * what happens if a task does not have any sources nor targets? always = True implicitly?!
  * Think about path handling (relative/abssolute, recursion, CWD of commands, ...)
 

@@ -78,6 +78,45 @@ def handle_no_command(options):
     pass
 
 
+def run_command(name, executed_commands):
+    command_cache = ctx.cache.getcache('commands')
+    if name in executed_commands:
+        return
+    for command in ctx.commands:
+        if command.name != name:
+            continue
+        # run all dependencies automatically
+        # if they fail, this command fails as well
+        for dependency in command.depends:
+            if not dependency in command_cache:
+                # dependency never executed
+                run_command(dependency, executed_commands)
+            elif not command_cache[dependency].success:
+                # dependency not executed successfully
+                run_command(dependency, executed_commands)
+        tasks = command.run()
+        if isinstance(tasks, list):
+            ctx.tasks.add(tasks)
+        elif isinstance(tasks, Task):
+            ctx.tasks.add(tasks)
+        elif tasks is not None:
+            assert False, 'Unrecognized return value from {0}'.format(name)
+        # else tasks is None, thats fine
+        results = ctx.run_tasks()
+        ctx.results.add(results)
+        ctx.tasks.save()
+        for key, task in ctx.tasks.items():
+            if not task.success:
+                msg = '{0} failed'.format(name)
+                # TODO: handle error message
+                raise CommandFailedError(msg)
+        ctx.tasks.clear()
+        ctx.results.save()
+        commands_cache = ctx.cache.getcache('commands')
+        commands_cache[name] = {'success': True}
+    executed_commands.append(name)
+
+
 def handle_commands(options):
     str_commands = []
     if '_commands' in options:
@@ -85,54 +124,9 @@ def handle_commands(options):
     if len(str_commands) == 0:
         handle_no_command(options)
         return
-    commands_to_run = []
-    for scom in str_commands:
-        for com in ctx.commands:
-            if com.name == scom:
-                commands_to_run.append(com)
-    command_groups = []
-    cur_lst = None
-    cur_name = None
-    for com in commands_to_run:
-        if cur_name != com.name:
-            if cur_lst is not None:
-                command_groups.append(cur_lst)
-            cur_lst = []
-            cur_name = com.name
-        cur_lst.append(com)
-    if cur_lst is not None:
-        command_groups.append(cur_lst)
-    for group in command_groups:
-        name = None
-        for com in group:
-            name = com.name
-            try:
-                tasks = com.run()
-                if isinstance(tasks, list):
-                    ctx.tasks.add(tasks)
-                elif isinstance(tasks, Task):
-                    ctx.tasks.add(tasks)
-                elif tasks is not None:
-                    assert False, 'Unrecognized return value from {0}'.format(name)
-                # else task is None, thats fine
-            except CommandFailedError:
-                # TODO: ...
-                raise
-        results = ctx.run_tasks()
-        ctx.results.extend(results)
-        ctx.tasks.save()
-        for key, task in ctx.tasks.items():
-            if not task.success:
-                msg = '{0} failed'.format(com.name)
-                ctx.log.fatal(msg)
-                raise CommandFailedError(msg)
-        ctx.tasks.clear()
-        serialized_results = ctx.results.to_json()
-        serialized_checks = ctx.results.to_json()
-        serialized = {'results': serialized_results, 'checks': serialized_checks}
-        ctx.cache.set('results', name, serialized)
-        commands_cache = ctx.cache.getcache('commands')
-        commands_cache[name] = {'success': True}
+    executed_comands = []
+    for command_name in str_commands:
+        run_command(command_name, executed_comands)
 
 
 @clean

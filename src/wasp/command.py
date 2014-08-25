@@ -21,27 +21,7 @@ class Command(object):
     def name(self):
         return self._name
 
-    def fail(self, msg):
-        ctx.log.fatal(msg)
-        raise CommandFailedError(msg)
-
     def run(self):
-        fail = False
-        msg = ''
-        command_cache = ctx.cache.getcache('commands')
-        for dep in self._depends:
-            com_info = command_cache.get(dep)
-            if com_info is not None:
-                if not com_info.get('success', False):
-                    fail = True
-                    msg = '{0} failed!'.format(dep)
-                    break
-            else:
-                msg = '{0} never run!'.format(dep)
-                fail = True
-                break
-        if fail:
-            self.fail('Command dependency not fullfilled: {0}'.format(msg))
         return self._fun()
 
     @property

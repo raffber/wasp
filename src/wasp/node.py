@@ -11,10 +11,6 @@ class Node(object):
         else:
             assert isinstance(identifier, str), 'Identifier for Node must be a string'
         self._id = identifier
-        # make sure that signature is created and or added to db
-        # this enables signatures to lazily generate their signatures
-        # which improves performance
-        self.signature
 
     @property
     def signature(self):
@@ -34,10 +30,11 @@ class FileNode(Node):
             path = os.path.abspath(path)
         self._path = path
         self._extension = os.path.splitext(path)[1]
-        if signature is not None:
-            self._signature_cache = signature
-        else:
-            self._signature_cache = None
+        signature = ctx.signatures.get(self._path)
+        if signature is None:
+            # signature was either not initialized or it was invalidated
+            signature = FileSignature(path=self._path)
+            ctx.signatures.add(signature)
         super().__init__(path)
 
     @property
@@ -59,10 +56,7 @@ class FileNode(Node):
     @property
     def signature(self):
         signature = ctx.signatures.get(self._path)
-        if signature is None:
-            # signature was either not initialized or it was invalidated
-            signature = FileSignature(path=self._path)
-            ctx.signatures.add(signature)
+        assert signature is not None
         return signature
 
 

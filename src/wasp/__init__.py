@@ -39,13 +39,13 @@ def require_version(*args):
 
 
 from .context import Context
-from .options import options, configure_options
+from .options import options
 from .arguments import Argument,  MissingArgumentError
 from .command import build, configure, install, command
 from .hooks import init, create_context
 from .directory import WaspDirectory
 from .generator import generate
 from .task import (register_task_result, TaskResult,
-                   ShellTask, Task, FindTask, MissingCheckError)
+                   ShellTask, Task, FindTask)
 from .directory import WaspDirectory
-from .tools import inject_tool
+from .tools import ToolProxy as tool # TODO: rewrite this as function returning ctx.tool() if it exits
