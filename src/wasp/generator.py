@@ -19,7 +19,7 @@ class FileExtensionGenerator(object):
         if isinstance(extensions, str):
             extensions = [extensions]
         assert isinstance(extensions, list), 'File extensions for generator decorator must '\
-                                             'either be given as list of string or string'
+                                             'either be given as a string or a list thereof'
         self._extensions = extensions
         self._fun = fun
 

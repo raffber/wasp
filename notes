@@ -1,7 +1,7 @@
 Implement before initial API stability
 =======================================
 
- * generators
+ * automatically add deferred commands
  * unify cache usage in FooCollection classes
  * go over argument usage again
 
@@ -18,6 +18,65 @@ Todos
  * better files package support, rename directory to fs and also add a few tasks (copy, remove whatever)
 
 
+Generators
+===========
+
+ * create a generator() task
+ * while building, run generators for the targets that are created
+ * add command_name='clean' to filter for command name
+ * add tags='asdf', then wasp.generator(tags='asfd') can be run. => generator must include tag
+
+Declarative
+============
+
+ * declarative tag handlers => register with factory
+ * use yaml or json as markup - yaml has dependency ;(
+ * run in init handler wasp.run_declarative('build.yml', format=None) infers format with 'json' => json, 'yml' => yaml
+
+
+'options' : {
+    'optimization' : ['debug', 'release']
+}
+
+'argument' : {
+    'CFLAGS' : {
+        ....
+    }
+}
+
+'commands' : {
+    'build' : {
+        'files' : '*.c',
+        'tool' : 'cpp',
+        'command' : 'compile',
+        'clean' : false,
+        'use' : {
+            'CFLAGS' : [
+                    {
+                        'argument' : 'CFLAGS'
+                    },
+                    {
+                        'switch' : 'optimization',
+                        'results' : {
+                            'debug' : '-g -O0',
+                            'release' : '-g -O0'
+                    },
+                    '--shared'
+                ],
+            }
+        }
+    }
+}
+
+Wasp Tools
+==========
+
+invocation ./wasp tool <toolname>
+
+e.g.
+./wasp tool daemon
+
+
 Ideas
 =========
 
@@ -28,6 +87,7 @@ Ideas
  * CWD of all commands should be TOPDIR!
  * make sure make_nodes correctly handles paths => how does it know from where it is called? => possibly everything relative to topdir?
  * waf lock
+ * daemon: simply use generator functions. also make an @changed(extension) available
 
 
 Challanges and Questions
@@ -35,8 +95,6 @@ Challanges and Questions
 
  * dummy nodes => Node('id'), how is it invalidated?!
  * what happens if a task does not have any sources nor targets? always = True implicitly?!
- * Think about path handling (relative/abssolute, recursion, CWD of commands, ...)
-
 
 Next Tasks
 ----------
@@ -50,9 +108,8 @@ Next Tasks
 Extensions
 -----------
 
- * declarative (autoload build.{json,yml}, use json subset, if build.py exists as well it takes precedence)
  * templates (fetch using git from external repo, copy over, keep a template-readme.txt)
- * metadata (e.g. for package generation)
+ * metadata (e.g. for package generation) => use metadata.{json, yml} => wasp.use_metadata('metadata.json', format=...)
  * gui (tkinter)
  * bashcompletion
 
@@ -112,7 +169,7 @@ class DCompile(wasp.Task):
 def link(files):
     return cpp.link(files)
 
-@wasp.generate('*.c|*.cpp')
+@wasp.generate(['c', 'cpp'], command='clean')
 def compile(files):
     return cpp.compile(files)
 

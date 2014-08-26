@@ -26,7 +26,7 @@ class Context(object):
         self._results = TaskResultCollection()
         self.projectname = projectname
         # create the directories
-        self._topdir = Directory(TOP_DIR)
+        self._topdir = Directory(TOP_DIR,  make_absolute=True)
         assert self._topdir.valid, 'The given topdir must exist!!'
         self._builddir = Directory(builddir)
         self._builddir.ensure_exists()
