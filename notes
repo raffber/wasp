@@ -1,7 +1,7 @@
 First refactor steps
 ====================
-
- * automatically run task dependencies
+ * look at cleaning again defer('clean', tasks...)?
+ * better files package support, rename directory to fs and also add a few tasks (copy, remove whatever)
  * remove taskresults entirely?!
         * less fundamental?
         * to keep track of what went wrong

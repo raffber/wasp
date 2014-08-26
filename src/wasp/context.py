@@ -74,7 +74,7 @@ class Context(object):
         self._previous_signatures = SignatureStore(self._cache)
         self._tasks = TaskDb(self._cache)
         self._tooldir = WaspDirectory('wasp-tools')
-        self._results.load()
+        self._results.load(self._cache.getcache('results'))
         self._tools = {}
         self._arguments = {}
         self._clean_files = []

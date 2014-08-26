@@ -82,6 +82,7 @@ def run_command(name, executed_commands):
     command_cache = ctx.cache.getcache('commands')
     if name in executed_commands:
         return
+    # run all dependencies
     for command in ctx.commands:
         if command.name != name:
             continue
@@ -91,9 +92,13 @@ def run_command(name, executed_commands):
             if not dependency in command_cache:
                 # dependency never executed
                 run_command(dependency, executed_commands)
-            elif not command_cache[dependency].success:
+            elif not command_cache[dependency]['success']:
                 # dependency not executed successfully
                 run_command(dependency, executed_commands)
+    # now run the commands
+    for command in ctx.commands:
+        if command.name != name:
+            continue
         tasks = command.run()
         if isinstance(tasks, list):
             ctx.tasks.add(tasks)
@@ -102,18 +107,20 @@ def run_command(name, executed_commands):
         elif tasks is not None:
             assert False, 'Unrecognized return value from {0}'.format(name)
         # else tasks is None, thats fine
-        results = ctx.run_tasks()
-        ctx.results.add(results)
-        ctx.tasks.save()
-        for key, task in ctx.tasks.items():
-            if not task.success:
-                msg = '{0} failed'.format(name)
-                # TODO: handle error message
-                raise CommandFailedError(msg)
-        ctx.tasks.clear()
-        ctx.results.save()
-        commands_cache = ctx.cache.getcache('commands')
-        commands_cache[name] = {'success': True}
+    # now execute all tasks
+    results = ctx.run_tasks()
+    ctx.results.add(results)
+    ctx.tasks.save()
+    # check all tasks if successful
+    for key, task in ctx.tasks.items():
+        if not task.success:
+            msg = '{0} failed'.format(name)
+            # TODO: handle error message
+            raise CommandFailedError(msg)
+    ctx.tasks.clear()
+    ctx.results.save()
+    commands_cache = ctx.cache.getcache('commands')
+    commands_cache[name] = {'success': True}
     executed_commands.append(name)
 
 

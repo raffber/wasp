@@ -1,9 +1,9 @@
-from .node import make_nodes, remove_duplicates, FileNode
+from .node import make_nodes, FileNode
 from uuid import uuid4 as uuid
 from io import StringIO
 from .util import run_command, Factory, UnusedArgFormatter
 from .arguments import Argument, ArgumentCollection
-from os import remove
+from . import ctx
 
 
 # TODO: move into own file
@@ -257,13 +257,15 @@ class TaskResultCollection(dict):
                 ret[result.id] = tojson
         return ret
 
-    def load(self):
-        # TODO: implement
-        raise NotImplementedError
+    def load(self, serialized):
+        for key, value in serialized.items():
+            self[key] = task_result_factory.create(value['type'], **value)
 
     def save(self):
-        # TODO: implement
-        raise NotImplementedError
+        serialized = self.to_json()
+        cached_results = ctx.cache.getcache('results')
+        for key in serialized.keys():
+            cached_results[key] = serialized[key]
 
 
 class TaskResult(object):
