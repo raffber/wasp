@@ -1,7 +1,14 @@
+Implement before initial API stability
+=======================================
+
+ * generators
+ * unify cache usage in FooCollection classes
+ * go over argument usage again
+
+
 First refactor steps
 ====================
 
- * look at cleaning again, clean without specifiying it?!
 
 Todos
 =======
@@ -101,8 +108,13 @@ class DCompile(wasp.Task):
         pass
 
 
-wasp.exec(projectname='bloxr')
+@wasp.generate('*.o')
+def link(files):
+    return cpp.link(files)
 
+@wasp.generate('*.c|*.cpp')
+def compile(files):
+    return cpp.compile(files)
 
 
 

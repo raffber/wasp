@@ -68,7 +68,7 @@ class ShellTask(Task):
         return results
 
 
-#@register_task
+@register_task
 class SerializableShellTask(ShellTask, Serializable):
     def __init__(self, sources=[], targets=[], children=[], cmd='', always=False):
         super(SerializableShellTask, self).__init__(sources=sources, targets=targets, children=children, cmd=cmd, always=always)
@@ -81,5 +81,5 @@ class SerializableShellTask(ShellTask, Serializable):
         raise NotImplementedError
 
 
-def shell(sources=[], targets=[], cmd='', always=False):
+def shell(cmd, sources=[], targets=[], always=False):
     return SerializableShellTask(sources=sources, targets=targets, cmd=cmd, always=always)

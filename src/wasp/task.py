@@ -130,7 +130,6 @@ task_factory = Factory(Serializable)
 
 
 class register_task(object):
-    def __call__(self, cls):
-        assert isinstance(cls, Serializable)
+    def __init__(self, cls):
+        assert issubclass(cls, Serializable)
         task_factory.register(cls)
-        return cls
