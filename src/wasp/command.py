@@ -1,5 +1,4 @@
 from .decorators import decorators
-from . import ctx
 
 
 class CommandFailedError(Exception):

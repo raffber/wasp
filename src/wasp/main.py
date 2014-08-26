@@ -64,12 +64,7 @@ def create_context(module):
             d = os.path.abspath(d)
             fpath = os.path.join(d, 'build.py')
             load_module_by_path(fpath)
-        if not hasattr(module, 'projectname'):
-            projname = 'myproject'
-        else:
-            projname = getattr(module, 'projectname')
-            assert isinstance(projname, str), 'projectname must be a string'
-        context = Context(projname, recurse_files=recurse)
+        context = Context(recurse_files=recurse)
     import wasp
     object.__setattr__(wasp.ctx, "_obj", context)
 
@@ -110,7 +105,6 @@ def run_command(name, executed_commands):
     # now execute all tasks
     results = ctx.run_tasks()
     ctx.results.add(results)
-    ctx.tasks.save()
     # check all tasks if successful
     for key, task in ctx.tasks.items():
         if not task.success:
@@ -134,11 +128,6 @@ def handle_commands(options):
     executed_comands = []
     for command_name in str_commands:
         run_command(command_name, executed_comands)
-
-
-@clean
-def auto_clean():
-    return RemoveFileTask(ctx.clean_files)
 
 
 def run_file(fpath):

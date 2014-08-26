@@ -1,4 +1,4 @@
-from .directory import WaspDirectory
+from .fs import Directory, TOP_DIR
 from .options import OptionsCollection
 from .cache import Cache
 from .signature import SignatureProvider, FileSignature, SignatureStore
@@ -6,53 +6,31 @@ from .arguments import Argument
 from .execution import TaskExecutionPool, RunnableDependencyTree
 from .ui import Log
 from .environment import Environment
-from .task import TaskResultCollection, TaskDb
+from .task import TaskResultCollection, TaskCollection
 from .util import load_module_by_path
 from .tools import ToolError, NoSuchToolError
 from .tools import proxies
+from .store import Store
 import os
-
-
-class Store(dict):
-    def __init__(self, cache):
-        self._cache = cache
-
-    def __setitem__(self, key, value):
-        self._cache.set('store', key, value)
-
-    def __getitem__(self, key):
-        ret = self._cache.get('store', key)
-        if ret is None:
-            raise KeyError
-        return ret
-
-    def get(self, key, *args):
-        if len(args) > 1:
-            raise TypeError('Only one argument may be provided as default argument if "key" does not exits')
-        ret = self._cache.get('store', key)
-        if ret is not None:
-            return ret
-        if len(args) == 0:
-            return None
-        return args[1]
 
 
 class Context(object):
 
-    def __init__(self, projectname, recurse_files=[], topdir='.', builddir='build', prefix='/usr'):
+    def __init__(self, projectname='myproject', recurse_files=[], builddir='build', prefix='/usr'):
         # we need to get the initialization order right.
         # the simplest way to do this is to initialize things first
         # that have no dependencies
         self._log = Log()
         self._results = TaskResultCollection()
+        # TODO: make property?!
         self.projectname = projectname
         # create the directories
-        self._topdir = WaspDirectory(topdir)
+        self._topdir = Directory(TOP_DIR, make_absolute=True)
         assert self._topdir.valid, 'The given topdir must exist!!'
-        self._builddir = WaspDirectory(builddir)
+        self._builddir = Directory(builddir)
         self._builddir.ensure_exists()
-        self._cachedir = WaspDirectory(self._builddir.join('c4che'))
-        self._prefix = WaspDirectory(os.environ.get('PREFIX', prefix))
+        self._cachedir = Directory(self._builddir.join('c4che'))
+        self._prefix = Directory(os.environ.get('PREFIX', prefix))
         # create the signature for this build script
         # the current build script
         fname = self._topdir.join('build.py')
@@ -72,20 +50,20 @@ class Context(object):
         self._commands = []
         self._signatures = SignatureProvider(self._cache)
         self._previous_signatures = SignatureStore(self._cache)
-        self._tasks = TaskDb(self._cache)
-        self._tooldir = WaspDirectory('wasp-tools')
+        self._tasks = TaskCollection()
+        self._deferred = {}
+        self._tooldir = Directory('wasp-tools')
         self._results.load(self._cache.getcache('results'))
         self._tools = {}
-        self._arguments = {}
-        self._clean_files = []
+        self._arguments = {}  # TODO: argument collection?!
 
     def get_tooldir(self):
         return self._tooldir
 
     def set_tooldir(self, tooldir):
         if isinstance(tooldir, str):
-            tooldir = WaspDirectory(tooldir)
-        assert isinstance(tooldir, WaspDirectory), 'tooldir must either be a path to a directory or a WaspDirectory'
+            tooldir = Directory(tooldir)
+        assert isinstance(tooldir, Directory), 'tooldir must either be a path to a directory or a WaspDirectory'
         tooldir.ensure_exists()
         self._tooldir = tooldir
 
@@ -213,6 +191,12 @@ class Context(object):
     @property
     def cache(self):
         return self._cache
+
+    @property
+    def deferred(self, commandname):
+        if commandname not in self._deferred:
+            self._deferred[commandname] = TaskCollection()
+        return self._deferred[commandname]
 
     def run_tasks(self):
         tree = RunnableDependencyTree(self.tasks)

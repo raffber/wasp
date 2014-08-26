@@ -1,5 +1,5 @@
 import json
-from .directory import WaspDirectory
+from .fs import Directory
 from . import ctx
 
 CACHE_FILE = 'c4che.json'
@@ -7,7 +7,7 @@ CACHE_FILE = 'c4che.json'
 
 class Cache(object):
     def __init__(self, cachedir):
-        assert isinstance(cachedir, WaspDirectory)
+        assert isinstance(cachedir, Directory)
         cachedir.ensure_exists()
         self._cachedir = cachedir
         self.d = {}

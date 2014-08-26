@@ -1,6 +1,6 @@
 
 from .util import Proxy
-ctx = Proxy(object)
+ctx = Proxy('The wasp context wasp.ctx can only be accessed after initialization.')
 
 
 class WaspVersion(object):
@@ -43,9 +43,8 @@ from .options import options
 from .arguments import Argument,  MissingArgumentError
 from .command import build, configure, install, command
 from .hooks import init, create_context
-from .directory import WaspDirectory
+from .fs import Directory
 from .generator import generate
-from .task import (register_task_result, TaskResult,
-                   ShellTask, Task, FindTask)
-from .directory import WaspDirectory
-from .tools import ToolProxy as tool # TODO: rewrite this as function returning ctx.tool() if it exits
+from .task import (register_task_result, TaskResult, ShellTask, Task)
+from .fs import Directory, TOP_DIR, file, files
+from .tools import tool

@@ -1,5 +1,7 @@
 import wasp
-from wasp import ShellTask, FindTask, ctx, Task
+from wasp import ShellTask, ctx, Task
+
+hello_world='yay!'
 
 #
 # @wasp.configure

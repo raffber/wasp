@@ -6,25 +6,7 @@ from .arguments import Argument, ArgumentCollection
 from . import ctx
 
 
-# TODO: move into own file
-class PreviousTaskDb(dict):
-    def __init__(self, cache):
-        d = cache.getcache('previous-tasks')
-        super().__init__(d)
-        d.clear()
-
-
-# TODO: tidy up
-# TODO: move into own file
-class TaskDb(dict):
-    def __init__(self, cache):
-        self._cache = cache
-
-    def save(self):
-        d = self._cache.getcache('previous-tasks')
-        for key, task in self.items():
-            success = task.success
-            d[task.identifier] = {'success': success}
+class TaskCollection(dict):
 
     def add(self, task):
         if isinstance(task, Task):
@@ -157,14 +139,6 @@ class Task(object):
                         # TODO: ....
                         raise RuntimeError('AAAAAAAAH! TODO!')
                     self.arguments.add(arg)
-
-
-class FindTask(Task):
-
-    always = True
-
-    def run(self):
-        pass
 
 
 class ShellTask(Task):

@@ -2,7 +2,6 @@ from .environment import Environment
 from .options import OptionsCollection
 from . import ctx
 
-
 class MissingArgumentError(Exception):
     pass
 
@@ -37,7 +36,6 @@ class Argument(object):
     value = property(get_value, set_value)
 
     def _retrieve_from_single(self, arg):
-        from .task import TaskResultCollection
         if isinstance(arg, Environment):
             # environment variable
             return arg.get(self.upperkey)
