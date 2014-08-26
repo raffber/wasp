@@ -5,10 +5,10 @@ from . import ctx
 class DeferredTaskCollection(dict):
 
     def load(self, cache):
-        pass
+        raise NotImplementedError
 
     def save(self, cache):
-        pass
+        raise NotImplementedError
 
 
 def defer(command_name, task):

@@ -1,6 +1,6 @@
 from .util import EventLoop, Event
 from threading import Thread, Lock
-from .task import TaskResult
+from .result import TaskResult
 from . import ctx
 
 

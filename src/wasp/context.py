@@ -6,7 +6,7 @@ from .arguments import Argument
 from .execution import TaskExecutionPool, RunnableDependencyTree
 from .ui import Log
 from .environment import Environment
-from .task import TaskResultCollection
+from .result import TaskResultCollection
 from .util import load_module_by_path
 from .tools import ToolError, NoSuchToolError
 from .tools import proxies
