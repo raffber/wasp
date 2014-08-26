@@ -25,9 +25,10 @@ class Node(object):
 
 
 class FileNode(Node):
-    def __init__(self, path, signature=None):
+    def __init__(self, path):
+        # TODO: optimize for performance => profile/benchmark
         if not os.path.isabs(path):
-            path = os.path.abspath(path)
+            path = os.path.realpath(path)
         self._path = path
         self._extension = os.path.splitext(path)[1]
         signature = ctx.signatures.get(self._path)

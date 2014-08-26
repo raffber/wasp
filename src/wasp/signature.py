@@ -73,12 +73,16 @@ class Signature(object):
         return {'value': self.value, 'valid': self.valid,
                 'type': self.__class__.__name__, 'identifier': self.identifier}
 
+    @classmethod
+    def from_json(cls, d):
+        return cls(value=d['value'], valid=d['valid'], identifier=d['identifier'])
+
     def refresh(self):
         pass
 
 
 class FileSignature(Signature):
-    def __init__(self, path=None, value=None, valid=True, **kw):
+    def __init__(self, path=None, value=None, valid=True):
         assert path is not None, 'Path must be given for file signature'
         if not os.path.exists(path):
             valid = False
@@ -92,6 +96,10 @@ class FileSignature(Signature):
         d['path'] = self.path
         d['type'] = self.__class__.__name__
         return d
+
+    @classmethod
+    def from_json(cls, d):
+        return cls(d['path'], value=d['value'], valid=d['valid'])
 
     def refresh(self):
         m = md5()

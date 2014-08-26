@@ -45,6 +45,7 @@ from .command import build, configure, install, command
 from .hooks import init, create_context
 from .fs import Directory
 from .generator import generate
-from .task import (register_task_result, TaskResult, ShellTask, Task)
+from .task import register_task_result, TaskResult, Task
+from .shell import shell
 from .fs import Directory, TOP_DIR, file, files
 from .tools import tool

@@ -1,4 +1,4 @@
-from .fs import Directory, TOP_DIR
+from .task_collection import TaskCollection
 from .options import OptionsCollection
 from .cache import Cache
 from .signature import SignatureProvider, FileSignature, SignatureStore
@@ -6,10 +6,11 @@ from .arguments import Argument
 from .execution import TaskExecutionPool, RunnableDependencyTree
 from .ui import Log
 from .environment import Environment
-from .task import TaskResultCollection, TaskCollection
+from .task import TaskResultCollection
 from .util import load_module_by_path
 from .tools import ToolError, NoSuchToolError
 from .tools import proxies
+from .fs import TOP_DIR, Directory
 from .store import Store
 import os
 
@@ -22,10 +23,9 @@ class Context(object):
         # that have no dependencies
         self._log = Log()
         self._results = TaskResultCollection()
-        # TODO: make property?!
         self.projectname = projectname
         # create the directories
-        self._topdir = Directory(TOP_DIR, make_absolute=True)
+        self._topdir = Directory(TOP_DIR)
         assert self._topdir.valid, 'The given topdir must exist!!'
         self._builddir = Directory(builddir)
         self._builddir.ensure_exists()
@@ -51,11 +51,12 @@ class Context(object):
         self._signatures = SignatureProvider(self._cache)
         self._previous_signatures = SignatureStore(self._cache)
         self._tasks = TaskCollection()
+        # TODO: save and load deferred tasks
         self._deferred = {}
         self._tooldir = Directory('wasp-tools')
         self._results.load(self._cache.getcache('results'))
         self._tools = {}
-        self._arguments = {}  # TODO: argument collection?!
+        self._arguments = {}
 
     def get_tooldir(self):
         return self._tooldir
@@ -105,10 +106,6 @@ class Context(object):
     @property
     def log(self):
         return self._log
-
-    @property
-    def clean_files(self):
-        return self._clean_files
 
     @property
     def topdir(self):
@@ -175,7 +172,7 @@ class Context(object):
                 invalid = True
                 # continue to see if the files have actually changed
                 continue
-            old_sig = FileSignature(**ser_sig)
+            old_sig = FileSignature.from_json(ser_sig)
             if old_sig != signature:
                 self.log.info('Build scripts have changed since last execution!'\
                         'All previous configurations have been cleared!')

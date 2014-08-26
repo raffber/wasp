@@ -2,7 +2,6 @@ from .util import load_module_by_path
 from .decorators import decorators
 from .context import Context
 from .task import Task
-from .tasklib import RemoveFileTask
 from .command import CommandFailedError
 import argparse
 from . import ctx
@@ -61,7 +60,7 @@ def create_context(module):
             recurse = getattr(module, 'recurse')
             assert isinstance(recurse, list), 'recurse must be a list of directories'
         for d in recurse:
-            d = os.path.abspath(d)
+            d = os.path.realpath(d)
             fpath = os.path.join(d, 'build.py')
             load_module_by_path(fpath)
         context = Context(recurse_files=recurse)

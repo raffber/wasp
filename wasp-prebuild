@@ -39,7 +39,7 @@ def unpack(unpack_dir):
 
 def main():
     script = sys.argv[0]
-    script = os.path.abspath(script)
+    script = os.path.realpath(script)
     cur_dir = os.path.dirname(script)
     os.chdir(cur_dir)
     unpack_dir = os.path.join(cur_dir, UNPACK_DIR)

@@ -32,14 +32,24 @@ class Factory(object):
             name = cls.__name__
         self.d[name] = cls
 
-    def getclass(self, name):
-        return self.d.get(name, None)
+    def getclass(self, tp):
+        return self.d.get(tp, None)
 
-    def create(self, name, *args, **kw):
-        cls = self.getclass(name)
+    def create(self, d):
+        cls = self.getclass(d['type'])
         if cls is None:
             return None
-        return cls(*args, **kw)
+        return cls.from_json(d)
+
+
+class Serializable(object):
+
+    def to_json(self):
+        raise NotImplementedError
+
+    @classmethod
+    def from_json(cls, d):
+        raise NotImplementedError
 
 
 class Event(object):
@@ -116,7 +126,7 @@ def load_module_by_path(fpath):
     """
     Heavily inspired by waf's load_module
     """
-    fpath = os.path.abspath(fpath)
+    fpath = os.path.realpath(fpath)
     module = module_cache.get(fpath)
     if module is not None:
         return module

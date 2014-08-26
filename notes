@@ -1,17 +1,15 @@
 First refactor steps
 ====================
 
- * change abspath to realpath
- * remove all internal dependencies on context, except in main?! possible?!
- * look at cleaning again defer('clean', tasks...)?
- * better files package support, rename directory to fs and also add a few tasks (copy, remove whatever)
-
+ * look at cleaning again, clean without specifiying it?!
 
 Todos
 =======
 
  * absolutely always save cache, even if exceptions
  * unify quote style
+ * better files package support, rename directory to fs and also add a few tasks (copy, remove whatever)
+
 
 Ideas
 =========
