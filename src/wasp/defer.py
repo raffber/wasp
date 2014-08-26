@@ -2,9 +2,13 @@ from .util import Serializable
 from . import ctx
 
 
-class Deferrable(Serializable):
-    pass
+class DeferredTaskCollection(dict):
 
+    def load(self, cache):
+        pass
+
+    def save(self, cache):
+        pass
 
 
 def defer(command_name, task):

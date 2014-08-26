@@ -12,6 +12,7 @@ from .tools import ToolError, NoSuchToolError
 from .tools import proxies
 from .fs import TOP_DIR, Directory
 from .store import Store
+from .defer import DeferredTaskCollection
 import os
 
 
@@ -51,8 +52,7 @@ class Context(object):
         self._signatures = SignatureProvider(self._cache)
         self._previous_signatures = SignatureStore(self._cache)
         self._tasks = TaskCollection()
-        # TODO: save and load deferred tasks
-        self._deferred = {}
+        self._deferred = DeferredTaskCollection()
         self._tooldir = Directory('wasp-tools')
         self._results.load(self._cache.getcache('results'))
         self._tools = {}
@@ -160,10 +160,12 @@ class Context(object):
         for fpath, signature in self._scripts_signatures.items():
             d[fpath] = signature.to_json()
         self.signatures.save()
+        self._deferred.save(self.cache)
         self.cache.save()
 
     def load(self):
         self._cache.load()
+        self._deferred.load(self.cache)
         signatures = self._cache.getcache('script-signatures')
         invalid = False
         for (fpath, signature) in self._scripts_signatures.items():

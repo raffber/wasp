@@ -6,7 +6,7 @@ from . import ctx
 
 
 class Task(object):
-    def __init__(self, sources=[], targets=[], children=[], always=False, id_=None):
+    def __init__(self, sources=[], targets=[], children=[], always=False, identifier=None):
         self._sources = make_nodes(sources)
         self._targets = make_nodes(targets)
         assert isinstance(children, list)
@@ -18,7 +18,7 @@ class Task(object):
         if id_ is None:
             self._id = str(uuid())
         else:
-            self._id = id_
+            self._id = identifier
 
     @property
     def always(self):
