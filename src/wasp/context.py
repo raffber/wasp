@@ -40,6 +40,7 @@ class Context(object):
             self._scripts_signatures[fpath] = FileSignature(fpath)
         # create the cache
         self._cache = Cache(self._cachedir)
+        self._deferred = DeferredTaskCollection()
         # make sure to do this early on, otherwise
         # such that everything that depends on the cache
         # has valid data and does not accidently read old stuff
@@ -52,7 +53,6 @@ class Context(object):
         self._signatures = SignatureProvider(self._cache)
         self._previous_signatures = SignatureStore(self._cache)
         self._tasks = TaskCollection()
-        self._deferred = DeferredTaskCollection()
         self._tooldir = Directory('wasp-tools')
         self._results.load(self._cache.getcache('results'))
         self._tools = {}
