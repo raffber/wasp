@@ -3,6 +3,7 @@ import os
 from . import ctx
 from .signature import FileSignature, Signature
 
+# TODO: is signature attribute actually required?!
 
 class Node(object):
     def __init__(self, identifier=None):

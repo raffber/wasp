@@ -14,7 +14,7 @@ class Task(object):
         self._always = always
         self._success = False
         self._arguments = ArgumentCollection()
-        if id_ is None:
+        if identifier is None:
             self._id = str(uuid())
         else:
             self._id = identifier
@@ -90,6 +90,17 @@ class Task(object):
     def run(self):
         self._success = True
 
+    def spawn(self):
+        """
+        Returns new tasks that should be added to the execution.
+
+        spawn() is called after run() and is called even if run()
+        was not called because it was determined that running the
+        task was not necessary.
+        :return: Returns a list of tasks to be added to the execution.
+        """
+        return []
+
     @property
     def arguments(self):
         return self._arguments
@@ -127,6 +138,52 @@ class Task(object):
 
 
 task_factory = Factory(Serializable)
+
+
+class TaskGroup(Task):
+    def __init__(self, children):
+        # TODO: think about this again and write it in less lines
+        # this should all be O(n+m) assuming n is the total number of sources
+        # and m is the total number of targets
+        # flatten sources and targets first
+        sources = []
+        for c in children:
+            sources.extend(self._recursive_flatten_sources(c))
+        targets = []
+        for c in children:
+            targets.extend(self._recursive_flatten_targets(c))
+        # create a dict mapping from identifier to node
+        source_dict = {}
+        for s in sources:
+            source_dict[s.identifier] = s
+        targets_new = []
+        for t in targets:
+            # remove source node if it is also a target
+            # otherwise, the target node in question is external
+            # and the source node is external as well.
+            if t.identifier in source_dict:
+                del source_dict[t.identifier]
+            else:
+                targets_new.append(t)
+        super().__init__(children=children, always=True)
+
+    def _recursive_flatten_sources(self, task):
+        ret = list(task.sources)
+        for c in task.children:
+            ret.extend(self._recursive_flatten_sources(c))
+        return ret
+
+    def _recursive_flatten_targets(self, task):
+        ret = list(task.targets)
+        for c in task.children:
+            ret.extend(self._recursive_flatten_targets(c))
+        return ret
+
+def group(*args):
+    if len(args) == 1 and isinstance(args, list):
+        return group(*args)
+    for arg in args:
+        assert isinstance(arg, Task), '*args must be a list of Tasks'
 
 
 class register_task(object):

@@ -4,6 +4,7 @@ Implement before initial API stability
  * automatically add deferred commands
  * unify cache usage in FooCollection classes
  * go over argument usage again
+ * verbosity
 
 
 First refactor steps
@@ -16,6 +17,7 @@ Todos
  * absolutely always save cache, even if exceptions
  * unify quote style
  * better files package support, rename directory to fs and also add a few tasks (copy, remove whatever)
+ * implement options
 
 
 Generators
