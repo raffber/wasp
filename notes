@@ -41,6 +41,7 @@ Todos
  * unify quote style
  * better files package support, rename directory to fs and also add a few tasks (copy, remove whatever)
  * implement options
+<<<<<<< HEAD
 
 Recursion
 =========

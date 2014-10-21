@@ -51,6 +51,9 @@ class DependencyCycleError(Exception):
 
 class RunnableDependencyTree(object):
     def __init__(self, tasks):
+        # TODO: dafuq is this?!
+        # TODO: children stuff
+        # TODO: spawn()...
         self._tasks = [tasks[key] for key in tasks]
         self._flatten_task_list()
         self._exec_count = 0
@@ -143,10 +146,10 @@ class TaskExecutor(Thread):
         self._results = self._task.run()
         self._task.has_run = True
         assert isinstance(self._results, TaskResult) or isinstance(self._results, list) or self._results is None, \
-            'Task.run() must either return a list of TaskResults or a TaskResult'
+            'Task.run() must either return a list of TaskResults or a TaskResult or None'
         if isinstance(self._results, list):
             for result in self._results:
-                assert isinstance(result, TaskResult), 'Task.run() must either return a list of TaskResults or a TaskResult'
+                assert isinstance(result, TaskResult), 'Task.run() must either return a list of TaskResults or a TaskResult or None'
         elif isinstance(self._results, TaskResult):
             self._results = [self._results]
         self._finished_event.fire(self._task, self._results)
@@ -168,7 +171,6 @@ class TaskExecutionPool(object):
             return
         elif task is None:
             return
-        task.prepare()
         executor = TaskExecutor(task, self._loop)
         executor.finished.connect(self._on_task_finished)
         executor.start()
