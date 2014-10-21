@@ -4,11 +4,35 @@ Implement before initial API stability
  * automatically add deferred commands
  * unify cache usage in FooCollection classes
  * go over argument usage again
+ * verbosity
+ * logger as property of task
+ * each task has a list of callables for initialize, prepare, run, success, fail
+ * spaw? called when?
+ * proper subproject handling
+ * add postprocess step for options
+ * dependencies
+ * recursion
 
 
 First refactor steps
 ====================
 
+
+Dependency management
+======================
+
+class DependencyCheck(Task): contains dependency
+
+class Dependency(ArgumentCollection): contains arguments, serializable
+
+glib = cpp.check('glib')
+myexec = cpp.compile()
+myexec.depends(glib)
+
+ * depends function is inherited from task, which just adds a task dependency
+ * is overrided to insert the required arguments
+ * ctx.dependencies collects dependencies, dependency check task adds itself uppon success
+ * myexec.use(ctx.dependencies['glib']) for using a previously saved dependency
 
 Todos
 =======
@@ -16,7 +40,25 @@ Todos
  * absolutely always save cache, even if exceptions
  * unify quote style
  * better files package support, rename directory to fs and also add a few tasks (copy, remove whatever)
+ * implement options
 
+Recursion
+=========
+
+ * use topdir = '../' *3 for subprojects
+ * have currentdir, current_builddir in context
+ * variables from higher-level directories can be overwritten
+ * @recurse for recurse, can be applied to a varianle declaration? recurse should otherwise be called during init
+ * add executiondir to ctx, so one can check if executiondir == currentdir
+
+subproject plugin
+------------------
+
+ * think about plugin api such that possible, what kind of hooks are required?
+ * automatically add options for activating subprojects
+ * wasp.subproject.activate.only('doc') or wasp.subproject.activate.except('doc')
+ * same with deactivate
+ * options --<subprojname> and --no-<subprojname> --all --none
 
 Generators
 ===========
@@ -95,6 +137,7 @@ Challanges and Questions
 
  * dummy nodes => Node('id'), how is it invalidated?!
  * what happens if a task does not have any sources nor targets? always = True implicitly?!
+ * could we integrate pip, easy_install?
 
 Next Tasks
 ----------
