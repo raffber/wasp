@@ -1,13 +1,17 @@
 from .node import make_nodes
 from uuid import uuid4 as uuid
-from .util import Factory, Serializable
+from .util import Factory, Serializable, CallableList
 from .arguments import Argument, ArgumentCollection
+from functools import reduce
+import operator
 
 
 class Task(object):
     def __init__(self, sources=[], targets=[], children=[], always=False, identifier=None):
         self._sources = make_nodes(sources)
         self._targets = make_nodes(targets)
+        if len(self._sources) == 0 and len(self._targets) == 0:
+            always = True
         assert isinstance(children, list)
         self.children = children
         self._has_run = False
@@ -18,6 +22,13 @@ class Task(object):
             self._id = str(uuid())
         else:
             self._id = identifier
+        self._run_list = CallableList()
+        self._initialize_list = CallableList().arg(self)
+        self._prepare_list = CallableList().arg(self)
+        self._success_list = CallableList().arg(self)
+        self._fail_list = CallableList().arg(self)
+        self._postprocess_list = CallableList().arg(self)
+        self._spawn_list = CallableList().arg(self).collect(lambda ret: reduce(operator.add, ret))
 
     @property
     def always(self):
@@ -33,8 +44,37 @@ class Task(object):
     def __ne__(self, other):
         return not (other.identfier == self._id)
 
+    @property
     def prepare(self):
-        pass
+        return self._prepare_list
+
+    @property
+    def success(self):
+        return self._success_list
+
+    @property
+    def fail(self):
+        return self._fail_list
+
+    @property
+    def postprocess(self):
+        return self._postprocess_list
+
+    @property
+    def spawn(self):
+        """
+        Returns new tasks that should be added to the execution.
+
+        spawn() is called after run() and is called even if run()
+        was not called because it was determined that running the
+        task was not necessary.
+        :return: Returns a list of tasks to be added to the execution.
+        """
+        return self._spawn_list
+
+    @property
+    def run(self):
+        return self._run_list
 
     @property
     def targets(self):
@@ -86,20 +126,6 @@ class Task(object):
         return self._success
 
     success = property(get_success, set_success)
-
-    def run(self):
-        self._success = True
-
-    def spawn(self):
-        """
-        Returns new tasks that should be added to the execution.
-
-        spawn() is called after run() and is called even if run()
-        was not called because it was determined that running the
-        task was not necessary.
-        :return: Returns a list of tasks to be added to the execution.
-        """
-        return []
 
     @property
     def arguments(self):

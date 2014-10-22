@@ -3,7 +3,6 @@ from .options import OptionsCollection
 from .cache import Cache
 from .signature import SignatureProvider, FileSignature, SignatureStore
 from .arguments import Argument
-from .execution import TaskExecutionPool, RunnableDependencyTree
 from .ui import Log
 from .environment import Environment
 from .result import TaskResultCollection

@@ -61,7 +61,7 @@ class Event(object):
         self._funs.append(fun)
 
     def disconnect(self, fun):
-        self._funs.remve(fun)
+        self._funs.remove(fun)
 
     def fire(self, *args, **kw):
         self._loop.fire_event(self, args, kw)
@@ -69,6 +69,31 @@ class Event(object):
     def invoke(self, *args, **kw):
         for fun in self._funs:
             fun(*args, **kw)
+
+
+class CallableList(list):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._collect_returns_fun = lambda ret: ret[-1] if len(ret) > 0 else None
+        self._arg = None
+
+    def collect(self, fun):
+        self._collect_returns_fun = fun
+        return self
+
+    def arg(self, arg):
+        self._arg = arg
+        return self
+
+    def __call__(self, *args, **kwargs):
+        ret = []
+        if self._arg is not None:
+            args.insert(0, self._arg)
+        for callable_ in self:
+            assert callable(callable_), 'Objects added to a CallableList must be callable'
+            ret.append(callable_(*args, **kwargs))
+        return self._collect_returns_fun(ret)
 
 
 class EventLoop(object):

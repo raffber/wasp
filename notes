@@ -6,8 +6,7 @@ Implement before initial API stability
  * go over argument usage again
  * verbosity
  * logger as property of task
- * each task has a list of callables for initialize, prepare, run, success, fail
- * spaw? called when?
+ * spaw? called when? => after run()
  * proper subproject handling
  * add postprocess step for options
  * dependencies
@@ -41,7 +40,6 @@ Todos
  * unify quote style
  * better files package support, rename directory to fs and also add a few tasks (copy, remove whatever)
  * implement options
-<<<<<<< HEAD
 
 Recursion
 =========
