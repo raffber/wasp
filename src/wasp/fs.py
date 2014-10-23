@@ -1,6 +1,8 @@
 import os
 import re
 from .node import FileNode
+from .task import Task, register_task
+from .util import Serializable
 
 MODULE_DIR = os.path.realpath(os.path.dirname(__file__))
 TOP_DIR = os.path.realpath(os.path.join(MODULE_DIR, '../..'))
@@ -143,3 +145,22 @@ def files(*args):
         elif isinstance(f, str):
             ret.append(File(f))
     return ret
+
+
+class RemoveTask(Task, Serializable):
+
+    def __init__(self, files, recursive=False):
+        self._recursive = recursive
+        super().__init__(targets=files, always=True)
+
+    def _make_id(self):
+        return 'rm ' + ' '.join(files)
+
+    def _run(self):
+        # TODO: implement recursive
+        for f in files:
+            os.remove(f)
+
+
+def remove(*args):
+    raise NotImplementedError

@@ -1,16 +1,21 @@
+Next Task
+==========
+ * defer tasks
+ * cache usage
+ * execution engine
+
+
 Implement before initial API stability
 =======================================
 
  * automatically add deferred commands
- * unify cache usage in FooCollection classes
+ * unify cache usage in FooCollection classes, improve cache
  * go over argument usage again
  * verbosity
- * logger as property of task
- * spaw? called when? => after run()
- * proper subproject handling
  * add postprocess step for options
  * dependencies
  * recursion
+ * proper subproject handling
 
 
 First refactor steps

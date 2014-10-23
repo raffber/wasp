@@ -20,7 +20,7 @@ class Task(object):
         self._success = False
         self._arguments = ArgumentCollection()
         if identifier is None:
-            self._id = str(uuid())
+            self._id = self._make_id()
         else:
             self._id = identifier
         self._run_list = CallableList().arg(self)
@@ -38,6 +38,9 @@ class Task(object):
         self._spawn_list = CallableList().arg(self).collect(lambda ret: reduce(operator.add, ret))
         self._spawn_list.append(self._spawn)
         self._logger = Logger()
+
+    def _make_id(self):
+        return str(uuid())
 
     @property
     def logger(self):
