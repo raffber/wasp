@@ -2,6 +2,7 @@ from .node import make_nodes
 from uuid import uuid4 as uuid
 from .util import Factory, Serializable, CallableList
 from .arguments import Argument, ArgumentCollection
+from .logging import Logger
 from functools import reduce
 import operator
 
@@ -22,13 +23,25 @@ class Task(object):
             self._id = str(uuid())
         else:
             self._id = identifier
-        self._run_list = CallableList()
+        self._run_list = CallableList().arg(self)
+        self._run_list.append(self._run)
         self._initialize_list = CallableList().arg(self)
+        self._initialize_list.append(self._initialize)
         self._prepare_list = CallableList().arg(self)
+        self._prepare_list.append(self._prepare)
         self._success_list = CallableList().arg(self)
+        self._success_list.append(self._success)
         self._fail_list = CallableList().arg(self)
+        self._fail_list.append(self._fail)
         self._postprocess_list = CallableList().arg(self)
+        self._postprocess_list.append(self._postprocess)
         self._spawn_list = CallableList().arg(self).collect(lambda ret: reduce(operator.add, ret))
+        self._spawn_list.append(self._spawn)
+        self._logger = Logger()
+
+    @property
+    def logger(self):
+        return self._logger
 
     @property
     def always(self):
@@ -45,20 +58,39 @@ class Task(object):
         return not (other.identfier == self._id)
 
     @property
+    def initialize(self):
+        return self._initialize_list
+
+    def _initialize(self):
+        pass
+
+    @property
     def prepare(self):
         return self._prepare_list
+
+    def _prepare(self):
+        pass
 
     @property
     def success(self):
         return self._success_list
 
+    def _success(self):
+        pass
+
     @property
     def fail(self):
         return self._fail_list
 
+    def _fail(self):
+        pass
+
     @property
     def postprocess(self):
         return self._postprocess_list
+
+    def _postprocess(self):
+        pass
 
     @property
     def spawn(self):
@@ -72,9 +104,15 @@ class Task(object):
         """
         return self._spawn_list
 
+    def _spawn(self):
+        pass
+
     @property
     def run(self):
         return self._run_list
+
+    def _run(self):
+        pass
 
     @property
     def targets(self):
@@ -163,9 +201,6 @@ class Task(object):
                     self.arguments.add(arg)
 
 
-task_factory = Factory(Serializable)
-
-
 class TaskGroup(Task):
     def __init__(self, children):
         # TODO: think about this again and write it in less lines
@@ -205,11 +240,15 @@ class TaskGroup(Task):
             ret.extend(self._recursive_flatten_targets(c))
         return ret
 
+
 def group(*args):
     if len(args) == 1 and isinstance(args, list):
         return group(*args)
     for arg in args:
         assert isinstance(arg, Task), '*args must be a list of Tasks'
+
+
+task_factory = Factory(Serializable)
 
 
 class register_task(object):
