@@ -1,7 +1,7 @@
 Next Task
 ==========
  * defer tasks
- * cache usage
+ * cache usage: always give cache object as argument in load() and save()
  * execution engine
 
 

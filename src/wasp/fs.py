@@ -72,6 +72,7 @@ class File(object):
         :param path: Path to the file. The file may or may not exist.
         :param make_absolute: Make the path absolute in all cases.
         """
+        assert isinstance(path, str), 'Path to file must be given as a string'
         if make_absolute:
             self._path = os.path.realpath(path)
         else:
@@ -92,21 +93,28 @@ class File(object):
     def extension(self):
         return os.path.splitext(self._path)[1]
 
+    @property
+    def path(self):
+        return self._path
+
+    def __str__(self):
+        return self._path
+
 
 class FileCollection(list):
 
-    def __init__(self, files):
-        assert isinstance(files, list) or isinstance(files, File), \
+    def __init__(self, fs):
+        assert isinstance(fs, list) or isinstance(fs, File), \
             'A file collection can only be created from a File or a list thereof'
-        if isinstance(files, list):
+        if isinstance(fs, list):
             # a list of files, check if it containes only files
             # and extend self
-            for f in files:
+            for f in fs:
                 assert isinstance(f, File), 'A file collection can only be created from a File or a list thereof'
                 self.append(File(f.path))  # clone the file object
         else:
             # a single file, just add it
-            self.append(File(files.path))
+            self.append(File(fs.path))
 
     def replace_extension(self, old=None, new=''):
         """
@@ -149,9 +157,9 @@ def files(*args):
 
 class RemoveTask(Task, Serializable):
 
-    def __init__(self, files, recursive=False):
+    def __init__(self, fs, recursive=False):
         self._recursive = recursive
-        super().__init__(targets=files, always=True)
+        super().__init__(targets=fs, always=True)
 
     def _make_id(self):
         return 'rm ' + ' '.join(files)
@@ -160,6 +168,13 @@ class RemoveTask(Task, Serializable):
         # TODO: implement recursive
         for f in files:
             os.remove(f)
+
+    def to_json(self):
+        raise NotImplementedError
+
+    @classmethod
+    def from_json(cls, d):
+        raise NotImplementedError
 
 
 def remove(*args):

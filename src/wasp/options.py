@@ -2,35 +2,37 @@ from .util import Factory
 from .decorators import decorators
 
 
-class OptionsCollection(object):
-    def __init__(self, cache=None):
-        self._cache = cache
-        self._options = {}
+class OptionsCollection(dict):
 
-    def add_option(self, option):
-        self._options[option.name] = option
-
-    def __getitem__(self, item):
-        return self._options[item]
-
-    def get(self, item, *args):
-        return self._options.get(item, *args)
+    def add(self, option):
+        self[option.name] = option
 
     def add_to_argparse(self, args):
-        pass
+        raise NotImplementedError
 
     def retrieve_from_dict(self, args):
-        pass
+        raise NotImplementedError
+
+    def group(self, groupname):
+        raise NotImplementedError
+
+    def remove_group(self, groupname):
+        raise NotImplementedError
 
 
 class Option(object):
-    def __init__(self, name, description):
+    def __init__(self, name, description, group=None):
         self._name = name
         self._description = description
+        self._group = group
 
     @property
     def name(self):
         return self._name
+
+    @property
+    def group(self):
+        return self._group
 
     @property
     def description(self):
@@ -58,7 +60,7 @@ class Option(object):
 options_factory = Factory(Option)
 
 
-def make_option_name_compliant(key):
+def sanitize_option_name(key):
     return key.replace('_', '-')
 
 
@@ -77,12 +79,12 @@ class FlagOption(Option):
     value = property(get_value, set_value)
 
     def add_to_arparse(self, args):
-        key = make_option_name_compliant(self._key)
+        key = sanitize_option_name(self._key)
         args.add_option('--' + key, action='store_true', default=False,
             help=self._description, dest=key)
 
     def from_argparse(self, args):
-        key = make_option_name_compliant(self._key)
+        key = sanitize_option_name(self._key)
         val = False
         if getattr(args, '--' + key):
             val = True

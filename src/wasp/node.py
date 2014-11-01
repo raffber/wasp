@@ -2,6 +2,7 @@ from uuid import uuid4 as generate_uuid
 import os
 from . import ctx
 from .signature import FileSignature, Signature
+from .fs import File
 
 # TODO: is signature attribute actually required?!
 
@@ -62,14 +63,16 @@ class FileNode(Node):
         return signature
 
 
-def make_nodes(lst_or_string):
+def make_nodes(arg):
     lst = []
-    if isinstance(lst_or_string, str):
-        lst = [FileNode(lst_or_string)]
-    elif isinstance(lst_or_string, Node):
-        lst = [lst_or_string]
-    elif isinstance(lst_or_string, list):
-        for item in lst_or_string:
+    if isinstance(arg, str):
+        lst = [FileNode(arg)]
+    elif isinstance(arg, File):
+        lst = [FileNode(arg.path)]
+    elif isinstance(arg, Node):
+        lst = [arg]
+    elif isinstance(arg, list):
+        for item in arg:
             lst.extend(make_nodes(item))
     else:
         raise TypeError('Invalid type passed to make_nodes, expected Node, string or list thereof.')

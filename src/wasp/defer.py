@@ -4,6 +4,9 @@ from . import ctx
 
 class DeferredTaskCollection(dict):
 
+    def add(self, task):
+        raise NotImplementedError
+
     def load(self, cache):
         raise NotImplementedError
 

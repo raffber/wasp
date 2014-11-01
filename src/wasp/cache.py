@@ -12,36 +12,12 @@ class Cache(object):
         self._cachedir = cachedir
         self.d = {}
 
-    def set(self, cachename, key, value):
-        if cachename not in self.d:
+    def prefix(self, prefix):
+        if not prefix in self.d:
             cache = {}
-            self.d[cachename] = cache
-        else:
-            cache = self.d[cachename]
-        if not isinstance(cache, dict):
-            ctx.log.warning('Cachefile is invalid. Ignoring')
-            cache = {}
-            self.d[cachename] = cache
-        cache[key] = value
-
-    def get(self, cachename, key, *args):
-        if len(args) > 1:
-            raise TypeError('At most one additional argument is allowed.')
-        default = args[0] if len(args) == 1 else None
-        cache = self.d.get(cachename, None)
-        if cache is not None:
-            return cache.get(key, default)
-        return None
-
-    def getcache(self, cachename):
-        if not cachename in self.d:
-            cache = {}
-            self.d[cachename] = cache
+            self.d[prefix] = cache
             return cache
-        return self.d[cachename]
-
-    def setcache(self, cachename, cache):
-        self.d[cachename] = cache
+        return self.d[prefix]
 
     def save(self):
         # that should not fail, since we ensured the existance

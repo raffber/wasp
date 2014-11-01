@@ -6,7 +6,7 @@ from .arguments import Argument
 from .ui import Log
 from .environment import Environment
 from .result import TaskResultCollection
-from .util import load_module_by_path
+from .util import load_module_by_path, Serializable
 from .tools import ToolError, NoSuchToolError
 from .tools import proxies
 from .fs import TOP_DIR, Directory
@@ -135,7 +135,7 @@ class Context(object):
         return self._env
 
     @property
-    def argumetns(self):
+    def arguments(self):
         return self._arguments
 
     @property
@@ -175,7 +175,7 @@ class Context(object):
                 continue
             old_sig = FileSignature.from_json(ser_sig)
             if old_sig != signature:
-                self.log.info('Build scripts have changed since last execution!'\
+                self.log.info('Build scripts have changed since last execution!' \
                         'All previous configurations have been cleared!')
                 invalid = True
                 break
@@ -190,15 +190,14 @@ class Context(object):
     def cache(self):
         return self._cache
 
-    @property
     def deferred(self, commandname):
         if commandname not in self._deferred:
-            self._deferred[commandname] = TaskCollection()
+            self._deferred[commandname] = TaskCollection(traits=[Serializable])
         return self._deferred[commandname]
 
     def run_tasks(self):
-        tree = RunnableDependencyTree(self.tasks)
+        #tree = RunnableDependencyTree(self.tasks)
         jobs = Argument('jobs').require_type(int).retrieve(self.env, self.options, default=1)
-        executor = TaskExecutionPool(tree, num_jobs=int(jobs))
-        res = executor.run()
-        return res
+        #executor = TaskExecutionPool(tree, num_jobs=int(jobs))
+        #res = executor.run()
+        return None
