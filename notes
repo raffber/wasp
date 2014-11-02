@@ -1,6 +1,5 @@
 Next Task
 ==========
- * defer tasks
  * cache usage: always give cache object as argument in load() and save()
  * execution engine
 
@@ -16,9 +15,13 @@ Implement before initial API stability
  * dependencies
  * recursion
  * proper subproject handling
+ * wasp specific commands and options:
+    - outsource into own module
+    - postprocess step options decorator
+    - clear cache: clear-cache
+    - verbosity
 
-
-First refactor steps
+Refactor steps
 ====================
 
 

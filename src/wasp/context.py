@@ -176,7 +176,7 @@ class Context(object):
             old_sig = FileSignature.from_json(ser_sig)
             if old_sig != signature:
                 self.log.info('Build scripts have changed since last execution!' \
-                        'All previous configurations have been cleared!')
+                                'All previous configurations have been cleared!')
                 invalid = True
                 break
         if invalid:

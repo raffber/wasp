@@ -11,9 +11,8 @@ class TaskCollection(dict):
             for trait in self._traits:
                 assert isinstance(task, trait), 'task must have trait: {0}'.format(trait.__name__)
             self[task.identifier] = task
-        elif isinstance(task, list):
-            for t in task:
-                self.add(t)
-        else:
-            assert False, 'Either a list of task or task is required as argument'
+        assert isinstance(task, list), 'Either a list of task or task is required as argument'
+        # task is a list of Task
+        for t in task:
+            self.add(t)
 

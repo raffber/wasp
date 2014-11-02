@@ -101,6 +101,8 @@ def run_command(name, executed_commands):
         elif tasks is not None:
             assert False, 'Unrecognized return value from {0}'.format(name)
         # else tasks is None, thats fine
+    deferred_tasks = [task for task in ctx.deferred(name)]
+    ctx.tasks.add(deferred_tasks)
     # now execute all tasks
     results = ctx.run_tasks()
     ctx.results.add(results)
