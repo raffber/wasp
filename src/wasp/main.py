@@ -3,20 +3,8 @@ from .decorators import decorators
 from .context import Context
 from .task import Task
 from .command import CommandFailedError
-import argparse
 from . import ctx
-import sys
 import os
-from .command import clean
-
-
-class CommandAction(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        if not '_commands' in namespace:
-            setattr(namespace, '_commands', [])
-        previous = namespace._commands
-        previous.append(values)
-        setattr(namespace, '_commands', previous)
 
 
 class EmptyCommandOption(object):
@@ -24,30 +12,7 @@ class EmptyCommandOption(object):
 
 
 def handle_options():
-    arg = argparse.ArgumentParser(description='Welcome to {0}'.format(ctx.projectname))
-    added_commands = []
-    for com in decorators.commands:
-        if com.name in added_commands:
-            ctx.commands.append(com)
-            continue
-        added_commands.append(com.name)
-        ctx.commands.append(com)
-        # TODO: nicify this by sorting the default commands in a logical sequence
-        # i.e. add configure before build and install
-        arg.add_argument(com.name, help=com.description, action=CommandAction, default='', nargs='?')
-    for option_decorator in decorators.options:
-        if len(option_decorator.commands) != 0:
-            if option_decorator.commands in sys.argv:
-                option_decorator.fun(ctx.options)
-            else:
-                pass  # TODO: unused options collection! such that previous options can still be retrieved
-                # mark the retrieved options as unused and then add them to the optionscollection as well
-        else:
-            option_decorator.fun(ctx.options)
-    ctx.options.add_to_argparse(arg)
-    parsed = arg.parse_args()
-    ctx.options.retrieve_from_dict(vars(parsed))
-    return parsed
+    raise NotImplementedError
 
 
 def create_context(module):
@@ -127,7 +92,7 @@ def handle_commands(options):
         handle_no_command(options)
         return
     executed_comands = []
-    for command_name in str_commands:
+for command_name in str_commands:
         run_command(command_name, executed_comands)
 
 

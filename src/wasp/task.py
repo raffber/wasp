@@ -121,6 +121,13 @@ class Task(object):
     def targets(self):
         return self._targets
 
+    def produce(self, *args):
+        # TODO: make_nodes and add to targets
+        raise NotImplementedError
+
+    def depends(self, *args, use=True):
+        raise NotImplementedError
+
     def set_has_run(self, has_run):
         self._has_run = has_run
 
@@ -129,7 +136,7 @@ class Task(object):
         # from the last run and all child-tasks have successfully
         # run.
         # note that each task may change the file signatures
-        # of its targets, as such, it can not be assuemd
+        # of its targets, as such, it cannot be assumed
         # that a task may still need to run even though at some
         # point this function returned True, since other tasks may
         # change the sources of this task and thus its signatures may
@@ -188,6 +195,8 @@ class Task(object):
         for c in self.children:
             c.use_arg(arg)
         self.arguments.add(arg)
+
+    # TODO: set result into all symblic nodes
 
     def require(self, arguments=None):
         if arguments is not None:
@@ -249,12 +258,3 @@ def group(*args):
         return group(*args)
     for arg in args:
         assert isinstance(arg, Task), '*args must be a list of Tasks'
-
-
-task_factory = Factory(Serializable)
-
-
-class register_task(object):
-    def __init__(self, cls):
-        assert issubclass(cls, Serializable)
-        task_factory.register(cls)

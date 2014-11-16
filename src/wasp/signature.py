@@ -2,12 +2,12 @@ from .util import Factory
 from uuid import uuid4 as generate_uuid
 from .util import Factory, b2a
 from hashlib import md5
+from . import register
 import os
 
 
 class SignatureProvider(object):
-    def __init__(self, cache):
-        self._cache = cache
+    def __init__(self):
         self._db = {}
 
     def add(self, signature):
@@ -16,12 +16,12 @@ class SignatureProvider(object):
     def get(self, signature_identifier):
         return self._db.get(signature_identifier)
 
-    def save(self):
+    def save(self, cache):
         ret = {}
         for id_, signature in self._db.items():
             if signature.valid:
                 ret[signature.identifier] = signature.to_json()
-        self._cache.setcache('signaturedb', ret)
+        cache.prefix('signaturedb').update(ret)
 
     def invalidate_signature(self, identifier):
         if isinstance(identifier, Signature):
@@ -36,13 +36,15 @@ class SignatureProvider(object):
 class SignatureStore(object):
     def __init__(self, cache):
         # copy the dict, so that the cache can be written to
-        self._signaturedb = dict(cache.getcache('signaturedb'))
+        self._signaturedb = dict(cache.prefix('signaturedb'))
 
     def get(self, id_):
-        d = self._signaturedb.get(id_)
-        if d is None:
-            return Signature()
-        return signature_factory.create(d['type'], **d)
+        raise NotImplementedError
+        # TODO: automatically casted to signature
+        # d = self._signaturedb.get(id_)
+        # if d is None:
+        #     return Signature()
+        # return signature_factory.create(d['type'], **d)
 
 
 class Signature(object):
@@ -80,7 +82,7 @@ class Signature(object):
     def refresh(self):
         pass
 
-
+@register
 class FileSignature(Signature):
     def __init__(self, path=None, value=None, valid=True):
         assert path is not None, 'Path must be given for file signature'
@@ -109,8 +111,3 @@ class FileSignature(Signature):
         value = b2a(m.digest())
         self.value = value
         return value
-
-
-signature_factory = Factory(Signature)
-signature_factory.register(Signature)
-signature_factory.register(FileSignature)

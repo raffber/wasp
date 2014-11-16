@@ -1,21 +1,28 @@
 from .environment import Environment
 from .options import OptionsCollection
 from . import ctx
+from .util import Serializable
 
 class MissingArgumentError(Exception):
     pass
 
 
-class ArgumentCollection(dict):
+class ArgumentCollection(dict, Serializable):
+    # TODO: implement json stuffz
 
     def add(self, arg):
         assert isinstance(arg, Argument), 'Can only add Argument to ArgumentCollection'
         self[arg.key] = arg
 
 
-class Argument(object):
-    def __init__(self, key, value=None):
+class Argument(Serializable):
+    # TODO: implement json stuffz
+    # TODO: automatically cast into the required type
+
+    def __init__(self, key, value=None, type=str):
+        # TODO: check type ALWAYS!
         self.key = key
+        self._type = type
         self.lowerkey = key.lower()
         self.upperkey = key.upper()
         self._value = value
@@ -53,7 +60,7 @@ class Argument(object):
             return arg
         return None
 
-    def retrieve(self, *args, default=''):
+    def retrieve(self, *args, default=None):
         for a in args:
             ret = self._retrieve_from_single(a)
             if ret is not None:

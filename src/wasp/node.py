@@ -3,6 +3,7 @@ import os
 from . import ctx
 from .signature import FileSignature, Signature
 from .fs import File
+from .arguments import ArgumentCollection
 
 # TODO: is signature attribute actually required?!
 
@@ -61,6 +62,28 @@ class FileNode(Node):
         signature = ctx.signatures.get(self._path)
         assert signature is not None
         return signature
+
+
+class SymbolicNode(Node):
+    def __init__(self, identifier):
+        super().__init__(identifier=identifier)
+
+    def read(self):
+        """
+        Returns the content of the node in form of an ArgumentCollection.
+        :return: An ArgumentCollection with the contents of the node.
+        """
+        arg_col = ctx.cache.prefix('symblic-nodes').get(self.identifier, None)
+        assert isinstance(arg_col, ArgumentCollection), 'Cache: Invalid datastructure for symblic node storage.'
+        return arg_col
+
+    def write(self, args):
+        """
+        Write an ArgumentCollection and store it with the symbolic node.
+        :param args: The ArgumentCollection to store
+        :return: None
+        """
+        ctx.cache.prefix('symblic-nodes')[self.identifier] = args
 
 
 def make_nodes(arg):

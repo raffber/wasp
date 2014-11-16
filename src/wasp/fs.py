@@ -3,6 +3,7 @@ import re
 from .node import FileNode
 from .task import Task, register_task
 from .util import Serializable
+from . import register
 
 MODULE_DIR = os.path.realpath(os.path.dirname(__file__))
 TOP_DIR = os.path.realpath(os.path.join(MODULE_DIR, '../..'))
@@ -64,7 +65,9 @@ class Directory(object):
             pass
 
 
-class File(object):
+@register
+class File(Serializable):
+    # TODO: implement serializable
 
     def __init__(self, path, make_absolute=False):
         """

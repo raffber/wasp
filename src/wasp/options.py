@@ -65,9 +65,10 @@ def sanitize_option_name(key):
 
 
 class FlagOption(Option):
-    def __init__(self, name, description):
+    def __init__(self, name, description, default=False):
         super().__init__(name, description)
         self._value = False
+        self._default = default
 
     def set_value(self, v):
         assert isinstance(v, bool), 'You can only set a flag option to True or False'
@@ -80,7 +81,7 @@ class FlagOption(Option):
 
     def add_to_arparse(self, args):
         key = sanitize_option_name(self._key)
-        args.add_option('--' + key, action='store_true', default=False,
+        args.add_option('--' + key, action='store_true', default=self._default,
             help=self._description, dest=key)
 
     def from_argparse(self, args):

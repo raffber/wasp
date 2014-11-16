@@ -24,6 +24,8 @@ class Cache(object):
         # of self._cachedir
         with open(self._cachedir.join(CACHE_FILE), 'w') as f:
             json.dump(self.d, f)
+        # TODO: recursive and if Serialziable then jsonify
+        # add __type__ == 'typename' for deserialization
 
     def clear(self):
         self.d = {}

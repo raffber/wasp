@@ -1,5 +1,22 @@
+Random thoughts
+-----------------------
+
+ * make_nodes(':asdf') if a : is prepended, the string is considered a symbolic node
+   this can be used to define dependencies => ask thomas
+   if ':' is within filename, it must be escaped with '\', i guess that's very uncommon, so not really a problem
+ * how do we remember nodes?! how do we konw if node was made? Use signature is guess? => SymbolicSignature?!
+   how do we invalidate?! make_nodes(':targets/my-binary').invalidate() this is kind of problematic as you can
+   link with.
+ * task.depends(':asdf') adds a dependency to the task
+ * task.produce(':asdf') adds a target to the task, somehow marks as result storage
+ * ctx.factory all Serializable stuff is registered there, with @register
+ * make sure thread savety is ensured if symbolic nodes are written
+ * allow people to name the build file either BUILD or build.py or just build?!
+
+
 Next Task
 ==========
+ * implement all NotImplentedError raises
  * cache usage: always give cache object as argument in load() and save()
  * execution engine
 
@@ -24,6 +41,8 @@ Implement before initial API stability
 Refactor steps
 ====================
 
+ * some way to make commands run again if specified implict as a dependency for another command and the former has already
+   completed successfully. Use case might be an updated git repo which gets pulled in by "./wasp fetch"
 
 Dependency management
 ======================

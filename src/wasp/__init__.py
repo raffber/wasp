@@ -45,8 +45,17 @@ from .command import build, configure, install, command
 from .hooks import init, create_context
 from .fs import Directory
 from .generator import generate
-from .task import register_task, Task
-from .result import register_task_result, TaskResult
+from .task import Task
+from .result import TaskResult
 from .shell import shell
 from .fs import Directory, TOP_DIR, file, files
 from .tools import tool
+from .util import Factory, Serializable
+
+
+factory = Factory(Serializable)
+
+
+class register(object):
+    def __init__(self, cls):
+        factory.register(cls)

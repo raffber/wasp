@@ -22,24 +22,27 @@ class TaskResultCollection(dict):
         self[result.identifier] = result
 
     def to_json(self):
-        ret = {}
-        for result in self:
-            if not isinstance(result, SerializableTaskResult):
-                continue
-            tojson = result.to_json()
-            if tojson is not None:
-                ret[result.id] = tojson
-        return ret
+        raise NotImplementedError
+        # ret = {}
+        # for result in self:
+        #     if not isinstance(result, SerializableTaskResult):
+        #         continue
+        #     tojson = result.to_json()
+        #     if tojson is not None:
+        #         ret[result.id] = tojson
+        # return ret
 
     def load(self, serialized):
-        for key, value in serialized.items():
-            self[key] = task_result_factory.create(value['type'], **value)
+        raise NotImplementedError
+        # for key, value in serialized.items():
+        #     self[key] = factory.create(value['type'], **value)
 
-    def save(self):
-        serialized = self.to_json()
-        cached_results = ctx.cache.getcache('results')
-        for key in serialized.keys():
-            cached_results[key] = serialized[key]
+    def save(self, cache):
+        raise NotImplementedError
+        # serialized = self.to_json()
+        # cached_results = ctx.cache.getcache('results')
+        # for key in serialized.keys():
+        #     cached_results[key] = serialized[key]
 
 
 class TaskResult(object):
@@ -56,12 +59,3 @@ class TaskResult(object):
 
 class SerializableTaskResult(TaskResult, Serializable):
     pass
-
-task_result_factory = Factory(SerializableTaskResult)
-
-
-class register_task_result(object):
-    def __call__(self, cls):
-        assert isinstance(cls, SerializableTaskResult)
-        task_result_factory.register(cls)
-        return cls
