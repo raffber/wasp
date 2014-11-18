@@ -10,7 +10,7 @@ Random thoughts
  * task.depends(':asdf') adds a dependency to the task
  * task.produce(':asdf') adds a target to the task, somehow marks as result storage
  * ctx.factory all Serializable stuff is registered there, with @register
- * make sure thread savety is ensured if symbolic nodes are written
+ * make sure thread savety is ensured if symbolic nodes are written, i.e. write them upon completion, result is just argument collection
  * allow people to name the build file either BUILD or build.py or just build?!
 
 

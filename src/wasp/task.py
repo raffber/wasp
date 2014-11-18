@@ -1,10 +1,14 @@
-from .node import make_nodes
+from .node import make_nodes, is_symbolic_node_string, SymbolicNode, make_node
 from uuid import uuid4 as uuid
-from .util import Factory, Serializable, CallableList
+from .util import CallableList
 from .arguments import Argument, ArgumentCollection
 from .logging import Logger
 from functools import reduce
 import operator
+
+
+class MissingArgumentError(Exception):
+    pass
 
 
 class Task(object):
@@ -38,6 +42,9 @@ class Task(object):
         self._spawn_list = CallableList().arg(self).collect(lambda ret: reduce(operator.add, ret))
         self._spawn_list.append(self._spawn)
         self._logger = Logger()
+        self._result = ArgumentCollection()
+        self._used_nodes = []
+        self._required_arguments = []
 
     def _make_id(self):
         return str(uuid())
@@ -59,6 +66,26 @@ class Task(object):
 
     def __ne__(self, other):
         return not (other.identfier == self._id)
+
+    def check(self):
+        """
+        Called before task execution (also before initialize and prepare). This function
+        retrieves all information from dependency nodes and checks if all required arguments
+        were given. If not, it is attempted to retrieve the required information using :ref:Argument.retrieve_all().
+        If this fails as well, a :ref:MissingArgumentError is thrown.
+        """
+        for node in self._used_nodes:
+            # retrieve all nodes
+            self.use(node.read())
+        for arg in self._required_arguments:
+            if arg.name not in self.arguments:
+                # attempt to retrieve the argument from the common sources
+                self.arguments.add(Argument(arg.name).retrieve_all())
+            elif self.arguments[arg.name].is_empty():
+                self.arguments[arg.name].retrieve_all()
+                if self.arguments[arg.name].is_empty():
+                    raise MissingArgumentError('Missing argument for task "{0}":'
+                                               ' Required argument "{1}" is empty.'.format(self.identifier, arg.name))
 
     @property
     def initialize(self):
@@ -122,11 +149,27 @@ class Task(object):
         return self._targets
 
     def produce(self, *args):
-        # TODO: make_nodes and add to targets
-        raise NotImplementedError
+        """
+        Adds targets to the task.
+        The function accepts the same positional arguments as :ref:make_nodes().
+        TODO: check documentation
+        """
+        nodes = make_nodes(args)
+        self.targets.extend(nodes)
 
     def depends(self, *args, use=True):
-        raise NotImplementedError
+        """
+        Sets dependencies to the task.
+        The function accepts the same positional arguments as :ref:make_nodes().
+        TODO: check documentation
+        """
+        nodes = make_nodes(args)
+        self.sources.extend(nodes)
+        if not use:
+            return
+        for node in nodes:
+            if isinstance(node, SymbolicNode):
+                self.use(node.read())
 
     def set_has_run(self, has_run):
         self._has_run = has_run
@@ -183,34 +226,46 @@ class Task(object):
         for a in args:
             if isinstance(a, Argument):
                 self.use_arg(a)
+            elif isinstance(a, ArgumentCollection):
+                self.arguments.update(a)
+            elif isinstance(a, SymbolicNode):
+                self.use_node(a)
             elif isinstance(a, str):
-                arg = Argument(a).retrieve_all()
-                self.use_arg(arg)
+                if is_symbolic_node_string(a):
+                    self.use_node(a)
+                else:
+                    arg = Argument(a).retrieve_all()
+                    self.use_arg(arg)
             elif isinstance(a, list):
                 self.use(*a)
         for k, a in kw.items():
             self.use_arg(Argument(k).assign(a))
+
+    def use_node(self, node):
+        node = make_node(node)
+        assert isinstance(node, SymbolicNode), 'Only subclasses of SymbolicNode can be used by a task'
+        self._used_nodes.append(node)
 
     def use_arg(self, arg):
         for c in self.children:
             c.use_arg(arg)
         self.arguments.add(arg)
 
-    # TODO: set result into all symblic nodes
+    def get_result(self):
+        return self._result
 
-    def require(self, arguments=None):
-        if arguments is not None:
-            if isinstance(arguments, str):
-                arguments = [arguments]
-            for argname in arguments:
-                # TODO: also retireve from ctx.arguments
-                if not argname in self._arguments:
-                    arg = Argument(argname)
-                    arg.retrieve_all()
-                    if arg.value is None:
-                        # TODO: ....
-                        raise RuntimeError('AAAAAAAAH! TODO!')
-                    self.arguments.add(arg)
+    def set_result(self, result):
+        self._result = result
+
+    result = property(get_result, set_result)
+
+    def require(self, arguments):
+        # add arguments to a list and check them before execution
+        if isinstance(arguments, str):
+            arguments = [Argument(arguments)]
+        elif isinstance(arguments, list):
+            arguments = [Argument(arg) if isinstance(arg, str) else arg for arg in arguments]
+        self._required_arguments.extend(arguments)
 
 
 class TaskGroup(Task):

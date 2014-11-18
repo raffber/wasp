@@ -1,44 +1,74 @@
 from .environment import Environment
 from .options import OptionsCollection
-from . import ctx
+from . import ctx, factory
 from .util import Serializable
+
 
 class MissingArgumentError(Exception):
     pass
 
 
 class ArgumentCollection(dict, Serializable):
-    # TODO: implement json stuffz
 
     def add(self, arg):
         assert isinstance(arg, Argument), 'Can only add Argument to ArgumentCollection'
         self[arg.key] = arg
 
+    def to_json(self):
+        d = super().to_json()
+        d['arguments'] = [arg.to_json() for arg in self.items()]
+        return d
+
+    @classmethod
+    def from_json(cls, d):
+        self = cls()
+        for argjson in d['arguments']:
+            arg = Argument.from_json(argjson)
+            self.add(arg)
+        return self
+
 
 class Argument(Serializable):
-    # TODO: implement json stuffz
-    # TODO: automatically cast into the required type
 
     def __init__(self, key, value=None, type=str):
-        # TODO: check type ALWAYS!
         self.key = key
         self._type = type
         self.lowerkey = key.lower()
         self.upperkey = key.upper()
-        self._value = value
+        self._value = None
         self._required_type = None
+        self._use_type(type)
+        self._set_value(value)
+
+    def to_json(self):
+        d = super().to_json()
+        d['value'] = factory.to_json(self._value)
+        d['key'] = self.key
+        return d
+
+    @classmethod
+    def from_json(cls, d):
+        value = factory.from_json(d['value'])
+        key = d['key']
+        return cls(key, value=value, type=type(value))
 
     def get_value(self):
         return self._value
 
-    def _check_type(self, value):
+    def _use_type(self, tp):
+        assert issubclass(tp, Serializable) or tp == str or \
+            tp == int or tp == float or tp == list or tp == dict
+        self._required_type = tp
+        self._check_convert_value(self.value)
+
+    def set_value(self, value):
+        """
+        Raises: ValueError if type conversion from value to the required type is not successful.
+        """
         if self._required_type is not None and value is not None:
             assert isinstance(value, self._required_type),\
                 'Argument {0} must be of type {1}!'.format(self.lowerkey, str(self._required_type))
-
-    def set_value(self, value):
-        self._check_type(value)
-        self._value = value
+        self._value = (self._required_type)(value)
 
     value = property(get_value, set_value)
 
@@ -76,7 +106,7 @@ class Argument(Serializable):
 
     def require_type(self, tp):
         self._required_type = tp
-        self._check_type(self._value)
+        self._use_type(self._value)
         return self
 
     @property

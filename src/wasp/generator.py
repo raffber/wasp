@@ -1,6 +1,12 @@
 from .node import FileNode
 from .decorators import decorators
 
+# TODO: generators are not yet implemented
+# and even the API is completely unfinished.
+# there are quite a few unanswered questions, such as:
+# * How does one specifiy a link task? A nice api needs to be provided
+#   which collects all object files.
+# * How exactly does "make -jN" do it?
 
 class TaskGenerator(object):
     def __init__(self):
@@ -34,7 +40,7 @@ class FileExtensionGenerator(object):
 
 
 class generate(object):
-    def __init__(self, extensions):
+    def __init__(self, command, *extensions):
         self._extension = extensions
 
     def __call__(self, f):

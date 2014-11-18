@@ -18,34 +18,74 @@ def b2a(b):
 
 
 class Factory(object):
-    # TODO: add checks and require subtype of base
-    def __init__(self, base):
-        self._base = base
+    def __init__(self):
         self.d = {}
 
-    @property
-    def base(self):
-        return self._base
+    def register(self, cls):
+        self.d[cls.__name__] = cls
 
-    def register(self, cls, name=None):
-        if name is None:
-            name = cls.__name__
-        self.d[name] = cls
-
-    def getclass(self, tp):
-        return self.d.get(tp, None)
+    def getclass(self, typename):
+        return self.d.get(typename, None)
 
     def create(self, d):
-        cls = self.getclass(d['type'])
+        typename = d['__type__']
+        cls = self.getclass(typename)
         if cls is None:
-            return None
+            raise ValueError('No such type registered: {0}'.format(typename))
         return cls.from_json(d)
+
+    def from_json(self, d):
+        typename = d['__type__']
+        if typename == 'int':
+            value = int(d['data'])
+        elif typename == 'float':
+            value = float(d['data'])
+        elif typename == 'list':
+            value = []
+            for k, v in d.items():
+                value[int(k)] = self.from_json(v)
+        elif typename == 'dict':
+            value = {}
+            for k, v in d.items():
+                value[k] = self.from_json(v)
+        elif typename == 'str':
+            value = str(d['data'])
+        else:
+            value = self.create(d)
+        return value
+
+    def to_json(self, arg):
+        d = {}
+        if isinstance(arg, int):
+            d['__type__'] = 'int'
+            d['data'] = str(arg)
+        elif isinstance(arg, str):
+            d['__type__'] = 'str'
+            d['data'] = str(arg)
+        elif isinstance(arg, float):
+            d['__type__'] = 'float'
+            d['data'] = str(arg)
+        elif isinstance(arg, list):
+            d['__type__'] = 'list'
+            index = 0
+            for item in arg:
+                d[str(index)] = self.to_json(item)
+                index += 1
+        elif isinstance(arg, dict):
+            d['__type__'] = 'dict'
+            for k, v in arg.items():
+                d[k] = self.to_json(v)
+        elif isinstance(arg, Serializable):
+            d = arg.to_json()
+        else:
+            raise ValueError('argument must either be int,str,float,Serializable or a list/dict thereof.')
+        return d
 
 
 class Serializable(object):
 
     def to_json(self):
-        raise NotImplementedError
+        return {'__type__': self.__class__.__name__}
 
     @classmethod
     def from_json(cls, d):
@@ -53,6 +93,10 @@ class Serializable(object):
 
 
 class Event(object):
+    # TODO: possibly use asyncio module, once its clear
+    # that it stays in the standard library
+    # also, this would require python3.4 at minimum
+    # one could also provide fallback options...
     def __init__(self, loop):
         self._funs = []
         self._loop = loop
@@ -120,6 +164,7 @@ class EventLoop(object):
                 evt.invoke(*args, **kw)
             self._events.clear()
             # TODO: thread save this
+
 
 def run_command(cmd, stdout=None, stderr=None, timeout=100):
     cmd = shlex.split(cmd)
