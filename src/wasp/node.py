@@ -7,6 +7,7 @@ from .arguments import ArgumentCollection
 
 # TODO: is signature attribute actually required?!
 
+
 class Node(object):
     def __init__(self, identifier=None):
         if identifier is None:
@@ -84,6 +85,10 @@ class SymbolicNode(Node):
         :return: None
         """
         ctx.cache.prefix('symblic-nodes')[self.identifier] = args
+
+    @property
+    def signature(self):
+        pass
 
 
 def is_symbolic_node_string(arg):

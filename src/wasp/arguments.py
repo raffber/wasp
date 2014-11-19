@@ -1,6 +1,6 @@
 from .environment import Environment
 from .options import OptionsCollection
-from . import ctx, factory
+from . import ctx, factory, register
 from .util import Serializable
 
 
@@ -8,6 +8,7 @@ class MissingArgumentError(Exception):
     pass
 
 
+@register
 class ArgumentCollection(dict, Serializable):
 
     def add(self, arg):
@@ -28,6 +29,7 @@ class ArgumentCollection(dict, Serializable):
         return self
 
 
+@register
 class Argument(Serializable):
 
     def __init__(self, key, value=None, type=str):
@@ -73,14 +75,12 @@ class Argument(Serializable):
     value = property(get_value, set_value)
 
     def _retrieve_from_single(self, arg):
+        # TODO: argumentcollection
         if isinstance(arg, Environment):
             # environment variable
             return arg.get(self.upperkey)
         elif isinstance(arg, OptionsCollection):
             return arg.get(self.lowerkey, None)
-        elif isinstance(arg, Environment):
-            # environment variable
-            return arg.get(self.upperkey)
         elif isinstance(arg, dict):
             # keyword argument
             return arg.get(self.lowerkey, None)

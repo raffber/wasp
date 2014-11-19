@@ -1,46 +1,54 @@
 import json
 from .fs import Directory
-from . import ctx
+from . import ctx, factory
 
 CACHE_FILE = 'c4che.json'
 
 
-class Cache(object):
+class Cache(dict):
     def __init__(self, cachedir):
         assert isinstance(cachedir, Directory)
         cachedir.ensure_exists()
         self._cachedir = cachedir
-        self.d = {}
+
 
     def prefix(self, prefix):
-        if not prefix in self.d:
+        if not prefix in self:
             cache = {}
-            self.d[prefix] = cache
+            self[prefix] = cache
             return cache
-        return self.d[prefix]
+        return self[prefix]
+
+    def __getitem__(self, prefix):
+        # automatically add dict if it's not there yet
+        # the reason why we do this, is to allow people reduce the number of
+        # code lines by writing things such as:
+        # ctx.cache['my-subproject-name']['cc'] = '/usr/bin/gcc'
+        # ctx.cache['another-subproject']['cc'] = '/usr/bin/clang'
+        # return cc.executable('main.c').use(ctx.cache['my-subproject-name'])
+        return self.prefix(prefix)
 
     def save(self):
         # that should not fail, since we ensured the existance
         # of self._cachedir
+        jsonified = factory.to_json(self)
         with open(self._cachedir.join(CACHE_FILE), 'w') as f:
-            json.dump(self.d, f)
-        # TODO: recursive and if Serialziable then jsonify
-        # add __type__ == 'typename' for deserialization
-
-    def clear(self):
-        self.d = {}
+            json.dump(jsonified, f)
 
     def load(self):
+        self.clear()
         try:
             with open(self._cachedir.join(CACHE_FILE), 'r') as f:
+                jsonified = None
                 try:
-                    self.d = json.load(f)
+                    jsonified = json.load(f)
                 except ValueError:
                     pass
-            if not isinstance(self.d, dict):
+            if not isinstance(jsonified, dict):
                 # invalid cache file, ignore
-                ctx.log.warning('Cachefile is invalid. Ignoring')
-                self.d = {}
+                ctx.log.warning('Cachefile is invalid. Ignoring.')
+            else:
+                self.update(factory.from_json(jsonified))
         except FileNotFoundError:
             # nvm, cachefile was probably never written
             # since wasp was never excuted or had anything

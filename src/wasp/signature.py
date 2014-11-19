@@ -1,8 +1,8 @@
-from .util import Factory
+from .util import Serializable, b2a
 from uuid import uuid4 as generate_uuid
-from .util import Factory, b2a
 from hashlib import md5
-from . import register
+from . import register, ctx, factory
+from json import dumps
 import os
 
 
@@ -47,10 +47,10 @@ class SignatureStore(object):
         # return signature_factory.create(d['type'], **d)
 
 
-class Signature(object):
+class Signature(Serializable):
 
     def __init__(self, value=None, valid=False, identifier=None):
-        self.value = value
+        self._value = value
         self._valid = valid
         if identifier is not None:
             self._id = identifier
@@ -62,6 +62,10 @@ class Signature(object):
         return self._id
 
     @property
+    def value(self):
+        return self._value
+
+    @property
     def valid(self):
         return self._valid
 
@@ -69,22 +73,25 @@ class Signature(object):
         return not self.__ne__(other)
 
     def __ne__(self, other):
-        return not other.valid or not self._valid or self.value != other.value
+        return not other.valid or not self._valid or self._value != other.value
 
     def to_json(self):
-        return {'value': self.value, 'valid': self.valid,
-                'type': self.__class__.__name__, 'identifier': self.identifier}
+        d = super().to_json()
+        d.update({'value': self._value, 'valid': self.valid, 'identifier': self.identifier})
+        return d
 
     @classmethod
     def from_json(cls, d):
         return cls(value=d['value'], valid=d['valid'], identifier=d['identifier'])
 
-    def refresh(self):
-        pass
+    def refresh(self, value=None):
+        if value is not None:
+            self._value = value
+        return value
 
 @register
 class FileSignature(Signature):
-    def __init__(self, path=None, value=None, valid=True):
+    def __init__(self, path, value=None, valid=True):
         assert path is not None, 'Path must be given for file signature'
         if not os.path.exists(path):
             valid = False
@@ -96,18 +103,50 @@ class FileSignature(Signature):
     def to_json(self):
         d = super().to_json()
         d['path'] = self.path
-        d['type'] = self.__class__.__name__
         return d
 
     @classmethod
     def from_json(cls, d):
         return cls(d['path'], value=d['value'], valid=d['valid'])
 
-    def refresh(self):
+    def refresh(self, value=None):
+        if value is not None:
+            self._value = value
+            return value
         m = md5()
         f = open(self.path, 'rb')
         m.update(f.read())
         f.close()
         value = b2a(m.digest())
-        self.value = value
+        self._value = value
+        return value
+
+
+class CacheSignature(Signature):
+    def __init__(self, identifier, prefix=None, key=None, value=None, valid=True):
+        super().__init__(value, valid=valid, identifier=identifier)
+        self._prefix = prefix
+        self._key = key
+        self.refresh(value)
+
+    def to_json(self):
+        d = super().to_json()
+        d['prefix'] = self._prefix
+        d['key'] = self._key
+        return d
+
+    @classmethod
+    def from_json(cls, d):
+        return cls(d['identifier'], key=d['key'], prefix=d['prefix'], value=d['value'], valid=d['valid'])
+
+    def refresh(self, value=None):
+        if value is not None:
+            self._value = value
+            return value
+        # XXX: not very efficient, benchmark to see if optimization required
+        m = md5()
+        jsonarr = factory.to_json(ctx.cache.prefix(self._prefix)[self._key])
+        m.update(dumps(jsonarr))
+        value = b2a(m.digest())
+        self._value = value
         return value

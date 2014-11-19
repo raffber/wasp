@@ -4,12 +4,28 @@ class CommandFailedError(Exception):
     pass
 
 
+class Trigger(object):
+    def check(self):
+        raise NotImplementedError
+
+
 class Command(object):
     def __init__(self, name, fun, description=None):
         self._depends = []
         self._name = name
         self._fun = fun
         self._description = description or name
+        self._triggers = []
+
+    @property
+    def triggers(self):
+        return self._triggers
+
+    def check_triggers(self):
+        for trigger in self._triggers:
+            if trigger.check():
+                return True
+        return False
 
     @property
     def depends(self):

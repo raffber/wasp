@@ -7,6 +7,7 @@ import sys
 
 
 class CommandAction(argparse.Action):
+    # XXX: UGH!
     def __call__(self, parser, namespace, values, option_string=None):
         if not '_commands' in namespace:
             setattr(namespace, '_commands', [])
@@ -81,7 +82,7 @@ class handle_options(object):
 
 @handle_options
 def handle_builtin_options(option_handler):
-    verbosity_one = Argument('v', type=bool).retrieve(ctx.options, default=True)
+    # verbosity_one = Argument('v', type=bool).retrieve(ctx.options, default=True)
     verbosity_two = Argument('vv', type=bool).retrieve(ctx.options, default=False)
     verbosity_three = Argument('vvv', type=bool).retrieve(ctx.options, default=False)
     verbosity_four = Argument('vvvv', type=bool).retrieve(ctx.options, default=False)

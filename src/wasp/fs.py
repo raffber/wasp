@@ -1,7 +1,7 @@
 import os
 import re
 from .node import FileNode
-from .task import Task, register_task
+from .task import Task
 from .util import Serializable
 from . import register
 
@@ -157,7 +157,7 @@ def files(*args):
             ret.append(File(f))
     return ret
 
-
+@register
 class RemoveTask(Task, Serializable):
 
     def __init__(self, fs, recursive=False):

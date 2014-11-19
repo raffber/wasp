@@ -3,15 +3,13 @@ from .options import OptionsCollection
 from .cache import Cache
 from .signature import SignatureProvider, FileSignature, SignatureStore
 from .arguments import Argument
-from .ui import Log
 from .environment import Environment
-from .result import TaskResultCollection
 from .util import load_module_by_path, Serializable
 from .tools import ToolError, NoSuchToolError
 from .tools import proxies
 from .fs import TOP_DIR, Directory
-from .store import Store
 from .defer import DeferredTaskCollection
+from .logging import Logger
 import os
 
 
@@ -21,8 +19,7 @@ class Context(object):
         # we need to get the initialization order right.
         # the simplest way to do this is to initialize things first
         # that have no dependencies
-        self._log = Log()
-        self._results = TaskResultCollection()
+        self._log = Logger()
         self.projectname = projectname
         # create the directories
         self._topdir = Directory(TOP_DIR,  make_absolute=True)
@@ -40,20 +37,18 @@ class Context(object):
         # create the cache
         self._cache = Cache(self._cachedir)
         self._deferred = DeferredTaskCollection()
-        # make sure to do this early on, otherwise
+        # make sure to do this early on
         # such that everything that depends on the cache
         # has valid data and does not accidently read old stuff
         self.load()
         # initialize options
         self._options = OptionsCollection()
-        self._store = Store(self._cache)
-        self._env = Environment(self._cache)
-        self._commands = []
+        self._env = Environment()
+        self._commands = {}
         self._signatures = SignatureProvider(self._cache)
         self._previous_signatures = SignatureStore(self._cache)
         self._tasks = TaskCollection()
         self._tooldir = Directory('wasp-tools')
-        self._results.load(self._cache.getcache('results'))
         self._tools = {}
         self._arguments = {}
 
@@ -145,10 +140,6 @@ class Context(object):
     @property
     def store(self):
         return self._store
-
-    @property
-    def results(self):
-        return self._results
 
     @property
     def commands(self):

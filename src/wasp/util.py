@@ -1,6 +1,6 @@
 import os
 import sys
-import imp
+import imp # TODO: ...
 from subprocess import Popen, PIPE
 import shlex
 from threading import Event as ThreadingEvent
@@ -35,51 +35,30 @@ class Factory(object):
         return cls.from_json(d)
 
     def from_json(self, d):
-        typename = d['__type__']
-        if typename == 'int':
-            value = int(d['data'])
-        elif typename == 'float':
-            value = float(d['data'])
-        elif typename == 'list':
-            value = []
-            for k, v in d.items():
-                value[int(k)] = self.from_json(v)
-        elif typename == 'dict':
+        if isinstance(d, dict) and '__type__' in d.keys():
+            value = self.create(d)
+        elif isinstance(d, list):
+            value = [self.from_json(v) for v in d]
+        elif isinstance(d, dict):
             value = {}
             for k, v in d.items():
                 value[k] = self.from_json(v)
-        elif typename == 'str':
-            value = str(d['data'])
-        else:
-            value = self.create(d)
+        else:  # primitives
+            value = d
         return value
 
     def to_json(self, arg):
-        d = {}
-        if isinstance(arg, int):
-            d['__type__'] = 'int'
-            d['data'] = str(arg)
-        elif isinstance(arg, str):
-            d['__type__'] = 'str'
-            d['data'] = str(arg)
-        elif isinstance(arg, float):
-            d['__type__'] = 'float'
-            d['data'] = str(arg)
-        elif isinstance(arg, list):
-            d['__type__'] = 'list'
-            index = 0
-            for item in arg:
-                d[str(index)] = self.to_json(item)
-                index += 1
-        elif isinstance(arg, dict):
-            d['__type__'] = 'dict'
+        ret = None
+        if isinstance(arg, dict):  # recurse
             for k, v in arg.items():
-                d[k] = self.to_json(v)
+                ret[k] = self.from_json(v)
+        elif isinstance(arg, list):  # recurse
+            ret = [self.to_json(v) for v in arg]
         elif isinstance(arg, Serializable):
-            d = arg.to_json()
-        else:
-            raise ValueError('argument must either be int,str,float,Serializable or a list/dict thereof.')
-        return d
+            ret = arg.to_json()
+        else:  # primitives
+            ret = arg
+        return ret
 
 
 class Serializable(object):

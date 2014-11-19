@@ -1,8 +1,7 @@
 from .task import Task
-from .result import TaskResult
 from .node import FileNode
 from .util import UnusedArgFormatter, run_command, Serializable
-from .task import register_task
+from .task import register
 from io import StringIO
 
 
@@ -68,7 +67,7 @@ class ShellTask(Task):
         return results
 
 
-@register_task
+@register
 class SerializableShellTask(ShellTask, Serializable):
     def __init__(self, sources=[], targets=[], children=[], cmd='', always=False):
         super(SerializableShellTask, self).__init__(sources=sources, targets=targets, children=children, cmd=cmd, always=always)

@@ -22,6 +22,9 @@ class Logger(object):
         if self._use_stdout:
             print(msg)
 
+    def configure(self, verbosity):
+        self._verbosity = verbosity
+
     def fatal(self, msg):
         self.log(msg, level=self.FATAL)
 
@@ -36,3 +39,8 @@ class Logger(object):
 
     def debug(self,  msg):
         self.log(msg, level=self.DEBUG)
+
+    def clone(self):
+        # TODO: ensure that io is thread save
+        return Logger(prepend=str(self._prepend), verbosity=self._verbosity
+                      , use_stdout=self._use_stdout, io=self._io)

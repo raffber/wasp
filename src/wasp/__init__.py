@@ -46,7 +46,6 @@ from .hooks import init, create_context
 from .fs import Directory
 from .generator import generate
 from .task import Task
-from .result import TaskResult
 from .shell import shell
 from .fs import Directory, TOP_DIR, file, files
 from .tools import tool

@@ -1,51 +1,63 @@
 Random thoughts
 -----------------------
 
- * make_nodes(':asdf') if a : is prepended, the string is considered a symbolic node
-   this can be used to define dependencies => ask thomas
-   if ':' is within filename, it must be escaped with '\', i guess that's very uncommon, so not really a problem
- * how do we remember nodes?! how do we konw if node was made? Use signature is guess? => SymbolicSignature?!
-   how do we invalidate?! make_nodes(':targets/my-binary').invalidate() this is kind of problematic as you can
-   link with.
- * task.depends(':asdf') adds a dependency to the task
- * task.produce(':asdf') adds a target to the task, somehow marks as result storage
- * ctx.factory all Serializable stuff is registered there, with @register
- * make sure thread savety is ensured if symbolic nodes are written, i.e. write them upon completion, result is just argument collection
- * allow people to name the build file either BUILD or build.py or just build?!
-
+ * make sure thread safety is ensured if symbolic nodes are written, i.e. write them upon completion, result is just argument collection
+ * does it really make sense to have prefix in context? i think this should just be a random argument
 
 Next Task
 ==========
+ * refactor environment: environment can be stored using a argumentcollection => argumentcollection.overwrite(environ)
+ * make environment inherit from argumentcollection? just read only?
  * implement all NotImplentedError raises
  * cache usage: always give cache object as argument in load() and save()
  * execution engine
 
-
-Implement before initial API stability
-=======================================
-
+Todos
+=======
+ * ABSOLUTELY make sure ctx is only reachable from main thread
+ * escape : in filename (.replace('\:', ':') at str[0:1])
  * automatically add deferred commands
- * unify cache usage in FooCollection classes, improve cache
- * go over argument usage again
- * verbosity
- * add postprocess step for options
- * dependencies
- * recursion
- * proper subproject handling
+ * ArgumentCollection can contain ArgumentCollection => WHY? SRSLY?
+ * dependencies (command internal using nodes, command external? just using required arguments?)
+ * proper subproject handling (implemented as plugin to the recursion algorithm)
  * wasp specific commands and options:
     - outsource into own module
     - postprocess step options decorator
     - clear cache: clear-cache
     - verbosity
-
-Refactor steps
-====================
-
  * some way to make commands run again if specified implict as a dependency for another command and the former has already
    completed successfully. Use case might be an updated git repo which gets pulled in by "./wasp fetch"
+ * do not allow context access within task execution! overwrite ctx with a lock proxy.
+
+Implement before initial API stability
+=======================================
+ * enable building only a specific target with: ./wasp <command> --target :whatever
+ * allow people to name the build file either BUILD or build.py or just build?!
+ * ArgumentCollection.load('asdf.json') to load an ArgumentCollection from a file
+ * recursion
+
+Refactor steps
+==============
+
 
 Dependency management
 ======================
+
+New
+-----
+
+ * we might need to use ".use()" for dependencies between commands
+    hopefully this can be avoided. E.g. by saying that if there is no
+    task producing a given node, the already produced node is used.
+    that would acutally be similiar to a filenode.
+
+class DependencyCheck(Task): contains dependency
+
+glib = cpp.check('glib').produce(':glib')
+myexec = cpp.compile('main.c').depends(':glib')
+
+Old
+-----
 
 class DependencyCheck(Task): contains dependency
 
@@ -60,13 +72,6 @@ myexec.depends(glib)
  * ctx.dependencies collects dependencies, dependency check task adds itself uppon success
  * myexec.use(ctx.dependencies['glib']) for using a previously saved dependency
 
-Todos
-=======
-
- * absolutely always save cache, even if exceptions
- * unify quote style
- * better files package support, rename directory to fs and also add a few tasks (copy, remove whatever)
- * implement options
 
 Recursion
 =========
@@ -93,6 +98,8 @@ Generators
  * while building, run generators for the targets that are created
  * add command_name='clean' to filter for command name
  * add tags='asdf', then wasp.generator(tags='asfd') can be run. => generator must include tag
+ * add a collect attribute, meaning all tasks are run before the generator is run. The generator is then invoked
+   with **all** sources.
 
 Declarative
 ============
