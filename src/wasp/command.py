@@ -1,5 +1,6 @@
 from .decorators import decorators
 
+
 class CommandFailedError(Exception):
     pass
 

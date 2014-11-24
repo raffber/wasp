@@ -71,29 +71,6 @@ class Serializable(object):
         raise NotImplementedError
 
 
-class Event(object):
-    # TODO: possibly use asyncio module, once its clear
-    # that it stays in the standard library
-    # also, this would require python3.4 at minimum
-    # one could also provide fallback options...
-    def __init__(self, loop):
-        self._funs = []
-        self._loop = loop
-
-    def connect(self, fun):
-        self._funs.append(fun)
-
-    def disconnect(self, fun):
-        self._funs.remove(fun)
-
-    def fire(self, *args, **kw):
-        self._loop.fire_event(self, args, kw)
-
-    def invoke(self, *args, **kw):
-        for fun in self._funs:
-            fun(*args, **kw)
-
-
 class CallableList(list):
 
     def __init__(self, *args, **kwargs):
@@ -119,6 +96,30 @@ class CallableList(list):
         return self._collect_returns_fun(ret)
 
 
+class Event(object):
+    # TODO: possibly use asyncio module, once its clear
+    # that it stays in the standard library
+    # also, this would require python3.4 at minimum
+    # one could also provide fallback options...
+    def __init__(self, loop):
+        self._funs = []
+        self._loop = loop
+
+    def connect(self, fun):
+        self._funs.append(fun)
+        return self
+
+    def disconnect(self, fun):
+        self._funs.remove(fun)
+
+    def fire(self, *args, **kw):
+        self._loop.fire_event(self, args, kw)
+
+    def invoke(self, *args, **kw):
+        for fun in self._funs:
+            fun(*args, **kw)
+
+
 class EventLoop(object):
     def __init__(self):
         self._threading_event = ThreadingEvent()
@@ -142,7 +143,7 @@ class EventLoop(object):
             for (evt, args, kw) in self._events:
                 evt.invoke(*args, **kw)
             self._events.clear()
-            # TODO: thread save this
+            # TODO: thread save this; lock on self._events
 
 
 def run_command(cmd, stdout=None, stderr=None, timeout=100):

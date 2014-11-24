@@ -10,6 +10,7 @@ from .tools import proxies
 from .fs import TOP_DIR, Directory
 from .defer import DeferredTaskCollection
 from .logging import Logger
+from .execution import execute
 import os
 
 
@@ -45,7 +46,7 @@ class Context(object):
         self._options = OptionsCollection()
         self._env = Environment()
         self._commands = {}
-        self._signatures = SignatureProvider(self._cache)
+        self._signatures = SignatureProvider()
         self._previous_signatures = SignatureStore(self._cache)
         self._tasks = TaskCollection()
         self._tooldir = Directory('wasp-tools')
@@ -149,7 +150,7 @@ class Context(object):
         d = self.cache.getcache('script-signatures')
         for fpath, signature in self._scripts_signatures.items():
             d[fpath] = signature.to_json()
-        self.signatures.save()
+        self.signatures.save(self._cache)
         self._deferred.save(self.cache)
         self.cache.save()
 
@@ -187,8 +188,5 @@ class Context(object):
         return self._deferred[commandname]
 
     def run_tasks(self):
-        #tree = RunnableDependencyTree(self.tasks)
-        jobs = Argument('jobs').require_type(int).retrieve(self.env, self.options, default=1)
-        #executor = TaskExecutionPool(tree, num_jobs=int(jobs))
-        #res = executor.run()
-        return None
+        jobs = Argument('jobs').require_type(int).retrieve_all(default=1)
+        execute(self.tasks, jobs=jobs)

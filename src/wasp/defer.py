@@ -1,19 +1,38 @@
 from .util import Serializable
-from . import ctx
+from . import ctx, register, factory
 
 
-class DeferredTaskCollection(dict):
+@register
+class DeferredTaskCollection(dict, Serializable):
 
     def add(self, task):
-        raise NotImplementedError
+        assert isinstance(task, Serializable), 'Task must be serializable if its execution should be deferrred'
+        self[task.identifier] = task
 
-    def load(self, cache):
-        raise NotImplementedError
+    @classmethod
+    def from_json(cls, d):
+        self = cls()
+        for k, v in d.items():
+            if k == '__type__':
+                continue
+            self.add(factory.from_json(d[k]))
+        return self
+
+    def to_json(self):
+        d = super().to_json()
+        for task in self:
+            assert isinstance(task, Serializable), 'Task must be serializable if its execution should be deferrred'
+            d[task.identifier] = task.to_json()
+        return d
 
     def save(self, cache):
-        raise NotImplementedError
+        cache['deferred'] = self
+
+    def load(self, cache):
+        if not 'deferred' in cache:
+            self.update(cache['deferred'])
 
 
 def defer(command_name, task):
-    assert isinstance(task, Serializable), 'Task must be serializable if it should be deferred to another command.'
+    assert isinstance(task, Serializable), 'Task must be serializable if its execution should be deferrred'
     ctx.deffered(command_name).add(task)
