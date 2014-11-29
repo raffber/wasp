@@ -1,5 +1,10 @@
-from .util import Factory
+from .util import Serializable
+from . import factory
 from .decorators import decorators
+
+
+# TODO: implemnt more options
+# TODO: implement group
 
 
 class OptionsCollection(dict):
@@ -20,7 +25,7 @@ class OptionsCollection(dict):
         raise NotImplementedError
 
 
-class Option(object):
+class Option(Serializable):
     def __init__(self, name, description, group=None):
         self._name = name
         self._description = description
@@ -43,30 +48,24 @@ class Option(object):
         raise NotImplementedError
 
     def to_json(self):
-        return {'key': self._key
-                , 'description': self._description
-                , 'type': self.typename}
+        return {'name': self._name
+                , 'description': self._description}
 
     def add_to_argparse(self, args):
         raise NotImplementedError
 
     @staticmethod
     def from_json(cls, d):
-        assert 'type' in d, 'Invalid json for options parsing! Delete cache!'
-        type_ = d['type']
-        return options_factory.create(type_, **d)
-
-
-options_factory = Factory(Option)
+        return cls(d['name'], d['description'])
 
 
 def sanitize_option_name(key):
-    return key.replace('_', '-')
+    return key.replace('_', '-').replace(' ', '-')
 
 
 class FlagOption(Option):
     def __init__(self, name, description, default=False):
-        super().__init__(name, description)
+        Option.__init__(name, description)
         self._value = False
         self._default = default
 
@@ -82,7 +81,7 @@ class FlagOption(Option):
     def add_to_arparse(self, args):
         key = sanitize_option_name(self._key)
         args.add_option('--' + key, action='store_true', default=self._default,
-            help=self._description, dest=key)
+                        help=self._description, dest=key)
 
     def from_argparse(self, args):
         key = sanitize_option_name(self._key)
@@ -92,49 +91,37 @@ class FlagOption(Option):
         self._value = val
 
     @classmethod
-    def from_json(cls, json_dict):
-        description = json_dict.get('description', None)
-        assert description is not None
-        key = json_dict.get('key', None)
-        assert key is not None
-        value = json_dict.get('value', False)
-        assert value is not None
-        ret = cls(key, description)
-        ret.value = value
-        return ret
+    def from_json(cls, d):
+        return cls(str(d['name']), str(d['description']), default=bool(d['default']))
 
     def to_json(self):
         ret = super().to_json()
         ret['value'] = self.value
         return ret
 
-    @property
-    def type_(self):
-        return 'FlagOption'
 
-
-options_factory.register(FlagOption)
+factory.register(FlagOption)
 
 
 class EnableOption(Option):
     pass
 
 
-options_factory.register(EnableOption)
+factory.register(EnableOption)
 
 
 class StringOption(Option):
     pass
 
 
-options_factory.register(StringOption)
+factory.register(StringOption)
 
 
 class IntOption(Option):
     pass
 
 
-options_factory.register(IntOption)
+factory.register(IntOption)
 
 
 class options(object):

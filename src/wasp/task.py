@@ -29,8 +29,6 @@ class Task(object):
             self._id = identifier
         self._run_list = CallableList().arg(self)
         self._run_list.append(self._run)
-        self._initialize_list = CallableList().arg(self)
-        self._initialize_list.append(self._initialize)
         self._prepare_list = CallableList().arg(self)
         self._prepare_list.append(self._prepare)
         self._success_list = CallableList().arg(self)
@@ -69,9 +67,10 @@ class Task(object):
 
     def check(self):
         """
-        Called before task execution (also before initialize and prepare). This function
+        Called before task execution (also before prepare). This function
         retrieves all information from dependency nodes and checks if all required arguments
         were given. If not, it is attempted to retrieve the required information using :ref:Argument.retrieve_all().
+        This function is called in the main thread and may access the wasp-context.
         If this fails as well, a :ref:MissingArgumentError is thrown.
         """
         for node in self._used_nodes:
@@ -88,13 +87,6 @@ class Task(object):
                                                ' Required argument "{1}" is empty.'.format(self.identifier, arg.name))
 
     @property
-    def initialize(self):
-        return self._initialize_list
-
-    def _initialize(self):
-        pass
-
-    @property
     def prepare(self):
         return self._prepare_list
 
@@ -102,17 +94,17 @@ class Task(object):
         pass
 
     @property
-    def success(self):
+    def on_success(self):
         return self._success_list
 
-    def _success(self):
+    def _on_success(self):
         pass
 
     @property
-    def fail(self):
+    def on_fail(self):
         return self._fail_list
 
-    def _fail(self):
+    def _on_fail(self):
         pass
 
     @property
@@ -156,6 +148,7 @@ class Task(object):
         """
         nodes = make_nodes(args)
         self.targets.extend(nodes)
+        return self
 
     def depends(self, *args, use=True):
         """
@@ -170,6 +163,7 @@ class Task(object):
         for node in nodes:
             if isinstance(node, SymbolicNode):
                 self.use(node.read())
+        return self
 
     def set_has_run(self, has_run):
         self._has_run = has_run
@@ -240,6 +234,7 @@ class Task(object):
                 self.use(*a)
         for k, a in kw.items():
             self.use_arg(Argument(k).assign(a))
+        return self
 
     def use_node(self, node):
         node = make_node(node)
@@ -266,6 +261,7 @@ class Task(object):
         elif isinstance(arguments, list):
             arguments = [Argument(arg) if isinstance(arg, str) else arg for arg in arguments]
         self._required_arguments.extend(arguments)
+        return self
 
 
 class TaskGroup(Task):
@@ -307,9 +303,25 @@ class TaskGroup(Task):
             ret.extend(self._recursive_flatten_targets(c))
         return ret
 
+    def use(self, *args, **kw):
+        for child in self.children:
+            child.use(*args, **kw)
+        return self
+
+
+def task_to_json(task):
+    raise NotImplementedError
+
+
+def task_from_json(d):
+    raise NotImplementedError
+
 
 def group(*args):
-    if len(args) == 1 and isinstance(args, list):
+    if len(args) == 1 and isinstance(args[0], list):
         return group(*args)
+    elif len(args) == 1:
+        return args[0]
     for arg in args:
         assert isinstance(arg, Task), '*args must be a list of Tasks'
+    return TaskGroup(args)

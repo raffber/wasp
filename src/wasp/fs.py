@@ -92,6 +92,12 @@ class File(Serializable):
         root, ext = os.path.splitext(self._path)
         return File(root + new, make_absolute=self._absolute)
 
+    def append_extension(self, append):
+        raise NotImplementedError
+
+    def to_builddir(self):
+        raise NotImplementedError
+
     @property
     def extension(self):
         return os.path.splitext(self._path)[1]
@@ -156,6 +162,7 @@ def files(*args):
         elif isinstance(f, str):
             ret.append(File(f))
     return ret
+
 
 @register
 class RemoveTask(Task, Serializable):

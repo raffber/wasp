@@ -2,8 +2,8 @@ from uuid import uuid4 as generate_uuid
 import os
 from . import ctx
 from .signature import FileSignature, Signature
-from .fs import File
 from .arguments import ArgumentCollection
+from .task import Task
 
 # TODO: is signature attribute actually required?!
 
@@ -45,6 +45,10 @@ class FileNode(Node):
     @property
     def path(self):
         return self._path
+
+    def to_file(self):
+        from .fs import File
+        return File(self._path)
 
     @property
     def extension(self):
@@ -97,25 +101,16 @@ def is_symbolic_node_string(arg):
 
 def make_nodes(arg):
     lst = []
-    if isinstance(arg, str):
-        if is_symbolic_node_string(arg):
-            lst = [SymbolicNode(arg)]
-        else:
-            lst = [FileNode(arg)]
-    elif isinstance(arg, File):
-        lst = [FileNode(arg.path)]
-    elif isinstance(arg, Node):
-        lst = [arg]
-    elif isinstance(arg, list):
+    if isinstance(arg, list):
         for item in arg:
             lst.extend(make_nodes(item))
-    else:
-        raise TypeError('Invalid type passed to make_nodes, expected Node, string or list thereof.')
-    return lst
+        return lst
+    elif isinstance(arg, Task):
+        return arg.targets
+    return [make_node(arg)]
 
 
 def make_node(arg):
-    ret = None
     if isinstance(arg, str):
         if is_symbolic_node_string(arg):
             return SymbolicNode(arg)
@@ -125,6 +120,8 @@ def make_node(arg):
         return FileNode(arg.path)
     elif isinstance(arg, Node):
         return arg
+    elif isinstance(arg, Task):
+        return arg.targets[0]
     raise TypeError('Invalid type passed to make_nodes, expected Node, string or list thereof.')
 
 

@@ -1,6 +1,8 @@
 from .task import Task
 from .util import EventLoop, Event
 
+from threading import Thread
+
 
 # TODO: task timeouts -> kill hanging tasks
 
@@ -40,11 +42,9 @@ class RunnableTaskContainer(object):
 
 class DAG(object):
     def __init__(self, tasks):
-        self._task = tasks
-        # n = num task, m = average number of target nodes per task
-        # TODO: create map from target => task --> O(m*n)
-        # TODO: add dependencies to every task, i.e. add all tasks producing each target --> O(m*n)
-        # TODO:
+        self._tasks = []
+        self._target_map = []
+        self.insert(self._tasks)
         self._runnable_tasks = []
         self._waiting_tasks = tasks
         self._executing_tasks = []
@@ -70,6 +70,24 @@ class DAG(object):
         task.finished = True
         self._executing_tasks.remove(task)
 
+    def insert(self, tasks):
+        self._tasks.extend(tasks)
+        # n = number of tasks, m = average number of source nodes per task
+        # p = average number of tasks producing a target
+        # create map from target => task --> O(m*n)
+        self._target_map = {}
+        for task in tasks:
+            for target in task.targets:
+                if target.identifier not in self._target_map:
+                    self._target_map[target.identifier] = []
+                self._target_map[target.identifier] = task
+        # add dependencies to every task, i.e. add all tasks producing each target --> O(m*n*p)
+        for task in tasks:
+            for source in task.sources:
+                if source.identifier in self._target_map.keys():
+                    additional_deps = self._target_map[source.identifier]
+                    task.dependencies.extend(additional_deps)
+
     def has_finished(self):
         return len(self._runnable_tasks) == 0 and len(self._waiting_tasks) == 0 and len(self._executing_tasks) == 0
 
@@ -94,6 +112,8 @@ class Executor(object):
     def task_success(self, task):
         self._current_jobs -= 1
         self._dag.task_finished(task)
+        spawned = task.task.spawn()
+        self._dag.insert(spawned)
         if self._cancel:
             if self._current_jobs == 0:
                 # no jobs running anymore, so quit the loop
@@ -103,9 +123,19 @@ class Executor(object):
 
     def start(self):
         while self._current_jobs < self._jobs:
+            if self._dag.has_finished():
+                self._loop.cancel()
+                break
             # attempt to start new task
             task = self._dag.pop_runnable_task()
-            # TODO: start new thread with task
+            if task is None:
+                self._loop.cancel()
+                break
+            # TODO: use a thread-pool
+            callable_ = lambda: run_task(task, self._success_event, self._failed_event)
+            thread = Thread(target=callable_)
+            task.task.check()
+            thread.start()
             self._current_jobs += 1
 
     def cancel(self):
@@ -116,17 +146,21 @@ def execute(tasks, jobs=1):
     tasks = flatten(tasks)
     dag = DAG(tasks)
     loop = EventLoop()
-    executor = Executor()
+    executor = Executor(dag, loop, jobs=jobs)
     executor.start()
     loop.run()
 
 
 def run_task(task, success_event=None, failed_event=None):
-    # task.prepare()
-    # task.initialize()
-    # task.run()
-    # task.
-    if not task.task.success and failed_event is not None:
+    real_task = task.task
+    real_task.prepare()
+    real_task.run()
+    if real_task.success:
+        real_task.on_success()
+    else:
+        real_task.on_fail()
+    real_task.postprocess()
+    if not real_task.success and failed_event is not None:
         failed_event.fire(task)
     elif success_event is not None:
         success_event.fire(task)

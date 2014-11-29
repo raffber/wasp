@@ -1,19 +1,20 @@
-from wasp import ctx
+from wasp import ctx, File, group, shell
 import wasp
 
-d = wasp.tool('d')
 
 @wasp.init
 def init():
-    ctx.load_tool('d')  # injects the actual tools
-
+    ctx.load_tool('d')
 
 @wasp.build
 def build():
-    pass
-    # ret = []
-    # cp = wasp.shell('cp {CPFLAGS} {TGT} {SRC}', sources=, targets=)
-    # ret += wasp.copy(sources=cp.targets, )
-    # ret += d.compile()
-
+    f = File('notes')
+    cp = shell('cp {CPFLAGS} {SRC} {TGT}',
+                    sources=f, targets=f.to_builddir()
+                    ).use(cpflags='-r')
+    d = ctx.tool('d')
+    one = d.compile('one.d')
+    two = d.compile('two.d')
+    link = d.link(one, two)
+    return cp, group(one, two, link).use(dc='/usr/lib/dmd')
 

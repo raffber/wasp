@@ -89,6 +89,7 @@ class Signature(Serializable):
             self._value = value
         return value
 
+
 @register
 class FileSignature(Signature):
     def __init__(self, path, value=None, valid=True):

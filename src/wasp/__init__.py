@@ -38,6 +38,12 @@ def require_version(*args):
     VERSION.is_compatible(major, minor, point)
 
 
+from .util import Factory, Serializable
+
+
+factory = Factory()
+
+
 from .context import Context
 from .options import options
 from .arguments import Argument,  MissingArgumentError
@@ -45,16 +51,9 @@ from .command import build, configure, install, command
 from .hooks import init, create_context
 from .fs import Directory
 from .generator import generate
-from .task import Task
+from .task import Task, group
 from .shell import shell
 from .fs import Directory, TOP_DIR, file, files
 from .tools import tool
-from .util import Factory, Serializable
 
 
-factory = Factory(Serializable)
-
-
-class register(object):
-    def __init__(self, cls):
-        factory.register(cls)

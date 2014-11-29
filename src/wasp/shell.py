@@ -1,7 +1,8 @@
 from .task import Task
 from .node import FileNode
+from .arguments import Argument
 from .util import UnusedArgFormatter, run_command, Serializable
-from .task import register
+from . import register
 from io import StringIO
 
 
@@ -14,7 +15,7 @@ class ShellTask(Task):
     def cmd(self):
         return self._cmd
 
-    def finished(self, exit_code, out, err):
+    def _finished(self, exit_code, out, err):
         return exit_code == 0
 
     def _process_args(self):
@@ -37,34 +38,35 @@ class ShellTask(Task):
             kw[arg.upperkey] = str(val)
         return kw
 
-    def prepare_args(self, kw):
+    def _prepare_args(self, kw):
         return kw
 
-    def format_cmd(self, **kw):
+    def _format_cmd(self, **kw):
         s = UnusedArgFormatter().format(self.cmd, **kw)
         return s
 
-    def run(self):
+    def _run(self):
         kw = self._process_args()
-        kw = self.prepare_args(kw)
-        commandstring = self.format_cmd(**kw)
+        kw = self._prepare_args(kw)
+        commandstring = self._format_cmd(**kw)
         out = StringIO()
         err = StringIO()
         exit_code = run_command(commandstring, stdout=out, stderr=err)
         print(commandstring + ': ' + str(exit_code))
         self.success = exit_code == 0
         self.has_run = True
-        ret = self.finished(exit_code, out.read(), err.read())
-        results = []
+        ret = self._finished(exit_code, out.read(), err.read())
         if ret is not None:
-            if not isinstance(ret, list):
+            if not isinstance(ret, list) or isinstance(ret, tuple):
                 ret = [ret]
+            first = True
             for r in ret:
-                if isinstance(r, bool):
+                if first and isinstance(r, bool):
                     self._success = r
-                elif isinstance(r, TaskResult):
-                    results.append(r)
-        return results
+                elif isinstance(r, Argument):
+                    self._result.add(r)
+                # TODO: more...
+                first = False
 
 
 @register

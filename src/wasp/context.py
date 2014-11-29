@@ -67,7 +67,7 @@ class Context(object):
 
     def load_tool(self, toolname, *args, path=None):
         if toolname in self._tools:
-            ret =self._tools[toolname]
+            ret = self._tools[toolname]
         else:
             if path is None:
                 path = self._tooldir.path
@@ -78,7 +78,7 @@ class Context(object):
                 self._tools[toolname] = module
                 if toolname in proxies.keys():
                     # inject the tool proxy
-                    object.__setattr__(proxies[toolname], "_obj", module)
+                    proxies[toolname].__assign_object(module)
                 ret = module
             except FileNotFoundError:
                 raise NoSuchToolError('No such tool: {0}'.format(toolname))
