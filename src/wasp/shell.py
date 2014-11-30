@@ -1,6 +1,6 @@
 from .task import Task
 from .node import FileNode
-from .arguments import Argument
+from .argument import Argument
 from .util import UnusedArgFormatter, run_command, Serializable
 from . import factory
 from io import StringIO

@@ -1,7 +1,7 @@
 from .node import make_nodes, is_symbolic_node_string, SymbolicNode, make_node
 from uuid import uuid4 as uuid
 from .util import CallableList
-from .arguments import Argument, ArgumentCollection
+from .argument import Argument, ArgumentCollection
 from .logging import Logger
 from functools import reduce
 import operator

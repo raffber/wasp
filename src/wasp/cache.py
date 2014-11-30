@@ -17,7 +17,7 @@ class Cache(dict):
             cache = {}
             self[prefix] = cache
             return cache
-        return self[prefix]
+        return super().__getitem__(prefix)
 
     def __getitem__(self, prefix):
         # automatically add dict if it's not there yet

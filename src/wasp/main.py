@@ -30,7 +30,7 @@ def create_context(module):
             load_module_by_path(fpath)
         context = Context(recurse_files=recurse)
     import wasp
-    object.__setattr__(wasp.ctx, "_obj", context)
+    wasp.ctx.__assign_object(context)
 
 
 def handle_no_command(options):
@@ -92,8 +92,8 @@ def handle_commands(options):
         handle_no_command(options)
         return
     executed_comands = []
-for command_name in str_commands:
-        run_command(command_name, executed_comands)
+    for command_name in str_commands:
+            run_command(command_name, executed_comands)
 
 
 def run_file(fpath):

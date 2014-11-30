@@ -46,10 +46,10 @@ factory = Factory()
 
 from .context import Context
 from .options import options
-from .arguments import Argument,  MissingArgumentError
+from .argument import Argument,  MissingArgumentError
 from .command import build, configure, install, command
 from .hooks import init, create_context
-from .fs import Directory
+from .fs import Directory, File
 from .generator import generate
 from .task import Task, group
 from .shell import shell

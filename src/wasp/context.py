@@ -2,7 +2,7 @@ from .task_collection import TaskCollection
 from .options import OptionsCollection
 from .cache import Cache
 from .signature import SignatureProvider, FileSignature, SignatureStore
-from .arguments import Argument
+from .argument import Argument
 from .environment import Environment
 from .util import load_module_by_path, Serializable
 from .tools import ToolError, NoSuchToolError
@@ -154,8 +154,7 @@ class Context(object):
 
     def load(self):
         self._cache.load()
-        self._deferred.load(self.cache)
-        signatures = self._cache.getcache('script-signatures')
+        signatures = self._cache.prefix('script-signatures')
         invalid = False
         for (fpath, signature) in self._scripts_signatures.items():
             ser_sig = signatures.get(fpath, None)
@@ -165,8 +164,8 @@ class Context(object):
                 continue
             old_sig = FileSignature.from_json(ser_sig)
             if old_sig != signature:
-                self.log.info('Build scripts have changed since last execution!' \
-                                'All previous configurations have been cleared!')
+                self.log.info('Build scripts have changed since last execution!'
+                              'All previous configurations have been cleared!')
                 invalid = True
                 break
         if invalid:

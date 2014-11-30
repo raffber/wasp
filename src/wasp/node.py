@@ -2,7 +2,7 @@ from uuid import uuid4 as generate_uuid
 import os
 from . import ctx
 from .signature import FileSignature, Signature
-from .arguments import ArgumentCollection
+from .argument import ArgumentCollection
 
 # TODO: is signature attribute actually required?!
 

@@ -2,7 +2,7 @@ from .decorators import decorators
 import argparse
 from . import ctx, options
 from .options import FlagOption
-from .arguments import Argument
+from .argument import Argument
 import sys
 
 
