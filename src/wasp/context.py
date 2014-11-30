@@ -8,7 +8,6 @@ from .util import load_module_by_path, Serializable
 from .tools import ToolError, NoSuchToolError
 from .tools import proxies
 from .fs import TOP_DIR, Directory
-from .defer import DeferredTaskCollection
 from .logging import Logger
 from .execution import execute
 import os
@@ -37,7 +36,6 @@ class Context(object):
             self._scripts_signatures[fpath] = FileSignature(fpath)
         # create the cache
         self._cache = Cache(self._cachedir)
-        self._deferred = DeferredTaskCollection()
         # make sure to do this early on
         # such that everything that depends on the cache
         # has valid data and does not accidently read old stuff

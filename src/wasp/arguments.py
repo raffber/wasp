@@ -1,6 +1,6 @@
 from .environment import Environment
 from .options import OptionsCollection
-from . import ctx, factory, register
+from . import ctx, factory
 from .util import Serializable
 
 
@@ -8,7 +8,6 @@ class MissingArgumentError(Exception):
     pass
 
 
-@register
 class ArgumentCollection(dict, Serializable):
 
     def add(self, arg):
@@ -29,7 +28,9 @@ class ArgumentCollection(dict, Serializable):
         return self
 
 
-@register
+factory.register(ArgumentCollection)
+
+
 class Argument(Serializable):
 
     def __init__(self, key, value=None, type=str):
@@ -116,3 +117,6 @@ class Argument(Serializable):
     def assign(self, value):
         self.value = value
         return self
+
+
+factory.register(Argument)

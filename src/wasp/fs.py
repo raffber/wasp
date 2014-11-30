@@ -3,7 +3,7 @@ import re
 from .node import FileNode
 from .task import Task
 from .util import Serializable
-from . import register
+from . import factory
 
 MODULE_DIR = os.path.realpath(os.path.dirname(__file__))
 TOP_DIR = os.path.realpath(os.path.join(MODULE_DIR, '../..'))
@@ -25,7 +25,9 @@ def sanitize_path(fpath):
     return fpath
 
 
-class Directory(object):
+class Directory(Serializable):
+    # TODO: implement serializable
+
     def __init__(self, path, make_absolute=False):
         """
         Creates a directory object of the given path.
@@ -65,7 +67,9 @@ class Directory(object):
             pass
 
 
-@register
+factory.register(Directory)
+
+
 class File(Serializable):
     # TODO: implement serializable
 
@@ -108,6 +112,9 @@ class File(Serializable):
 
     def __str__(self):
         return self._path
+
+
+factory.register(File)
 
 
 class FileCollection(list):
@@ -164,7 +171,6 @@ def files(*args):
     return ret
 
 
-@register
 class RemoveTask(Task, Serializable):
 
     def __init__(self, fs, recursive=False):
@@ -185,6 +191,9 @@ class RemoveTask(Task, Serializable):
     @classmethod
     def from_json(cls, d):
         raise NotImplementedError
+
+
+factory.register(RemoveTask)
 
 
 def remove(*args):

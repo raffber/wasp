@@ -3,7 +3,6 @@ import os
 from . import ctx
 from .signature import FileSignature, Signature
 from .arguments import ArgumentCollection
-from .task import Task
 
 # TODO: is signature attribute actually required?!
 
@@ -100,6 +99,7 @@ def is_symbolic_node_string(arg):
 
 
 def make_nodes(arg):
+    from .task import Task
     lst = []
     if isinstance(arg, list):
         for item in arg:
@@ -111,6 +111,8 @@ def make_nodes(arg):
 
 
 def make_node(arg):
+    from .fs import File
+    from .task import Task
     if isinstance(arg, str):
         if is_symbolic_node_string(arg):
             return SymbolicNode(arg)

@@ -2,7 +2,7 @@ from .task import Task
 from .node import FileNode
 from .arguments import Argument
 from .util import UnusedArgFormatter, run_command, Serializable
-from . import register
+from . import factory
 from io import StringIO
 
 
@@ -69,18 +69,5 @@ class ShellTask(Task):
                 first = False
 
 
-@register
-class SerializableShellTask(ShellTask, Serializable):
-    def __init__(self, sources=[], targets=[], children=[], cmd='', always=False):
-        super(SerializableShellTask, self).__init__(sources=sources, targets=targets, children=children, cmd=cmd, always=always)
-
-    def to_json(self):
-        raise NotImplementedError
-
-    @classmethod
-    def from_json(cls, d):
-        raise NotImplementedError
-
-
 def shell(cmd, sources=[], targets=[], always=False):
-    return SerializableShellTask(sources=sources, targets=targets, cmd=cmd, always=always)
+    return ShellTask(sources=sources, targets=targets, cmd=cmd, always=always)

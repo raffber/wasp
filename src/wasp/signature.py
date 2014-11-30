@@ -1,7 +1,7 @@
 from .util import Serializable, b2a
 from uuid import uuid4 as generate_uuid
 from hashlib import md5
-from . import register, ctx, factory
+from . import ctx, factory
 from json import dumps
 import os
 
@@ -90,7 +90,6 @@ class Signature(Serializable):
         return value
 
 
-@register
 class FileSignature(Signature):
     def __init__(self, path, value=None, valid=True):
         assert path is not None, 'Path must be given for file signature'
@@ -123,6 +122,9 @@ class FileSignature(Signature):
         return value
 
 
+factory.register(FileSignature)
+
+
 class CacheSignature(Signature):
     def __init__(self, identifier, prefix=None, key=None, value=None, valid=True):
         super().__init__(value, valid=valid, identifier=identifier)
@@ -151,3 +153,6 @@ class CacheSignature(Signature):
         value = b2a(m.digest())
         self._value = value
         return value
+
+
+factory.register(CacheSignature)
