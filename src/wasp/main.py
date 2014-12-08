@@ -3,8 +3,11 @@ from .decorators import decorators
 from .context import Context
 from .task import Task
 from .command import CommandFailedError
+from .options import OptionsCollection
+from .cmdline import OptionHandler
 from . import ctx
 import os
+import argparse
 
 
 class EmptyCommandOption(object):
@@ -12,6 +15,15 @@ class EmptyCommandOption(object):
 
 
 def handle_options():
+    # parser = argparse.ArgumentParser(description='The wasp-build system.')
+    # options = OptionsCollection()
+    # for options_populator in decorators.options:
+    #     options_populator(options)
+    # command_names = set(map(lambda x: x.name, decorators.commands))
+    # for name in command_names:
+    #     parser.add_argument(name)
+    handler = OptionHandler()
+
     raise NotImplementedError
 
 
@@ -101,7 +113,6 @@ def run_file(fpath):
     create_context(module)
     for hook in decorators.init:
         hook()
-
     parsed = handle_options()
     handle_commands(parsed)
     ctx.save()

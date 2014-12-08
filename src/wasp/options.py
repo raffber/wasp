@@ -1,28 +1,42 @@
 from .util import Serializable
 from . import factory
-from .decorators import decorators
+from .decorators import decorators, FunctionDecorator
 
 
 # TODO: implemnt more options
-# TODO: implement group
 
 
 class OptionsCollection(dict):
+
+    def __init__(self, groupname=None):
+        super().__init__()
+        self._groups = {}
+        self._groupname = groupname
+
+    @property
+    def groupname(self):
+        return self._groupname
 
     def add(self, option):
         self[option.name] = option
 
     def add_to_argparse(self, args):
-        raise NotImplementedError
+        for option in self.values():
+            option.add_to_argparse(args)
+        for group in self._groups.values():
+            group.add_to_argparse(args)
 
     def retrieve_from_dict(self, args):
         raise NotImplementedError
 
     def group(self, groupname):
-        raise NotImplementedError
+        if groupname not in self._groups.keys():
+            self._groups[groupname] = OptionsCollection()
+        return self._groups[groupname]
 
     def remove_group(self, groupname):
-        raise NotImplementedError
+        if groupname in self._groups.keys():
+            del self._groups[groupname]
 
 
 class Option(Serializable):
@@ -65,7 +79,7 @@ def sanitize_option_name(key):
 
 class FlagOption(Option):
     def __init__(self, name, description, default=False):
-        Option.__init__(name, description)
+        super().__init__(name, description)
         self._value = False
         self._default = default
 
@@ -78,7 +92,8 @@ class FlagOption(Option):
 
     value = property(get_value, set_value)
 
-    def add_to_arparse(self, args):
+    def add_to_argparse(self, args):
+        # TODO: groups are ignored for the time being.
         key = sanitize_option_name(self._key)
         args.add_option('--' + key, action='store_true', default=self._default,
                         help=self._description, dest=key)
@@ -124,14 +139,11 @@ class IntOption(Option):
 factory.register(IntOption)
 
 
-class options(object):
-    def __init__(self, *commands):
+class options(FunctionDecorator):
+    def __init__(self, f, *commands):
+        super().__init__(f)
+        self.commands = commands
         for com in commands:
             assert isinstance(com, str), 'commands must be given as strings'
-        self.commands = commands
-        self.fun = None
-
-    def __call__(self, f):
         decorators.options.append(self)
-        self.fun = f
-        return f
+

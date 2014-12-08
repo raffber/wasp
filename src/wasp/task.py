@@ -309,14 +309,6 @@ class TaskGroup(Task):
         return self
 
 
-def task_to_json(task):
-    raise NotImplementedError
-
-
-def task_from_json(d):
-    raise NotImplementedError
-
-
 def group(*args):
     if len(args) == 1 and isinstance(args[0], list):
         return group(*args)

@@ -21,23 +21,30 @@ class OptionHandler(object):
         self._verbosity = 0
         self._argparse = argparse.ArgumentParser(description='Welcome to {0}'.format(ctx.projectname))
         added_commands = []
+        # create a set of command names that can be called
+        command_names = set(map(lambda x: x.name, decorators.commands))
+        # in case there are multiple commands with different description, we just take
+        # the last one given.
+        descriptions = {}
         for com in decorators.commands:
             if com.name in added_commands:
                 ctx.commands.append(com)
                 continue
             added_commands.append(com.name)
             ctx.commands.append(com)
+            descriptions[com.name] = com.description
             # TODO: sort by occurance in sys.argv
-            self._argparse.add_argument(com.name, help=com.description, action=CommandAction, default='', nargs='?')
+        for name in command_names:
+            self._argparse.add_argument(name, help=descriptions[name], action=CommandAction, default='', nargs='?')
         for option_decorator in decorators.options:
             if len(option_decorator.commands) != 0:
                 if option_decorator.commands in sys.argv:
-                    option_decorator.fun(ctx.options)
+                    option_decorator(ctx.options)
                 else:
                     pass  # TODO: unused options collection! such that previous options can still be retrieved
                     # mark the retrieved options as unused and then add them to the optionscollection as well
             else:
-                option_decorator.fun(ctx.options)
+                option_decorator(ctx.options)
         ctx.options.add_to_argparse(self._argparse)
         parsed = self._argparse.parse_args()
         ctx.options.retrieve_from_dict(vars(parsed))

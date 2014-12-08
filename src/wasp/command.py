@@ -1,4 +1,4 @@
-from .decorators import decorators
+from .decorators import decorators, FunctionDecorator
 
 
 class CommandFailedError(Exception):
@@ -66,23 +66,27 @@ class CleanCommand(Command):
         super().__init__('clean', fun, description='Clean generated files.')
 
 
-class build(object):
+class build(FunctionDecorator):
     def __init__(self, f):
+        super().__init__(f)
         decorators.commands.append(BuildCommand(f))
 
 
-class install(object):
+class install(FunctionDecorator):
     def __init__(self, f):
+        super().__init__(f)
         decorators.append(InstallCommand(f))
 
 
-class configure(object):
+class configure(FunctionDecorator):
     def __init__(self, f):
+        super().__init__(f)
         decorators.commands.append(ConfigureCommand(f))
 
 
-class clean(object):
+class clean(FunctionDecorator):
     def __init__(self, f):
+        super().__init__(f)
         decorators.commands.append(CleanCommand(f))
 
 

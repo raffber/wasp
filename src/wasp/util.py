@@ -1,7 +1,7 @@
 import threading
 import os
 import sys
-import imp # TODO: ...
+import imp  # TODO: ...
 from subprocess import Popen, PIPE
 import shlex
 from threading import Event as ThreadingEvent

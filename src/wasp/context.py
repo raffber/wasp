@@ -43,7 +43,7 @@ class Context(object):
         # initialize options
         self._options = OptionsCollection()
         self._env = Environment()
-        self._commands = {}
+        self._commands = []
         self._signatures = SignatureProvider()
         self._previous_signatures = SignatureStore(self._cache)
         self._tasks = TaskCollection()
