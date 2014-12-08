@@ -27,6 +27,13 @@ class ArgumentCollection(dict, Serializable):
             self.add(arg)
         return self
 
+    def __getitem__(self, key):
+        assert isinstance(key, str), 'ArgumentCollection keys ' \
+                                      'must be strings, found: {0}'.format(type(key).__name__)
+        if key not in self.keys():
+            self[key] = Argument(key)
+        return super().__getitem__(key)
+
 
 factory.register(ArgumentCollection)
 
@@ -41,7 +48,7 @@ class Argument(Serializable):
         self._value = None
         self._required_type = None
         self._use_type(type)
-        self._set_value(value)
+        self.set_value(value)
 
     def to_json(self):
         d = super().to_json()
@@ -59,10 +66,10 @@ class Argument(Serializable):
         return self._value
 
     def _use_type(self, tp):
-        assert issubclass(tp, Serializable) or tp == str or \
-            tp == int or tp == float or tp == list or tp == dict
+        assert tp == str or \
+            tp == int or tp == bool or tp == float or tp == list or tp == dict or issubclass(tp, Serializable)
         self._required_type = tp
-        self._check_convert_value(self.value)
+        self.set_value(self.value)
 
     def set_value(self, value):
         """
@@ -70,8 +77,10 @@ class Argument(Serializable):
         """
         if self._required_type is not None and value is not None:
             assert isinstance(value, self._required_type),\
-                'Argument {0} must be of type {1}!'.format(self.lowerkey, str(self._required_type))
-        self._value = (self._required_type)(value)
+                'Argument {0} must be of type {1}, but found type {2}!' \
+                ''.format(self.lowerkey, self._required_type.__name__, type(value).__name__)
+            self._value = (self._required_type)(value)
+        self._value = value
 
     value = property(get_value, set_value)
 
@@ -81,7 +90,9 @@ class Argument(Serializable):
             # environment variable
             return arg.get(self.upperkey)
         elif isinstance(arg, OptionsCollection):
-            return arg.get(self.lowerkey, None)
+            option = arg.all().get(self.lowerkey, None)
+            if option:
+                return option.value
         elif isinstance(arg, dict):
             # keyword argument
             return arg.get(self.lowerkey, None)
@@ -107,7 +118,7 @@ class Argument(Serializable):
 
     def require_type(self, tp):
         self._required_type = tp
-        self._use_type(self._value)
+        self.set_value(self._value)
         return self
 
     @property

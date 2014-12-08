@@ -27,7 +27,10 @@ class OptionsCollection(dict):
             group.add_to_argparse(args)
 
     def retrieve_from_dict(self, args):
-        raise NotImplementedError
+        for option in self.values():
+            option.retrieve_from_dict(args)
+        for group in self._groups.values():
+            group.retrieve_from_dict(args)
 
     def group(self, groupname):
         if groupname not in self._groups.keys():
@@ -38,16 +41,35 @@ class OptionsCollection(dict):
         if groupname in self._groups.keys():
             del self._groups[groupname]
 
+    def all(self):
+        ret = dict(self)
+        for group in self._groups.values():
+            ret.update(group.all())
+        return ret
+
+
+def sanitize_name(name):
+    return name.replace(' ', '_').lower()
+
+
+def name_to_key(name):
+    return name.replace('_', '_')
+
 
 class Option(Serializable):
     def __init__(self, name, description, group=None):
-        self._name = name
+        self._name = sanitize_name(name)
+        self._key = name_to_key(self._name)
         self._description = description
         self._group = group
 
     @property
     def name(self):
         return self._name
+
+    @property
+    def key(self):
+        return self._key
 
     @property
     def group(self):
@@ -57,24 +79,20 @@ class Option(Serializable):
     def description(self):
         return self._description
 
-    @property
-    def typename(self):
-        raise NotImplementedError
-
     def to_json(self):
-        return {'name': self._name
-                , 'description': self._description}
+        d = super.to_json()
+        d.update({'name': self._name, 'description': self._description})
+        return d
 
     def add_to_argparse(self, args):
+        raise NotImplementedError
+
+    def retrieve_from_dict(self, args):
         raise NotImplementedError
 
     @staticmethod
     def from_json(cls, d):
         return cls(d['name'], d['description'])
-
-
-def sanitize_option_name(key):
-    return key.replace('_', '-').replace(' ', '-')
 
 
 class FlagOption(Option):
@@ -94,16 +112,16 @@ class FlagOption(Option):
 
     def add_to_argparse(self, args):
         # TODO: groups are ignored for the time being.
-        key = sanitize_option_name(self._key)
-        args.add_option('--' + key, action='store_true', default=self._default,
-                        help=self._description, dest=key)
+        if len(self.key) == 1:
+            prefix = '-'
+        else:
+            prefix = '--'
+        args.add_argument(prefix + self.key, action='store_true', default=self._default,
+                          help=self._description, dest=self.name)
 
-    def from_argparse(self, args):
-        key = sanitize_option_name(self._key)
-        val = False
-        if getattr(args, '--' + key):
-            val = True
-        self._value = val
+    def retrieve_from_dict(self, args):
+        assert self.name in args, 'Option was never added to the collection and never parsed.'
+        self.value = args[self.name]
 
     @classmethod
     def from_json(cls, d):

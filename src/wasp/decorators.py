@@ -11,6 +11,8 @@ class DecoratorStore(object):
         self.handle_options = []
 
 
+# XXX: this can still be improved a lot
+# possibly use transparent object proxies to implement this.
 class FunctionDecorator(object):
     def __init__(self, f):
         self._f = f

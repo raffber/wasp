@@ -1,6 +1,6 @@
 from .node import make_nodes, is_symbolic_node_string, SymbolicNode, make_node
 from uuid import uuid4 as uuid
-from .util import CallableList
+from .util import CallableList, is_iterable
 from .argument import Argument, ArgumentCollection
 from .logging import Logger
 from functools import reduce
@@ -27,17 +27,17 @@ class Task(object):
             self._id = self._make_id()
         else:
             self._id = identifier
-        self._run_list = CallableList().arg(self)
+        self._run_list = CallableList()
         self._run_list.append(self._run)
-        self._prepare_list = CallableList().arg(self)
+        self._prepare_list = CallableList()
         self._prepare_list.append(self._prepare)
-        self._success_list = CallableList().arg(self)
-        self._success_list.append(self._success)
-        self._fail_list = CallableList().arg(self)
-        self._fail_list.append(self._fail)
-        self._postprocess_list = CallableList().arg(self)
+        self._success_list = CallableList()
+        self._success_list.append(self._on_success)
+        self._fail_list = CallableList()
+        self._fail_list.append(self._on_fail)
+        self._postprocess_list = CallableList()
         self._postprocess_list.append(self._postprocess)
-        self._spawn_list = CallableList().arg(self).collect(lambda ret: reduce(operator.add, ret))
+        self._spawn_list = CallableList().collect(lambda ret: reduce(operator.add, ret))
         self._spawn_list.append(self._spawn)
         self._logger = Logger()
         self._result = ArgumentCollection()
@@ -77,14 +77,14 @@ class Task(object):
             # retrieve all nodes
             self.use(node.read())
         for arg in self._required_arguments:
-            if arg.name not in self.arguments:
+            if arg.key not in self.arguments:
                 # attempt to retrieve the argument from the common sources
-                self.arguments.add(Argument(arg.name).retrieve_all())
-            elif self.arguments[arg.name].is_empty():
-                self.arguments[arg.name].retrieve_all()
-                if self.arguments[arg.name].is_empty():
+                self.arguments.add(Argument(arg.key).retrieve_all())
+            elif self.arguments[arg.key].is_empty:
+                self.arguments[arg.key].retrieve_all()
+                if self.arguments[arg.key].is_empty():
                     raise MissingArgumentError('Missing argument for task "{0}":'
-                                               ' Required argument "{1}" is empty.'.format(self.identifier, arg.name))
+                                               ' Required argument "{1}" is empty.'.format(self.identifier, arg.key))
 
     @property
     def prepare(self):
@@ -309,11 +309,20 @@ class TaskGroup(Task):
         return self
 
 
-def group(*args):
-    if len(args) == 1 and isinstance(args[0], list):
-        return group(*args)
-    elif len(args) == 1:
-        return args[0]
+def _flatten(args):
+    if not is_iterable(args):
+        return [args]
+    ret = []
     for arg in args:
-        assert isinstance(arg, Task), '*args must be a list of Tasks'
+        if is_iterable(arg):
+            ret += _flatten(arg)
+        else:
+            ret.append(arg)
+    return ret
+
+
+def group(*args):
+    args = _flatten(args)
+    for arg in args:
+        assert isinstance(arg, Task), '*args must be a list of Tasks, but was: {0}'.format(type(arg).__name__)
     return TaskGroup(args)

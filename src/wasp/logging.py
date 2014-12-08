@@ -1,11 +1,12 @@
 
 
 class Logger(object):
-    FATAL = 0
-    ERROR = 1
-    WARN = 2
-    INFO = 3
-    DEBUG = 4
+    QUIET = 0
+    FATAL = 1
+    ERROR = 2
+    WARN = 3
+    INFO = 4
+    DEBUG = 5
 
     def __init__(self, prepend='', verbosity=0, use_stdout=True, io=None):
         self._use_stdout = use_stdout

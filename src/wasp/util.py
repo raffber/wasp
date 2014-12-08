@@ -83,16 +83,11 @@ class CallableList(list):
         self._collect_returns_fun = fun
         return self
 
-    def arg(self, arg):
-        self._arg = arg
-        return self
-
     def __call__(self, *args, **kwargs):
         ret = []
-        if self._arg is not None:
-            args.insert(0, self._arg)
         for callable_ in self:
             assert callable(callable_), 'Objects added to a CallableList must be callable'
+
             ret.append(callable_(*args, **kwargs))
         return self._collect_returns_fun(ret)
 
@@ -191,6 +186,11 @@ def load_module_by_path(fpath):
     sys.path.remove(dirname)
     module_cache[fpath] = module
     return module
+
+
+def is_iterable(arg):
+    # TODO: incorrect
+    return isinstance(arg, list) or isinstance(arg, tuple)
 
 
 class Proxy(object):

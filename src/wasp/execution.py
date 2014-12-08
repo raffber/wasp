@@ -1,5 +1,5 @@
 from .task import Task
-from .util import EventLoop, Event
+from .util import EventLoop, Event, is_iterable
 
 from threading import Thread
 
@@ -27,7 +27,7 @@ class RunnableTaskContainer(object):
 
     def runnable(self):
         for dep in self._dependencies:
-            if not dep.task.has_run():
+            if not dep.task.has_run:
                 return False
         return True
 
@@ -50,8 +50,8 @@ class DAG(object):
         self._executing_tasks = []
 
     def update_runnable(self):
-        self._runnable_tasks = filter(lambda task: task.runnable(), self._waiting_tasks)
-        self._waiting_tasks = filter(lambda task: not task.runnable(), self._waiting_tasks)
+        self._runnable_tasks = list(filter(lambda task: task.runnable(), self._waiting_tasks))
+        self._waiting_tasks = list(filter(lambda task: not task.runnable(), self._waiting_tasks))
 
     def pop_runnable_task(self):
         if len(self._runnable_tasks) == 0 and len(self._waiting_tasks) == 0:
@@ -113,7 +113,11 @@ class Executor(object):
         self._current_jobs -= 1
         self._dag.task_finished(task)
         spawned = task.task.spawn()
-        self._dag.insert(spawned)
+        if spawned is not None:
+            if is_iterable(spawned):
+                self._dag.insert(list(spawned))
+            else:
+                self._dag.insert([spawned])
         if self._cancel:
             if self._current_jobs == 0:
                 # no jobs running anymore, so quit the loop
@@ -143,7 +147,9 @@ class Executor(object):
 
 
 def execute(tasks, jobs=1):
-    tasks = flatten(tasks)
+    tasks = flatten(tasks.values())
+    if len(tasks) == 0:
+        return
     dag = DAG(tasks)
     loop = EventLoop()
     executor = Executor(dag, loop, jobs=jobs)

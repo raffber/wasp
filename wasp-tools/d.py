@@ -8,10 +8,10 @@ def compile(*sources):
         source = make_node(source)
         assert isinstance(source, FileNode)
         target = source.to_file().to_builddir().append_extension('.o')
-        ret += wasp.shell(cmd='{DC} {DFLAGS} -c {SRC} -of{TGT}'
-                          , sources=source
-                          , targets=target
+        task = wasp.shell(cmd='{DC} {DFLAGS} -c {SRC} -of{TGT}'
+                          , sources=source, targets=target
                           ).require('dc')
+        ret.append(task)
     return wasp.group(ret)
 
 

@@ -101,7 +101,7 @@ def is_symbolic_node_string(arg):
 def make_nodes(arg):
     from .task import Task
     lst = []
-    if isinstance(arg, list):
+    if isinstance(arg, list) or isinstance(arg, tuple):
         for item in arg:
             lst.extend(make_nodes(item))
         return lst
@@ -124,7 +124,8 @@ def make_node(arg):
         return arg
     elif isinstance(arg, Task):
         return arg.targets[0]
-    raise TypeError('Invalid type passed to make_nodes, expected Node, string or list thereof.')
+    raise TypeError('Invalid type passed to make_nodes, expected Node'
+                    ', string, File or Task. Type was: {0}'.format(type(arg).__name__))
 
 
 def remove_duplicates(nodes):

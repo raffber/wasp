@@ -3,7 +3,7 @@ import re
 from .node import FileNode
 from .task import Task
 from .util import Serializable
-from . import factory
+from . import factory, ctx
 
 MODULE_DIR = os.path.realpath(os.path.dirname(__file__))
 TOP_DIR = os.path.realpath(os.path.join(MODULE_DIR, '../..'))
@@ -97,10 +97,15 @@ class File(Serializable):
         return File(root + new, make_absolute=self._absolute)
 
     def append_extension(self, append):
-        raise NotImplementedError
+        if append[0] == '.' or self._path[-1] == '.':
+            return File(self._path + append)
+        return File(self._path + '.' + append)
 
     def to_builddir(self):
-        raise NotImplementedError
+        return File(ctx.builddir.join(self._path))
+
+    def is_relative(self):
+        return not os.path.isabs(self._path)
 
     @property
     def extension(self):

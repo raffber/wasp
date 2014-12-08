@@ -16,5 +16,5 @@ def build():
     one = d.compile('one.d')
     two = d.compile('two.d')
     link = d.link(one, two)
-    return cp, group(one, two, link).use(dc='/usr/lib/dmd')
+    return cp, group(one, two, link).use(dc='/usr/bin/dmd')
 

@@ -179,11 +179,6 @@ class Context(object):
     def cache(self):
         return self._cache
 
-    def deferred(self, commandname):
-        if commandname not in self._deferred:
-            self._deferred[commandname] = TaskCollection(traits=[Serializable])
-        return self._deferred[commandname]
-
     def run_tasks(self):
-        jobs = Argument('jobs').require_type(int).retrieve_all(default=1)
+        jobs = Argument('jobs', type=int).retrieve_all(default=1)
         execute(self.tasks, jobs=jobs)

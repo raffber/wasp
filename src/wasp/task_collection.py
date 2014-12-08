@@ -1,4 +1,5 @@
 from .task import Task
+from .util import is_iterable
 
 
 class TaskCollection(dict):
@@ -11,7 +12,9 @@ class TaskCollection(dict):
             for trait in self._traits:
                 assert isinstance(task, trait), 'task must have trait: {0}'.format(trait.__name__)
             self[task.identifier] = task
-        assert isinstance(task, list), 'Either a list of task or task is required as argument'
+            return
+        assert is_iterable(task), 'Either an iterable of task or task is' \
+                                  ' required as argument, found: {0}'.format(type(task).__name__)
         # task is a list of Task
         for t in task:
             self.add(t)

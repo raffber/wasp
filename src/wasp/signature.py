@@ -39,13 +39,10 @@ class SignatureStore(object):
         self._signaturedb = dict(cache.prefix('signaturedb'))
 
     def get(self, id_):
-        raise NotImplementedError
-        # TODO: automatically casted to signature
-        # d = self._signaturedb.get(id_)
-        # if d is None:
-        #     return Signature()
-        # return signature_factory.create(d['type'], **d)
-
+        ret = self._signaturedb.get(id_)
+        if ret is None:
+            return Signature()
+        return ret
 
 class Signature(Serializable):
 
