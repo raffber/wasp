@@ -1,5 +1,6 @@
 from .task import Task
 from .util import EventLoop, Event, is_iterable
+from . import ctx
 
 from threading import Thread
 
@@ -139,10 +140,17 @@ class Executor(object):
         self._cancel = True
 
 
+def preprocess(tasks):
+    for task in tasks:
+        real_task = task.task
+        real_task.log.configure(verbosity=ctx.log.verbosity)
+
+
 def execute(tasks, jobs=1):
     tasks = flatten(tasks.values())
     if len(tasks) == 0:
         return
+    preprocess(tasks)
     dag = DAG(tasks)
     loop = EventLoop()
     executor = Executor(dag, loop, jobs=jobs)
@@ -159,12 +167,12 @@ def run_task(task, success_event=None, failed_event=None):
     else:
         real_task.on_fail()
     real_task.postprocess()
+    for node in real_task.targets:
+        node.signature.refresh()
     if not real_task.success and failed_event is not None:
         failed_event.fire(task)
     elif success_event is not None:
         success_event.fire(task)
-    for node in real_task.targets:
-        node.signature.refresh()
 
 
 def flatten(tasks):

@@ -69,19 +69,24 @@ def run_command(name, executed_commands):
     # check all tasks if successful
     for key, task in ctx.tasks.items():
         if not task.success:
-            msg = '{0} failed'.format(name)
-            # TODO: handle error message
-            raise CommandFailedError(msg)
+            ctx.log.fatal('Command `{0}` failed.'.format(name))
+            ctx.cache.prefix('commands')[name] = {'success': False}
+            return False
+    ctx.log.info('SUCCESS: Command `{0}` executed successfully!'.format(name))
     ctx.tasks.clear()
-    commands_cache = ctx.cache.prefix('commands')
-    commands_cache[name] = {'success': True}
+    ctx.cache.prefix('commands')[name] = {'success': True}
+    return True
 
 
 def handle_commands(options):
     executed_comands = []
+    success = True
     for command in options.commands:
-        run_command(command, executed_comands)
+        success = run_command(command, executed_comands)
+        if not success:
+            break
         executed_comands.append(command)
+    return success
 
 
 def run_file(fpath):
@@ -92,9 +97,10 @@ def run_file(fpath):
     for hook in decorators.init:
         hook()
     options = OptionHandler()
-    handle_commands(options)
+    ctx.log.configure(options.verbosity)
+    success = handle_commands(options)
     ctx.save()
-    print('DONE')
+    return success
 
 
 def recurse_file(fpath):

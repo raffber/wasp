@@ -1,5 +1,6 @@
 Random thoughts
------------------------
+---------------
+
  * make sure thread safety is ensured if symbolic nodes are written, i.e. write them upon completion, result is just argument collection
  * properly implement decorators!!
  * does it really make sense to have prefix in context? i think this should just be a random argument

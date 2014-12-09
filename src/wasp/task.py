@@ -48,7 +48,7 @@ class Task(object):
         return str(uuid())
 
     @property
-    def logger(self):
+    def log(self):
         return self._logger
 
     @property

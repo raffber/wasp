@@ -74,12 +74,12 @@ class OptionHandler(object):
 def add_builtin_options(option_collection):
     builtin_group = option_collection.group('builtin')
     builtin_group.description = 'Builtin options for wasp'
-    builtin_group.add(FlagOption('q', 'Set verbosity level to 0 [QUIET]'))
-    builtin_group.add(FlagOption('v', 'Set verbosity level to 1 [FATAL] <- default', default=True))
-    builtin_group.add(FlagOption('vv', 'Set verbosity level to 2 [ERROR]'))
-    builtin_group.add(FlagOption('vvv', 'Set verbosity level to 3 [WARN]'))
-    builtin_group.add(FlagOption('vvvv', 'Set verbosity level to 4 [INFO]'))
-    builtin_group.add(FlagOption('vvvvv', 'Set verbosity level to 5 [DEBUG]'))
+    builtin_group.add(FlagOption('q', 'Set verbosity level to 0 [QUIET]', prefix='-'))
+    builtin_group.add(FlagOption('v', 'Set verbosity level to 1 [FATAL] <- default', default=True, prefix='-'))
+    builtin_group.add(FlagOption('vv', 'Set verbosity level to 2 [ERROR]', prefix='-'))
+    builtin_group.add(FlagOption('vvv', 'Set verbosity level to 3 [WARN]', prefix='-'))
+    builtin_group.add(FlagOption('vvvv', 'Set verbosity level to 4 [INFO]', prefix='-'))
+    builtin_group.add(FlagOption('vvvvv', 'Set verbosity level to 5 [DEBUG]', prefix='-'))
 
 
 class handle_options(object):

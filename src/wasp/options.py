@@ -96,10 +96,15 @@ class Option(Serializable):
 
 
 class FlagOption(Option):
-    def __init__(self, name, description, default=False):
+    def __init__(self, name, description, prefix=None, default=False):
         super().__init__(name, description)
         self._value = False
         self._default = default
+        if len(self.key) == 1 and prefix is None:
+            prefix = '-'
+        else:
+            prefix = '--'
+        self._prefix = prefix
 
     def set_value(self, v):
         assert isinstance(v, bool), 'You can only set a flag option to True or False'
@@ -112,11 +117,7 @@ class FlagOption(Option):
 
     def add_to_argparse(self, args):
         # TODO: groups are ignored for the time being.
-        if len(self.key) == 1:
-            prefix = '-'
-        else:
-            prefix = '--'
-        args.add_argument(prefix + self.key, action='store_true', default=self._default,
+        args.add_argument(self._prefix + self.key, action='store_true', default=self._default,
                           help=self._description, dest=self.name)
 
     def retrieve_from_dict(self, args):

@@ -33,7 +33,8 @@ class Cache(dict):
         # of self._cachedir
         jsonified = factory.to_json(self)
         with open(self._cachedir.join(CACHE_FILE), 'w') as f:
-            json.dump(jsonified, f)
+            json.dump(jsonified, f, indent=4, separators=(',', ': '))
+            #json.dump(jsonified, f)
 
     def load(self):
         self.clear()

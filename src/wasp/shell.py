@@ -1,8 +1,7 @@
 from .task import Task
 from .node import FileNode
 from .argument import Argument
-from .util import UnusedArgFormatter, run_command, Serializable
-from . import factory
+from .util import UnusedArgFormatter, run_command
 from io import StringIO
 
 
@@ -52,10 +51,19 @@ class ShellTask(Task):
         out = StringIO()
         err = StringIO()
         exit_code = run_command(commandstring, stdout=out, stderr=err)
-        print(commandstring + ': ' + str(exit_code))
+        self.log.info(commandstring + ': ' + str(exit_code))
         self.success = exit_code == 0
         self.has_run = True
-        ret = self._finished(exit_code, out.read(), err.read())
+        stdout = out.getvalue()
+        errout = err.getvalue()
+        if stdout != '':
+            self.log.info(stdout.strip())
+        if errout != '' and not self.success:
+            self.log.fatal(errout.strip())
+            self.log.fatal('While executing:\n' + commandstring)
+        else:
+            self.log.error(errout)
+        ret = self._finished(exit_code, stdout, errout)
         if ret is not None:
             if not isinstance(ret, list) or isinstance(ret, tuple):
                 ret = [ret]

@@ -14,8 +14,12 @@ class Logger(object):
         self._io = io
         self._prepend = prepend
 
+    @property
+    def verbosity(self):
+        return self._verbosity
+
     def log(self, msg, level=None):
-        if level < self._verbosity:
+        if level > self._verbosity:
             return
         msg = self._prepend + msg
         if self._io is not None:
