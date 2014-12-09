@@ -45,6 +45,8 @@ class DAG(object):
         self._executing_tasks = []
 
     def update_runnable(self):
+        # TODO: short and easy... BUT very inefficient
+        # TODO: move tasks that are not required to execute to another list for logging
         self._runnable_tasks = list(filter(lambda task: task.runnable() and not task.finished(), self._waiting_tasks))
         self._waiting_tasks = list(filter(lambda task: not task.runnable(), self._waiting_tasks))
 

@@ -102,7 +102,7 @@ class FlagOption(Option):
         self._default = default
         if len(self.key) == 1 and prefix is None:
             prefix = '-'
-        else:
+        elif prefix is None:
             prefix = '--'
         self._prefix = prefix
 
