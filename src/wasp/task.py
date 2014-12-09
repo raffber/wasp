@@ -134,7 +134,7 @@ class Task(object):
         return self._run_list
 
     def _run(self):
-        pass
+        self.success = True
 
     @property
     def targets(self):

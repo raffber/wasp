@@ -1,6 +1,6 @@
 from uuid import uuid4 as generate_uuid
 import os
-from . import ctx
+from . import ctx, signatures, old_signatures
 from .signature import FileSignature, Signature
 from .argument import ArgumentCollection
 
@@ -34,11 +34,11 @@ class FileNode(Node):
             path = os.path.realpath(path)
         self._path = path
         self._extension = os.path.splitext(path)[1]
-        signature = ctx.signatures.get(self._path)
+        signature = signatures.get(self._path)
         if signature is None:
             # signature was either not initialized or it was invalidated
             signature = FileSignature(path=self._path)
-            ctx.signatures.add(signature)
+            signatures.add(signature)
         super().__init__(path)
 
     @property
@@ -54,7 +54,7 @@ class FileNode(Node):
         return self._extension
 
     def has_changed(self):
-        sig = ctx.previous_signatures.get(self._path)
+        sig = old_signatures.get(self._path)
         if sig is None:
             return True
         if sig != self.signature:
@@ -63,7 +63,7 @@ class FileNode(Node):
 
     @property
     def signature(self):
-        signature = ctx.signatures.get(self._path)
+        signature = signatures.get(self._path)
         assert signature is not None
         return signature
 
@@ -91,7 +91,7 @@ class SymbolicNode(Node):
 
     @property
     def signature(self):
-        pass
+        raise NotImplementedError
 
 
 def is_symbolic_node_string(arg):

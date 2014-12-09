@@ -1,15 +1,16 @@
 from .task_collection import TaskCollection
 from .options import OptionsCollection
 from .cache import Cache
-from .signature import SignatureProvider, FileSignature, SignatureStore
+from .signature import FileSignature
 from .argument import Argument
 from .environment import Environment
-from .util import load_module_by_path, Serializable
+from .util import load_module_by_path
 from .tools import ToolError, NoSuchToolError
 from .tools import proxies
 from .fs import TOP_DIR, Directory
 from .logging import Logger
 from .execution import execute
+from . import old_signatures, signatures
 import os
 
 
@@ -44,8 +45,6 @@ class Context(object):
         self._options = OptionsCollection()
         self._env = Environment()
         self._commands = []
-        self._signatures = SignatureProvider()
-        self._previous_signatures = SignatureStore(self._cache)
         self._tasks = TaskCollection()
         self._tooldir = Directory('wasp-tools')
         self._tools = {}
@@ -105,14 +104,6 @@ class Context(object):
         return self._topdir
 
     @property
-    def signatures(self):
-        return self._signatures
-
-    @property
-    def previous_signatures(self):
-        return self._previous_signatures
-
-    @property
     def prefix(self):
         return self._prefix
 
@@ -145,24 +136,21 @@ class Context(object):
         return self._commands
 
     def save(self):
-        d = self.cache.getcache('script-signatures')
+        d = self.cache.prefix('script-signatures')
         for fpath, signature in self._scripts_signatures.items():
             d[fpath] = signature.to_json()
-        self.signatures.save(self._cache)
-        self._deferred.save(self.cache)
+        signatures.save(self._cache)
         self.cache.save()
 
     def load(self):
         self._cache.load()
+        old_signatures.load(self._cache)
         signatures = self._cache.prefix('script-signatures')
         invalid = False
         for (fpath, signature) in self._scripts_signatures.items():
-            ser_sig = signatures.get(fpath, None)
-            if ser_sig is None:
-                invalid = True
-                # continue to see if the files have actually changed
+            if fpath not in signatures:
                 continue
-            old_sig = FileSignature.from_json(ser_sig)
+            old_sig = signatures[fpath]
             if old_sig != signature:
                 self.log.info('Build scripts have changed since last execution!'
                               'All previous configurations have been cleared!')

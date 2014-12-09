@@ -46,7 +46,8 @@ class Cache(dict):
                     pass
             if not isinstance(jsonified, dict):
                 # invalid cache file, ignore
-                ctx.log.warning('Cachefile is invalid. Ignoring.')
+                # XXX: cannot use ctx.log
+                print('Cachefile is invalid. Ignoring.')
             else:
                 self.update(factory.from_json(jsonified))
         except FileNotFoundError:

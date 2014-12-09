@@ -6,12 +6,13 @@ import wasp
 def init():
     ctx.load_tool('d')
 
+
 @wasp.build
 def build():
     f = File('notes')
     cp = shell('cp {CPFLAGS} {SRC} {TGT}',
-                    sources=f, targets=f.to_builddir()
-                    ).use(cpflags='-r')
+               sources=f, targets=f.to_builddir()
+               ).use(cpflags='-r')
     d = ctx.tool('d')
     one = d.compile('one.d')
     two = d.compile('two.d')

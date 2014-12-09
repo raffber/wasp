@@ -51,8 +51,9 @@ class Factory(object):
     def to_json(self, arg):
         ret = None
         if isinstance(arg, dict):  # recurse
+            ret = {}
             for k, v in arg.items():
-                ret[k] = self.from_json(v)
+                ret[k] = self.to_json(v)
         elif isinstance(arg, list):  # recurse
             ret = [self.to_json(v) for v in arg]
         elif isinstance(arg, Serializable):

@@ -15,7 +15,6 @@ class RunnableTaskContainer(object):
     def __init__(self, task):
         self._dependencies = []
         self._task = task
-        self._finished = False
 
     @property
     def dependencies(self):
@@ -31,26 +30,21 @@ class RunnableTaskContainer(object):
                 return False
         return True
 
-    def get_finished(self):
-        return self._finished
-
-    def set_finished(self, finished):
-        self._finished = finished
-
-    finished = property(get_finished, set_finished)
+    def finished(self):
+        return self._task.has_run
 
 
 class DAG(object):
     def __init__(self, tasks):
         self._tasks = []
-        self._target_map = []
-        self.insert(self._tasks)
+        self._target_map = {}
+        self.insert(tasks)
         self._runnable_tasks = []
         self._waiting_tasks = tasks
         self._executing_tasks = []
 
     def update_runnable(self):
-        self._runnable_tasks = list(filter(lambda task: task.runnable(), self._waiting_tasks))
+        self._runnable_tasks = list(filter(lambda task: task.runnable() and not task.finished(), self._waiting_tasks))
         self._waiting_tasks = list(filter(lambda task: not task.runnable(), self._waiting_tasks))
 
     def pop_runnable_task(self):
@@ -67,7 +61,7 @@ class DAG(object):
         return task
 
     def task_finished(self, task):
-        task.finished = True
+        task.task.has_run = True
         self._executing_tasks.remove(task)
 
     def insert(self, tasks):
@@ -75,15 +69,14 @@ class DAG(object):
         # n = number of tasks, m = average number of source nodes per task
         # p = average number of tasks producing a target
         # create map from target => task --> O(m*n)
-        self._target_map = {}
         for task in tasks:
-            for target in task.targets:
+            for target in task.task.targets:
                 if target.identifier not in self._target_map:
                     self._target_map[target.identifier] = []
-                self._target_map[target.identifier] = task
+                self._target_map[target.identifier].append(task)
         # add dependencies to every task, i.e. add all tasks producing each target --> O(m*n*p)
         for task in tasks:
-            for source in task.sources:
+            for source in task.task.sources:
                 if source.identifier in self._target_map.keys():
                     additional_deps = self._target_map[source.identifier]
                     task.dependencies.extend(additional_deps)
@@ -170,6 +163,8 @@ def run_task(task, success_event=None, failed_event=None):
         failed_event.fire(task)
     elif success_event is not None:
         success_event.fire(task)
+    for node in real_task.targets:
+        node.signature.refresh()
 
 
 def flatten(tasks):

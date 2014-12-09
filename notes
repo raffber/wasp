@@ -1,6 +1,5 @@
 Random thoughts
 -----------------------
-
  * make sure thread safety is ensured if symbolic nodes are written, i.e. write them upon completion, result is just argument collection
  * properly implement decorators!!
  * does it really make sense to have prefix in context? i think this should just be a random argument
@@ -29,6 +28,7 @@ Todos
  * some way to make commands run again if specified implict as a dependency for another command and the former has already
    completed successfully. Use case might be an updated git repo which gets pulled in by "./wasp fetch"
  * do not allow context access within task execution! overwrite ctx with a lock proxy.
+ * refactor signature identifier to key: generally, refactor all "identifier" to "key"
 
 Implement before initial API stability
 =======================================

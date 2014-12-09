@@ -39,10 +39,11 @@ def require_version(*args):
 
 
 from .util import Factory, Serializable
-
-
 factory = Factory()
 
+from .signature import SignatureProvider, SignatureStore
+signatures = SignatureProvider()
+old_signatures = SignatureStore()
 
 from .context import Context
 from .options import options

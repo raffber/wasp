@@ -1,7 +1,7 @@
 from .util import Serializable, b2a
 from uuid import uuid4 as generate_uuid
 from hashlib import md5
-from . import ctx, factory
+from . import factory, ctx
 from json import dumps
 import os
 
@@ -34,8 +34,11 @@ class SignatureProvider(object):
 
 
 class SignatureStore(object):
-    def __init__(self, cache):
+    def __init__(self):
         # copy the dict, so that the cache can be written to
+        self._signaturedb = {}
+
+    def load(self, cache):
         self._signaturedb = dict(cache.prefix('signaturedb'))
 
     def get(self, id_):
@@ -43,6 +46,7 @@ class SignatureStore(object):
         if ret is None:
             return Signature()
         return ret
+
 
 class Signature(Serializable):
 
@@ -109,13 +113,18 @@ class FileSignature(Signature):
     def refresh(self, value=None):
         if value is not None:
             self._value = value
+            self._valid = True
             return value
         m = md5()
-        f = open(self.path, 'rb')
-        m.update(f.read())
-        f.close()
+        if not os.path.exists(self.path):
+            self._valid = False
+            self._value = None
+            return
+        with open(self.path, 'rb') as f:
+            m.update(f.read())
         value = b2a(m.digest())
         self._value = value
+        self._valid = True
         return value
 
 
@@ -126,6 +135,7 @@ class CacheSignature(Signature):
     def __init__(self, identifier, prefix=None, key=None, value=None, valid=True):
         super().__init__(value, valid=valid, identifier=identifier)
         self._prefix = prefix
+        self._cache = ctx.cache.prefix(self._prefix)
         self._key = key
         self.refresh(value)
 
@@ -145,7 +155,7 @@ class CacheSignature(Signature):
             return value
         # XXX: not very efficient, benchmark to see if optimization required
         m = md5()
-        jsonarr = factory.to_json(ctx.cache.prefix(self._prefix)[self._key])
+        jsonarr = factory.to_json(self._cache.prefix(self._prefix)[self._key])
         m.update(dumps(jsonarr))
         value = b2a(m.digest())
         self._value = value

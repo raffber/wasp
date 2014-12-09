@@ -12,7 +12,9 @@ def compile(*sources):
                           , sources=source, targets=target
                           ).require('dc')
         ret.append(task)
-    return wasp.group(ret)
+    if len(ret) > 1:
+        return wasp.group(ret)
+    return ret[0]
 
 
 def link(*sources, target='main'):
