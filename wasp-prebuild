@@ -49,14 +49,10 @@ def main():
         wasp = __import__('wasp')
     except ImportError:
         raise WaspInstallationError('Something went wrong during the installation. Does {0} directory with all wasp files exist?'.format(UNPACK_DIR))
-    scriptname = os.path.join(cur_dir, 'build.py')
-    if os.path.exists(scriptname):
-        from wasp.main import run_file
-        success = run_file(scriptname)
-        if success:
-            sys.exit(0)
-        else:
-            sys.exit(1)
+    from wasp.main import run
+    success = run(cur_dir)
+    if success:
+        sys.exit(0)
     else:
-        raise FileNotFoundError('You require a "build.py" file to do anything useful with wasp')
+        sys.exit(1)
 

@@ -1,11 +1,10 @@
 import wasp
-from wasp.node import make_node, make_nodes, FileNode
+from wasp.node import make_nodes, FileNode
 
 
 def compile(*sources):
     ret = []
-    for source in sources:
-        source = make_node(source)
+    for source in make_nodes(sources):
         assert isinstance(source, FileNode)
         target = source.to_file().to_builddir().append_extension('.o')
         task = wasp.shell(cmd='{DC} {DFLAGS} -c {SRC} -of{TGT}'
