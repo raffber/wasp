@@ -1,4 +1,3 @@
-
 from .util import Proxy
 ctx = Proxy('The wasp context wasp.ctx can only be accessed after initialization.')
 
@@ -44,6 +43,21 @@ factory = Factory()
 from .signature import SignatureProvider, SignatureStore
 signatures = SignatureProvider()
 old_signatures = SignatureStore()
+
+
+def recurse(*fpaths):
+    import os
+    for f in fpaths:
+        if isinstance(f, list):
+            recurse(*f)
+            continue
+        assert isinstance(f, str), 'Arguments to recurse() must be strings or ' \
+                                   'lists thereof. Found {0}'.format(type(f).__name__)
+        if not os.path.isdir(f):
+            f = os.path.dirname(f)
+        recurse_files.append(f)
+
+recurse_files = []
 
 from .context import Context
 from .options import options

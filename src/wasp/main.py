@@ -2,40 +2,51 @@ from .util import load_module_by_path
 from .decorators import decorators
 from .context import Context
 from .task import Task
-from .command import CommandFailedError
+from . import recurse_files
 from .util import is_iterable
 from .cmdline import OptionHandler
 from . import ctx
 import os
 
-
-class EmptyCommandOption(object):
-    pass
+FILE_NAMES = ['build.py', 'build.user.py', 'BUILD', 'BUILD.user']
 
 
-def create_context(module):
+def create_context(recurse_files):
+    """
+    Creates the context object (wasp.ctx) based either on the @create_context decorator (if it exists)
+    or creates a default context otherwise.
+    :param recurse_files: The files which are recursed into.
+    :return: The created context.
+    """
     if decorators.create_context is not None:
         context = decorators.create_context()
         assert isinstance(context, Context), 'create_context: You really need to provide a subclass of wasp.Context'
     else:
-        recurse = []
-        if hasattr(module, 'recurse'):
-            recurse = getattr(module, 'recurse')
-            assert isinstance(recurse, list), 'recurse must be a list of directories'
-        for d in recurse:
-            d = os.path.realpath(d)
-            fpath = os.path.join(d, 'build.py')
-            load_module_by_path(fpath)
-        context = Context(recurse_files=recurse)
+        context = Context(recurse_files)
     import wasp
+    # assign context to proxy
     wasp.ctx.__assign_object(context)
+    return context
 
 
 def handle_no_command(options):
-    pass
+    """
+    This function is called if no commands are to be executed.
+    At the moment, this function only warns that no command is being executed.
+    :param options: OptionsCollection with the options specified.
+    :return: None
+    """
+    ctx.log.warn('Warning: wasp called without command.')
 
 
 def run_command(name, executed_commands):
+    """
+    Runs a command specified by name. All dependencies of the command are
+    executed, if they have not successfully executed before.
+    :param name: The name of the command in question.
+    :param executed_commands: List of commands that have already been executed.
+    :return:
+    """
     command_cache = ctx.cache.prefix('commands')
     if name in executed_commands:
         return
@@ -79,6 +90,12 @@ def run_command(name, executed_commands):
 
 
 def handle_commands(options):
+    """
+    Runs all commands specified by the `options` parameter given.
+    If a command fails, the method aborts.
+    :param options: OptionsCollection(), the options given to wasp
+    :return: True if the commands have been executed successfully.
+    """
     executed_comands = []
     success = True
     for command in options.commands:
@@ -89,20 +106,67 @@ def handle_commands(options):
     return success
 
 
-def run_file(fpath):
-    module = load_module_by_path(fpath)
-    create_context(module)
+def load_recursive():
+    """
+    Loads all directorires which were defined as recursive, using
+    wasp.recurse().
+    :return: Returns a list of loaded files, [] if no file was loaded.
+    """
+    loaded = True
+    loaded_paths = set()
+    ret = []
+    while loaded:
+        loaded = False
+        for path in recurse_files:
+            if path in loaded_paths:
+                continue
+            ret.extend(load_directory(path))
+            loaded = True
+    return ret
+
+
+def load_directory(dir_path):
+    """
+    Loads a directory and imports the files as modules, which is the only thing that
+    is necessary for executing commands.
+    :param dir_path: The path to the directory which contains the build files.
+    :return: Returns a list of loaded files, [] if no files were loaded
+    """
+    file_found = []
+    for fname in FILE_NAMES:
+        full_path = os.path.join(dir_path, fname)
+        if os.path.exists(full_path):
+            load_module_by_path(full_path)
+            file_found.append(full_path)
+    return file_found
+
+
+def run(dir_path):
+    """
+    Runs the application from the given directory. It is assumed that:
+     * The current working directory is `dir_path`,
+     * the current working directory is the TOPDIR of the project,
+     * this function is executed once.
+    :param dir_path: The directory from which is used as TOPDIR
+    :return: True if a build file was found in `dir_path`, False otherwise
+    """
+    loaded_files = load_directory(dir_path)
+    if len(loaded_files) == 0:
+        return False  # nothing was loaded, no point in continuing
+    # load recursive files
+    loaded_files.extend(load_recursive())
+    # create the context using the files that were loaded.
+    # the list is mainly required to determine if the build
+    # files have changed.
+    create_context(loaded_files)
+    # load all command decorators into the context
     for com in decorators.commands:
         ctx.commands.append(com)
+    # run all init() hooks
     for hook in decorators.init:
         hook()
     options = OptionHandler()
     ctx.log.configure(options.verbosity)
     success = handle_commands(options)
     ctx.save()
-    return success
-
-
-def recurse_file(fpath):
-    # TODO: handle additional recurse
-    load_module_by_path(fpath)
+    return True

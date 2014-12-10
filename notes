@@ -1,24 +1,25 @@
 Random thoughts
 ---------------
 
- * make sure thread safety is ensured if symbolic nodes are written, i.e. write them upon completion, result is just argument collection
- * properly implement decorators!!
- * does it really make sense to have prefix in context? i think this should just be a random argument
+Bugs
+=======
+
+ * sth is wrong with command options-parsing => a command with '' is added  => 1. sanity check command name, 2. parsing is broken
+    there is not even a handler for '', nor is it registered anywhere
 
 Next Task
 ==========
- * refactor environment: environment can be stored using a argumentcollection => argumentcollection.overwrite(environ)
- * make environment inherit from argumentcollection? just read only?
- * implement all NotImplentedError raises
- * cache usage: always give cache object as argument in load() and save()
- * execution engine
+
+ * generators
+ * extensions
+ * configuration
+ * recursion
+
 
 Todos
 =======
- * ABSOLUTELY make sure ctx is only reachable from main thread
+ * make sure thread safety is ensured if symbolic nodes are written, i.e. write them upon completion, result is just argument collection
  * escape : in filename (.replace('\:', ':') at str[0:1])
- * automatically add deferred commands
- * ArgumentCollection can contain ArgumentCollection => WHY? SRSLY?
  * dependencies (command internal using nodes, command external? just using required arguments?)
  * proper subproject handling (implemented as plugin to the recursion algorithm)
  * wasp specific commands and options:
@@ -28,7 +29,6 @@ Todos
     - verbosity
  * some way to make commands run again if specified implict as a dependency for another command and the former has already
    completed successfully. Use case might be an updated git repo which gets pulled in by "./wasp fetch"
- * do not allow context access within task execution! overwrite ctx with a lock proxy.
  * refactor signature identifier to key: generally, refactor all "identifier" to "key"
 
 Implement before initial API stability

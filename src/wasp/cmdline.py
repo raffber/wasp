@@ -1,6 +1,6 @@
 from .decorators import decorators
 import argparse
-from . import ctx, options
+from . import ctx, options, command
 from .options import FlagOption
 from .argument import Argument
 import sys
@@ -109,3 +109,8 @@ def handle_builtin_options(option_handler):
         assert False, 'No verbosity configured as default and no verbosity set!'
     if quiet:
         option_handler.verbosity = 0
+
+
+@command('clear-cache')
+def clear_cache():
+    ctx.cache.clear()
