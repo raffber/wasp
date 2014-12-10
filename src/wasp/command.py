@@ -1,4 +1,5 @@
-from .decorators import decorators, FunctionDecorator
+from .decorators import decorators
+from .util import FunctionDecorator
 
 
 class CommandFailedError(Exception):

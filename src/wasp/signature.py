@@ -70,6 +70,9 @@ class Signature(Serializable):
     def valid(self):
         return self._valid
 
+    def invalidate(self):
+        self._valid = False
+
     def __eq__(self, other):
         return not self.__ne__(other)
 

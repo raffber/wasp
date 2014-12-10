@@ -3,7 +3,9 @@ from uuid import uuid4 as uuid
 from .util import CallableList, is_iterable
 from .argument import Argument, ArgumentCollection
 from .logging import Logger
+
 from functools import reduce
+from itertools import chain
 import operator
 
 
@@ -195,7 +197,6 @@ class Task(object):
                 return False
         # Task was successfully run
         self.success = True
-        self._has_run_cache = True
         return True
 
     has_run = property(get_has_run, set_has_run)
@@ -266,47 +267,52 @@ class Task(object):
 
 class TaskGroup(Task):
     def __init__(self, children):
-        # TODO: think about this again and write it in less lines
         # this should all be O(n+m) assuming n is the total number of sources
         # and m is the total number of targets
         # flatten sources and targets first
-        sources = []
-        for c in children:
-            sources.extend(self._recursive_flatten_sources(c))
-        targets = []
-        for c in children:
-            targets.extend(self._recursive_flatten_targets(c))
-        # create a dict mapping from identifier to node
-        source_dict = {}
-        for s in sources:
-            source_dict[s.identifier] = s
+        sources = self._flatten(children, lambda x: x.sources)
+        targets = self._flatten(children, lambda x: x.targets)
         targets_new = []
-        for t in targets:
+        for t in targets.values():
             # remove source node if it is also a target
             # otherwise, the target node in question is external
             # and the source node is external as well.
-            if t.identifier in source_dict:
-                del source_dict[t.identifier]
+            if t.identifier in sources:
+                del sources[t.identifier]
             else:
                 targets_new.append(t)
-        super().__init__(children=children, always=True)
+        super().__init__(sources=list(sources.values()), targets=targets_new, children=children, always=True)
 
-    def _recursive_flatten_sources(self, task):
-        ret = list(task.sources)
-        for c in task.children:
-            ret.extend(self._recursive_flatten_sources(c))
-        return ret
-
-    def _recursive_flatten_targets(self, task):
-        ret = list(task.targets)
-        for c in task.children:
-            ret.extend(self._recursive_flatten_targets(c))
+    def _flatten(self, tasks, fun):
+        # get all task items
+        lst = chain(*[fun(task) for task in tasks])
+        # create a dict from them
+        ret = dict(zip([x.identifier for x in lst], lst))
+        # recursively flatten all children... haskell style :P
+        ret.update(dict(chain([self._flatten(c, fun).items() for task in tasks for c in task.children])))
         return ret
 
     def use(self, *args, **kw):
         for child in self.children:
             child.use(*args, **kw)
         return self
+
+    def __repr__(self):
+        return '[' + ', '.join([repr(c) for c in self.children]) + ']'
+
+    def get_has_run(self):
+        if self._has_run:
+            return True
+        for task in self.children:
+            if not task.has_run:
+                return False
+        return True
+
+    has_run = property(get_has_run, Task.set_has_run)
+
+    @property
+    def success(self):
+        return all(map(lambda x: x.success, self.children))
 
 
 def _flatten(args):
@@ -321,8 +327,10 @@ def _flatten(args):
     return ret
 
 
-def group(*args):
+def group(*args, collapse=True):
     args = _flatten(args)
     for arg in args:
         assert isinstance(arg, Task), '*args must be a list of Tasks, but was: {0}'.format(type(arg).__name__)
+    if len(args) == 1 and collapse:
+        return args[0]
     return TaskGroup(args)

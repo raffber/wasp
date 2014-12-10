@@ -8,6 +8,7 @@ from threading import Event as ThreadingEvent
 from binascii import a2b_base64, b2a_base64
 from string import Formatter
 from uuid import uuid4 as uuid
+import functools
 
 
 def a2b(s):
@@ -141,6 +142,17 @@ class EventLoop(object):
                 evt.invoke(*args, **kw)
             self._events.clear()
             # TODO: thread save this; lock on self._events
+
+
+# XXX: this can still be improved a lot
+# possibly use transparent object proxies to implement this.
+class FunctionDecorator(object):
+    def __init__(self, f):
+        self._f = f
+        functools.update_wrapper(self, f)
+
+    def __call__(self, *args, **kwargs):
+        return self._f(*args, **kwargs)
 
 
 def run_command(cmd, stdout=None, stderr=None, timeout=100):

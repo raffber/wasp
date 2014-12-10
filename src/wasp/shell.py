@@ -61,7 +61,7 @@ class ShellTask(Task):
         if errout != '' and not self.success:
             self.log.fatal(errout.strip())
             self.log.fatal('While executing:\n' + commandstring)
-        else:
+        elif errout != '':
             self.log.error(errout)
         ret = self._finished(exit_code, stdout, errout)
         if ret is not None:
@@ -75,6 +75,9 @@ class ShellTask(Task):
                     self._result.add(r)
                 # TODO: more...
                 first = False
+
+    def __repr__(self):
+        return '<class ShellTask: {0}>'.format(self.cmd)
 
 
 def shell(cmd, sources=[], targets=[], always=False):

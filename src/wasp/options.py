@@ -1,6 +1,7 @@
 from .util import Serializable
 from . import factory
-from .decorators import decorators, FunctionDecorator
+from .decorators import decorators
+from .util import FunctionDecorator
 
 
 # TODO: implemnt more options

@@ -34,6 +34,9 @@ class RunnableTaskContainer(object):
     def finished(self):
         return self._task.has_run
 
+    def __repr__(self):
+        return repr(self.task)
+
 
 class DAG(object):
     def __init__(self, tasks):
@@ -55,7 +58,7 @@ class DAG(object):
             return None  # Done
         if len(self._runnable_tasks) == 0:
             self.update_runnable()
-            if len(self._runnable_tasks) == 0 and len(self._executing_tasks) == 0:
+            if len(self._runnable_tasks) == 0 and len(self._executing_tasks) == 0 and len(self._waiting_tasks) != 0:
                 raise DependencyCycleError('The task graph is not a DAG: Dependency cycle found!')
         if len(self._runnable_tasks) == 0:
             return None
@@ -104,6 +107,9 @@ class Executor(object):
         if self._current_jobs == 0:
             # no jobs running anymore, so quit the loop
             self._loop.cancel()
+        # invalidate the sources, such that this task is rerun
+        for source in task.task.sources:
+            source.signature.invalidate()
 
     def task_success(self, task):
         self._current_jobs -= 1
