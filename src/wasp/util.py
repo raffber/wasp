@@ -74,6 +74,10 @@ class Serializable(object):
         raise NotImplementedError
 
 
+class CannotSerializeError(Exception):
+    pass
+
+
 class CallableList(list):
 
     def __init__(self, *args, **kwargs):
@@ -212,7 +216,7 @@ class Proxy(object):
     def __init__(self, error_message, lock_thread=True):
         data = {}
         object.__setattr__(self, '_data', data)
-        data['obj'] = object
+        data['obj'] = object()
         assert isinstance(error_message, str)
         data['msg'] = error_message
         data['lock_thread'] = lock_thread

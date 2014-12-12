@@ -6,6 +6,8 @@ from .util import Serializable
 from . import factory, ctx
 
 MODULE_DIR = os.path.realpath(os.path.dirname(__file__))
+# TODO: this might cause problems if the extraction path of wasp is changed.
+# but how to fix it? Is a fix relevant?!
 TOP_DIR = os.path.realpath(os.path.join(MODULE_DIR, '../..'))
 
 
@@ -66,6 +68,9 @@ class Directory(Serializable):
         except FileExistsError:
             pass
 
+    def __str__(self):
+        return self._path
+
 
 factory.register(Directory)
 
@@ -85,6 +90,12 @@ class File(Serializable):
         else:
             self._path = sanitize_path(path)
         self._absolute = make_absolute
+
+    def directory(self):
+        """
+        :return: Instance of a Directory object representing the directory this script lives in.
+        """
+        return Directory(os.path.dirname(self._path))
 
     def replace_extension(self, new):
         """

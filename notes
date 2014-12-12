@@ -1,5 +1,11 @@
 Random thoughts
 ---------------
+ * verbosity per decorator (use command class, assign all tasks their logger just after calling a command)
+ * removed prefix from context for the time being. Argument('prefix') should be used. probably make a default option --prefix '/usr'
+
+# TODO: note, that at the moment global installation of wasp is not possible
+        The implementation of this ``feature`` does not have particular priority, since
+        it is not the intended design of wasp. Though it might be useful for performance enhancement.
 
 Bugs
 =======

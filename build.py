@@ -1,10 +1,13 @@
-from wasp import ctx, File, group, shell
+from wasp import ctx, File, group, shell, tool
 import wasp
+
+
+d = tool('d')
 
 
 @wasp.init
 def init():
-    ctx.load_tool('d')
+    ctx.load_tool('d', path='wasp-tools')
 
 
 @wasp.build
@@ -13,7 +16,6 @@ def build():
     cp = shell('cp {CPFLAGS} {SRC} {TGT}',
                sources=f, targets=f.to_builddir()
                ).use(cpflags='-r')
-    d = ctx.tool('d')
     one = d.compile('one.d')
     two = d.compile('two.d')
     link = d.link(one, two)

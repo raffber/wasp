@@ -9,11 +9,13 @@ import sys
 class CommandAction(argparse.Action):
     # XXX: UGH!
     def __call__(self, parser, namespace, values, option_string=None):
-        if not '_commands' in namespace:
-            setattr(namespace, '_commands', [])
-        previous = namespace._commands
+        if values is None:
+            return
+        if 'commands' not in namespace:
+            setattr(namespace, 'commands', [])
+        previous = namespace.commands
         previous.append(values)
-        setattr(namespace, '_commands', previous)
+        setattr(namespace, 'commands', previous)
 
 
 class OptionHandler(object):
@@ -29,20 +31,21 @@ class OptionHandler(object):
         command_names = set(map(lambda x: x.name, ctx.commands))
         # TODO: check sorting
         for name in command_names:
-            self._argparse.add_argument(name, help=descriptions[name], action=CommandAction, default='', nargs='?')
+            self._argparse.add_argument(name, help=descriptions[name], action=CommandAction, default=None, nargs='?')
         for option_decorator in decorators.options:
             if len(option_decorator.commands) != 0:
                 if option_decorator.commands in sys.argv:
                     option_decorator(ctx.options)
                 else:
                     pass
+
                     # TODO: unused options collection! such that previous options can still be retrieved
                     # mark the retrieved options as unused and then add them to the optionscollection as well
             else:
                 option_decorator(ctx.options)
         ctx.options.add_to_argparse(self._argparse)
         parsed = self._argparse.parse_args()
-        self._commands = parsed._commands
+        self._commands = parsed.commands
         ctx.options.retrieve_from_dict(vars(parsed))
         self._options_dict = vars(parsed)
         for fun in decorators.handle_options:

@@ -7,7 +7,8 @@ This script unpacks the wasp build tool and should be checked into vcs
 repositories.
 """
 
-import sys,os
+import sys
+import os
 import zlib
 import binascii
 

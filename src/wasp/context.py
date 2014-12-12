@@ -16,7 +16,7 @@ import os
 
 class Context(object):
 
-    def __init__(self, projectname='myproject', recurse_files=[], builddir='build', prefix='/usr'):
+    def __init__(self, projectname='myproject', recurse_files=[], builddir='build'):
         # we need to get the initialization order right.
         # the simplest way to do this is to initialize things first
         # that have no dependencies
@@ -28,7 +28,6 @@ class Context(object):
         self._builddir = Directory(builddir)
         self._builddir.ensure_exists()
         self._cachedir = Directory(self._builddir.join('c4che'))
-        self._prefix = Directory(os.environ.get('PREFIX', prefix))
         # create the signature for this build script
         # the current build script
         fname = self._topdir.join('build.py')
@@ -75,7 +74,14 @@ class Context(object):
                 self._tools[toolname] = module
                 if toolname in proxies.keys():
                     # inject the tool proxy
-                    proxies[toolname].__assign_object(module)
+                    # TODO: why is it bugging any other way?!
+                    # specifically, proxy.__assign_object(asdf) does not
+                    # seem to work. The attriute name gets strangely converted
+                    # into _Context__assign_object... even if calling __getattribute__
+                    # directly
+                    p = proxies[toolname]
+                    data = object.__getattribute__(p, '_data')
+                    data['obj'] = module
                 ret = module
             except FileNotFoundError:
                 raise NoSuchToolError('No such tool: {0}'.format(toolname))
@@ -102,10 +108,6 @@ class Context(object):
     @property
     def topdir(self):
         return self._topdir
-
-    @property
-    def prefix(self):
-        return self._prefix
 
     @property
     def builddir(self):

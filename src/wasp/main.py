@@ -5,6 +5,7 @@ from .task import Task
 from . import recurse_files
 from .util import is_iterable
 from .cmdline import OptionHandler
+from .config import Config
 from . import ctx
 import os
 
@@ -139,6 +140,13 @@ def load_directory(dir_path):
             load_module_by_path(full_path)
             file_found.append(full_path)
     return file_found
+
+
+def load_configuration(dirpath):
+    """
+    :return: Returns a configuration object containing the configuration checked into the current directory.
+    """
+    pass
 
 
 def run(dir_path):
