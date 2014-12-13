@@ -2,6 +2,9 @@ Random thoughts
 ---------------
  * verbosity per decorator (use command class, assign all tasks their logger just after calling a command)
  * removed prefix from context for the time being. Argument('prefix') should be used. probably make a default option --prefix '/usr'
+ * waf lock
+ * daemon: simply use generator functions. also make an @changed(extension) available
+ * could we integrate pip, easy_install? just install extensions as eggs?
 
 # TODO: note, that at the moment global installation of wasp is not possible
         The implementation of this ``feature`` does not have particular priority, since
@@ -10,8 +13,6 @@ Random thoughts
 Bugs
 =======
 
- * sth is wrong with command options-parsing => a command with '' is added  => 1. sanity check command name, 2. parsing is broken
-    there is not even a handler for '', nor is it registered anywhere
 
 Next Task
 ==========
@@ -20,6 +21,7 @@ Next Task
  * extensions
  * configuration
  * recursion
+ * implement options => implement an option that consumes several more...
 
 
 Todos
@@ -28,13 +30,9 @@ Todos
  * escape : in filename (.replace('\:', ':') at str[0:1])
  * dependencies (command internal using nodes, command external? just using required arguments?)
  * proper subproject handling (implemented as plugin to the recursion algorithm)
- * wasp specific commands and options:
-    - outsource into own module
-    - postprocess step options decorator
-    - clear cache: clear-cache
-    - verbosity
  * some way to make commands run again if specified implict as a dependency for another command and the former has already
-   completed successfully. Use case might be an updated git repo which gets pulled in by "./wasp fetch"
+   completed successfully. Use case might be an updated git repo which gets pulled in by "./wasp fetch" and should be updated
+   regularly. => ctx.commands['configure'].invalidate()
  * refactor signature identifier to key: generally, refactor all "identifier" to "key"
 
 Implement before initial API stability
@@ -47,48 +45,6 @@ Implement before initial API stability
 Refactor steps
 ==============
 
-
-Dependency management
-======================
-
-New
------
-
- * we might need to use ".use()" for dependencies between commands
-    hopefully this can be avoided. E.g. by saying that if there is no
-    task producing a given node, the already produced node is used.
-    that would acutally be similiar to a filenode.
-
-class DependencyCheck(Task): contains dependency
-
-glib = cpp.check('glib').produce(':glib')
-myexec = cpp.compile('main.c').depends(':glib')
-
-Old
------
-
-class DependencyCheck(Task): contains dependency
-
-class Dependency(ArgumentCollection): contains arguments, serializable
-
-glib = cpp.check('glib')
-myexec = cpp.compile()
-myexec.depends(glib)
-
- * depends function is inherited from task, which just adds a task dependency
- * is overrided to insert the required arguments
- * ctx.dependencies collects dependencies, dependency check task adds itself uppon success
- * myexec.use(ctx.dependencies['glib']) for using a previously saved dependency
-
-
-Recursion
-=========
-
- * use topdir = '../' *3 for subprojects
- * have currentdir, current_builddir in context
- * variables from higher-level directories can be overwritten
- * @recurse for recurse, can be applied to a varianle declaration? recurse should otherwise be called during init
- * add executiondir to ctx, so one can check if executiondir == currentdir
 
 subproject plugin
 ------------------
@@ -150,44 +106,6 @@ Declarative
         }
     }
 }
-
-Wasp Tools
-==========
-
-invocation ./wasp tool <toolname>
-
-e.g.
-./wasp tool daemon
-
-
-Ideas
-=========
-
- * automatic tool loading?!
- * task generators
- * argument to disable commands registred by tools
-
- * CWD of all commands should be TOPDIR!
- * make sure make_nodes correctly handles paths => how does it know from where it is called? => possibly everything relative to topdir?
- * waf lock
- * daemon: simply use generator functions. also make an @changed(extension) available
-
-
-Challanges and Questions
-=============================
-
- * dummy nodes => Node('id'), how is it invalidated?!
- * what happens if a task does not have any sources nor targets? always = True implicitly?!
- * could we integrate pip, easy_install?
-
-Next Tasks
-----------
-
- * design refactor steps
- * write unittests
- * document code
- * possibly rewrite some code that is ugly
-
 
 Extensions
 -----------

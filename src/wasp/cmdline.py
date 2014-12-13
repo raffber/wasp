@@ -7,7 +7,6 @@ import sys
 
 
 class CommandAction(argparse.Action):
-    # XXX: UGH!
     def __call__(self, parser, namespace, values, option_string=None):
         if values is None:
             return
@@ -29,7 +28,7 @@ class OptionHandler(object):
             descriptions[com.name] = com.description
         # create a set of command names that can be called
         command_names = set(map(lambda x: x.name, ctx.commands))
-        # TODO: check sorting
+        # TODO: check sorting, how?!
         for name in command_names:
             self._argparse.add_argument(name, help=descriptions[name], action=CommandAction, default=None, nargs='?')
         for option_decorator in decorators.options:
@@ -38,7 +37,6 @@ class OptionHandler(object):
                     option_decorator(ctx.options)
                 else:
                     pass
-
                     # TODO: unused options collection! such that previous options can still be retrieved
                     # mark the retrieved options as unused and then add them to the optionscollection as well
             else:
@@ -64,7 +62,7 @@ class OptionHandler(object):
         return self._argparse
 
     def set_verbosity(self, verbosity):
-        assert isinstance(verbosity, int) and verbosity >= 0 and verbosity <= 5, 'Verbosity must be between 0 and 5'
+        assert isinstance(verbosity, int) and 0 <= verbosity <= 5, 'Verbosity must be between 0 and 5'
         self._verbosity = verbosity
 
     def get_verbosity(self):
@@ -78,9 +76,9 @@ def add_builtin_options(option_collection):
     builtin_group = option_collection.group('builtin')
     builtin_group.description = 'Builtin options for wasp'
     builtin_group.add(FlagOption('q', 'Set verbosity level to 0 [QUIET]', prefix='-'))
-    builtin_group.add(FlagOption('v', 'Set verbosity level to 1 [FATAL] <- default', default=True, prefix='-'))
+    builtin_group.add(FlagOption('v', 'Set verbosity level to 1 [FATAL]', prefix='-'))
     builtin_group.add(FlagOption('vv', 'Set verbosity level to 2 [ERROR]', prefix='-'))
-    builtin_group.add(FlagOption('vvv', 'Set verbosity level to 3 [WARN]', prefix='-'))
+    builtin_group.add(FlagOption('vvv', 'Set verbosity level to 3 [WARN] <- default', default=True, prefix='-'))
     builtin_group.add(FlagOption('vvvv', 'Set verbosity level to 4 [INFO]', prefix='-'))
     builtin_group.add(FlagOption('vvvvv', 'Set verbosity level to 5 [DEBUG]', prefix='-'))
 
@@ -102,15 +100,15 @@ def handle_builtin_options(option_handler):
         option_handler.verbosity = 5
     elif verbosity_four:
         option_handler.verbosity = 4
-    elif verbosity_three:
-        option_handler.verbosity = 3
     elif verbosity_two:
         option_handler.verbosity = 2
     elif verbosity_one:
         option_handler.verbosity = 1
-    else:
+    elif verbosity_three:  # default, must be last
+        option_handler.verbosity = 3
+    else:  # sth definitely went wrong
         assert False, 'No verbosity configured as default and no verbosity set!'
-    if quiet:
+    if quiet:  # -q overwrites all
         option_handler.verbosity = 0
 
 
