@@ -238,7 +238,7 @@ class Argument(Serializable):
         return self.value
 
     def retrieve_all(self, default=None):
-        self.retrieve(ctx.arguments, ctx.options, ctx.env, default=default)
+        self.retrieve(ctx.arguments, ctx.options, ctx.config, ctx.env, default=default)
         return self.value
 
     def require_type(self, tp):

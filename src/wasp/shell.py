@@ -37,6 +37,13 @@ class ShellTask(Task):
             kw[arg.upperkey] = str(val)
         return kw
 
+    def require_all(self):
+        raise NotImplementedError
+        return self
+
+    def check(self):
+        super().check()
+
     def _prepare_args(self, kw):
         return kw
 

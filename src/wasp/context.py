@@ -2,7 +2,7 @@ from .task_collection import TaskCollection
 from .options import OptionsCollection
 from .cache import Cache
 from .signature import FileSignature
-from .argument import Argument
+from .argument import Argument, ArgumentCollection
 from .environment import Environment
 from .util import load_module_by_path
 from .tools import ToolError, NoSuchToolError
@@ -10,13 +10,15 @@ from .tools import proxies
 from .fs import TOP_DIR, Directory
 from .logging import Logger
 from .execution import execute
+from .config import Config
+from .generator import GeneratorCollection
 from . import old_signatures, signatures
 import os
 
 
 class Context(object):
 
-    def __init__(self, projectname='myproject', recurse_files=[], builddir='build'):
+    def __init__(self, projectname='myproject', config=None, recurse_files=[], builddir='build'):
         # we need to get the initialization order right.
         # the simplest way to do this is to initialize things first
         # that have no dependencies
@@ -28,6 +30,10 @@ class Context(object):
         self._builddir = Directory(builddir)
         self._builddir.ensure_exists()
         self._cachedir = Directory(self._builddir.join('c4che'))
+        if config is None:
+            self._config = Config()
+        else:
+            self._config = config
         # create the signature for this build script
         # the current build script
         fname = self._topdir.join('build.py')
@@ -47,7 +53,8 @@ class Context(object):
         self._tasks = TaskCollection()
         self._tooldir = Directory('wasp-tools')
         self._tools = {}
-        self._arguments = {}
+        self._arguments = ArgumentCollection()
+        self._generators = {}
 
     def get_tooldir(self):
         return self._tooldir
@@ -60,6 +67,10 @@ class Context(object):
         self._tooldir = tooldir
 
     tooldir = property(get_tooldir, set_tooldir)
+
+    @property
+    def config(self):
+        return self._config
 
     def load_tool(self, toolname, *args, path=None):
         if toolname in self._tools:
@@ -100,6 +111,11 @@ class Context(object):
             raise ToolError('No such tool "{0}" loaded. Make sure to load the ' \
                 'tool using load_tool() during initialization time'.format(toolname))
         return self._tools[toolname]
+
+    def generators(self, commandname):
+        if commandname not in self._generators:
+            self._generators[commandname] = GeneratorCollection()
+        return self._generators[commandname]
 
     @property
     def log(self):

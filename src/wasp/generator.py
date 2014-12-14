@@ -1,48 +1,26 @@
-from .node import FileNode
-from .decorators import decorators
+from . import Serializable, factory
 
-# TODO: generators are not yet implemented
-# and even the API is completely unfinished.
-# there are quite a few unanswered questions, such as:
-# * How does one specifiy a link task? A nice api needs to be provided
-#   which collects all object files.
-# * How exactly does "make -jN" do it?
 
-class TaskGenerator(object):
-    def __init__(self):
+class Generator(Serializable):
+
+    @property
+    def key(self):
         pass
 
-    def handles(self, node):
-        raise NotImplementedError
-
-    def generate(self, nodes, **kw):
-        raise NotImplementedError
+    def run(self):
+        pass
 
 
-class FileExtensionGenerator(object):
-    def __init__(self, extensions, fun):
-        super().__init__()
-        if isinstance(extensions, str):
-            extensions = [extensions]
-        assert isinstance(extensions, list), 'File extensions for generator decorator must '\
-                                             'either be given as a string or a list thereof'
-        self._extensions = extensions
-        self._fun = fun
+class GeneratorCollection(dict, Serializable):
 
-    def handles(self, node):
-        if isinstance(node, FileNode):
-            if node.extension in self._extensions:
-                return True
-        return False
+    def add(self, generator):
+        self[generator.key] = generator
 
-    def generate(self, nodes, **kw):
-        return self._fun(nodes, **kw)
+    @classmethod
+    def from_json(cls, d):
+        assert isinstance(d, dict), 'Expected dictionary of serialized generators.'
+        return cls(factory.from_json(d))
 
-
-class generate(object):
-    def __init__(self, command, *extensions):
-        self._extension = extensions
-
-    def __call__(self, f):
-        decorators.generators.append(FileExtensionGenerator(self._extensions, f))
-        return f
+    def to_json(self):
+        d = super().to_json()
+        d.update(dict((k, factory.to_json(v)) for k, v in self.items()))

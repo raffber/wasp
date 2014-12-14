@@ -22,6 +22,7 @@ Next Task
  * configuration
  * recursion
  * implement options => implement an option that consumes several more...
+ * metadata => load at start, automerge with argumentcollection (merge_keep)
 
 
 Todos
@@ -38,9 +39,7 @@ Todos
 Implement before initial API stability
 =======================================
  * enable building only a specific target with: ./wasp <command> --target :whatever
- * allow people to name the build file either BUILD or build.py or just build?!
  * ArgumentCollection.load('asdf.json') to load an ArgumentCollection from a file
- * recursion
 
 Refactor steps
 ==============

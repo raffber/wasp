@@ -171,9 +171,6 @@ def run_command(cmd, stdout=None, stderr=None, timeout=100):
     return exit_code
 
 
-module_cache = {}
-
-
 class UnusedArgFormatter(Formatter):
     def check_unused_args(self, used_args, args, kwargs):
         pass
@@ -183,6 +180,9 @@ class UnusedArgFormatter(Formatter):
             return args[key]
         if isinstance(key, str):
             return kwargs.get(key, '')
+
+
+module_cache = {}
 
 
 def load_module_by_path(fpath):

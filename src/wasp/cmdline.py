@@ -3,6 +3,7 @@ import argparse
 from . import ctx, options, command
 from .options import FlagOption
 from .argument import Argument
+from .fs import remove, Directory
 import sys
 
 
@@ -115,3 +116,12 @@ def handle_builtin_options(option_handler):
 @command('clear-cache')
 def clear_cache():
     ctx.cache.clear()
+
+
+@command('clear')
+def clear():
+    ret = []
+    for f in Directory(ctx.builddir).glob('*', exclude='c4che'):
+        ret.append(remove(f))
+
+    return ret

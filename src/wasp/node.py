@@ -1,10 +1,8 @@
 from uuid import uuid4 as generate_uuid
 import os
 from . import ctx, signatures, old_signatures
-from .signature import FileSignature, Signature
+from .signature import FileSignature, Signature, CacheSignature
 from .argument import ArgumentCollection
-
-# TODO: is signature attribute actually required?!
 
 
 class Node(object):
@@ -16,15 +14,22 @@ class Node(object):
         self._id = identifier
 
     @property
-    def signature(self):
-        return Signature()
-
-    def has_changed(self):
-        raise NotImplementedError
-
-    @property
     def identifier(self):
         return self._id
+
+    @property
+    def signature(self):
+        signature = signatures.get(self.identifier)
+        assert signature is not None
+        return signature
+
+    def has_changed(self):
+        sig = old_signatures.get(self.identifier)
+        if sig is None:
+            return True
+        if sig != self.signature:
+            return True
+        return False
 
 
 class FileNode(Node):
@@ -53,24 +58,15 @@ class FileNode(Node):
     def extension(self):
         return self._extension
 
-    def has_changed(self):
-        sig = old_signatures.get(self._path)
-        if sig is None:
-            return True
-        if sig != self.signature:
-            return True
-        return False
-
-    @property
-    def signature(self):
-        signature = signatures.get(self._path)
-        assert signature is not None
-        return signature
-
 
 class SymbolicNode(Node):
     def __init__(self, identifier):
         super().__init__(identifier=identifier)
+        signature = signatures.get(self.identifier)
+        if signature is None:
+            # signature was either not initialized or it was invalidated
+            signature = CacheSignature(identifier, prefix='symblic-nodes', key=identifier)
+            signatures.add(signature)
 
     def read(self):
         """
@@ -88,10 +84,6 @@ class SymbolicNode(Node):
         :return: None
         """
         ctx.cache.prefix('symblic-nodes')[self.identifier] = args
-
-    @property
-    def signature(self):
-        raise NotImplementedError
 
 
 def is_symbolic_node_string(arg):

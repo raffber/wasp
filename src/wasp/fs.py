@@ -4,6 +4,7 @@ from .node import FileNode
 from .task import Task
 from .util import Serializable
 from . import factory, ctx
+from .generator import Generator
 
 MODULE_DIR = os.path.realpath(os.path.dirname(__file__))
 # TODO: this might cause problems if the extraction path of wasp is changed.
@@ -58,8 +59,7 @@ class Directory(Serializable):
     def path(self):
         return self._path
 
-    def glob(self, pattern, recusive=False):
-        # TODO: implement
+    def glob(self, pattern, recusive=False, exclude=None):
         raise NotImplementedError
 
     def ensure_exists(self):
@@ -197,9 +197,10 @@ class RemoveTask(Task, Serializable):
         return 'rm ' + ' '.join(files)
 
     def _run(self):
-        # TODO: implement recursive
-        for f in files:
-            os.remove(f)
+        raise NotImplementedError
+        # # TODO: implement recursive
+        # for f in self.files:
+        #     os.remove(f)
 
     def to_json(self):
         raise NotImplementedError
@@ -214,3 +215,48 @@ factory.register(RemoveTask)
 
 def remove(*args):
     raise NotImplementedError
+
+
+def copy(source, destination, flags=None):
+    raise NotImplementedError
+
+
+BINARY_PERMISSIONS = 755
+DEFAULT_PERMSSIONS = 644
+
+
+class FileInstallGenerator(Generator):
+
+    def __init__(self, fpaths, destination='{PREFIX}/share/{PROJECTID}', permissions=BINARY_PERMISSIONS):
+        self._destination = destination
+        self._files = files(fpaths)
+
+    @property
+    def key(self):
+        return '-'.join(str(self._files))
+
+    @property
+    def destination(self):
+        return self._destination
+
+    def run(self):
+        ret = []
+        destdir = Directory(self.destination)
+        for f in self._files:
+            cp = copy(f, destdir.join(f)).require_all()
+            ret.append(cp)
+        return ret
+
+    @classmethod
+    def from_json(cls, d):
+        raise NotImplementedError
+
+    def to_json(self):
+        raise NotImplementedError
+
+
+factory.register(FileInstallGenerator)
+
+
+def defer_install(file, destination='{PREFIX}/share/{PROJECTID}', permissions=DEFAULT_PERMSSIONS, command='install'):
+    ctx.generators(command).add(FileInstallGenerator(file, destination=destination, permissions=permissions))
