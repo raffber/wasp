@@ -5,10 +5,10 @@ class Generator(Serializable):
 
     @property
     def key(self):
-        pass
+        raise NotImplementedError
 
     def run(self):
-        pass
+        raise NotImplementedError
 
 
 class GeneratorCollection(dict, Serializable):

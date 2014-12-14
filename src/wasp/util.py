@@ -236,6 +236,7 @@ class Proxy(object):
         elif name == '__has_object':
             return data['obj'].__class__ != object
         if not data['obj'].__class__ != object:
+
             raise RuntimeError(data['msg'])
         return getattr(data['obj'], name)
 

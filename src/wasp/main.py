@@ -4,12 +4,77 @@ from .context import Context
 from .task import Task
 from . import recurse_files
 from .util import is_iterable
-from .cmdline import OptionHandler
-from .config import Config
+import argparse
 from . import ctx
 import os
 
 FILE_NAMES = ['build.py', 'build.user.py', 'BUILD', 'BUILD.user']
+
+
+class CommandAction(argparse.Action):
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        if 'commands' not in namespace:
+            setattr(namespace, 'commands', [])
+        if values is None:
+            return
+        previous = namespace.commands
+        previous.append(values)
+        setattr(namespace, 'commands', previous)
+
+
+class OptionHandler(object):
+    def __init__(self):
+        self._commands = []
+        self._verbosity = 0
+        self._argparse = argparse.ArgumentParser(description='Welcome to {0}'.format(ctx.projectname))
+        # retrieve descriptions of commands
+        descriptions = {}
+        for com in ctx.commands:
+            descriptions[com.name] = com.description
+        # create a set of command names that can be called
+        command_names = set(map(lambda x: x.name, ctx.commands))
+        # TODO: check sorting, how?!
+        for name in command_names:
+            self._argparse.add_argument(name, help=descriptions[name], action=CommandAction, default=None, nargs='?')
+        for option_decorator in decorators.options:
+            if len(option_decorator.commands) != 0:
+                if option_decorator.commands in sys.argv:
+                    option_decorator(ctx.options)
+                else:
+                    pass
+                    # TODO: unused options collection! such that previous options can still be retrieved
+                    # mark the retrieved options as unused and then add them to the optionscollection as well
+            else:
+                option_decorator(ctx.options)
+        ctx.options.add_to_argparse(self._argparse)
+        parsed = self._argparse.parse_args()
+        self._commands = parsed.commands
+        ctx.options.retrieve_from_dict(vars(parsed))
+        self._options_dict = vars(parsed)
+        for fun in decorators.handle_options:
+            fun(self)
+
+    @property
+    def options_dict(self):
+        return self._options_dict
+
+    @property
+    def commands(self):
+        return self._commands
+
+    @property
+    def argparse(self):
+        return self._argparse
+
+    def set_verbosity(self, verbosity):
+        assert isinstance(verbosity, int) and 0 <= verbosity <= 5, 'Verbosity must be between 0 and 5'
+        self._verbosity = verbosity
+
+    def get_verbosity(self):
+        return self._verbosity
+
+    verbosity = property(get_verbosity, set_verbosity)
 
 
 def create_context(recurse_files):
@@ -40,13 +105,13 @@ def handle_no_command(options):
     ctx.log.warn('Warning: wasp called without command.')
 
 
-def run_command(name, executed_commands):
+def run_command(name, executed_commands=[]):
     """
     Runs a command specified by name. All dependencies of the command are
     executed, if they have not successfully executed before.
     :param name: The name of the command in question.
     :param executed_commands: List of commands that have already been executed.
-    :return:
+    :return: True if the executed is successful, False otherwise
     """
     command_cache = ctx.cache.prefix('commands')
     if name in executed_commands:
@@ -60,10 +125,10 @@ def run_command(name, executed_commands):
         for dependency in command.depends:
             if not dependency in command_cache:
                 # dependency never executed
-                run_command(dependency, executed_commands)
+                run_command(dependency, executed_commands=executed_commands)
             elif not command_cache[dependency]['success']:
                 # dependency not executed successfully
-                run_command(dependency, executed_commands)
+                run_command(dependency, executed_commands=executed_commands)
     # now run the commands
     for command in ctx.commands:
         if command.name != name:

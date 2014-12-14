@@ -167,3 +167,7 @@ class options(FunctionDecorator):
             assert isinstance(com, str), 'commands must be given as strings'
         decorators.options.append(self)
 
+
+class handle_options(object):
+    def __init__(self, f):
+        decorators.handle_options.append(f)

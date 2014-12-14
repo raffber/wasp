@@ -60,12 +60,12 @@ def recurse(*fpaths):
 recurse_files = []
 
 from .context import Context
-from .options import options
+from .options import options, handle_options
 from .argument import Argument,  MissingArgumentError
-from .command import build, configure, install, command
+from .builtin import build, configure, install
+from .commands import command
 from .hooks import init, create_context
 from .fs import Directory, File
-from .generator import generate
 from .task import Task, group
 from .shell import shell
 from .fs import Directory, TOP_DIR, file, files

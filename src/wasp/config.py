@@ -17,10 +17,12 @@ CONFIG_FILE_NAMES = ['waprc.json', 'wasprc.user.json']
 
 class Config(object):
 
-    def __init__(self, json_data):
+    def __init__(self, json_data=None):
         self._arguments = ArgumentCollection()
         self._python_path = None
         self._verbosity = None
+        if json_data is None:
+            return
         if not isinstance(json_data, dict):
             raise ValueError
         for key, value in json_data.items():
