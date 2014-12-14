@@ -37,15 +37,8 @@ class OptionHandler(object):
         # TODO: check sorting, how?!
         for name in command_names:
             self._argparse.add_argument(name, help=descriptions[name], action=CommandAction, default=None, nargs='?')
+        # option decorators => TODO: different groups for command options
         for option_decorator in decorators.options:
-            if len(option_decorator.commands) != 0:
-                if option_decorator.commands in sys.argv:
-                    option_decorator(ctx.options)
-                else:
-                    pass
-                    # TODO: unused options collection! such that previous options can still be retrieved
-                    # mark the retrieved options as unused and then add them to the optionscollection as well
-            else:
                 option_decorator(ctx.options)
         ctx.options.add_to_argparse(self._argparse)
         parsed = self._argparse.parse_args()

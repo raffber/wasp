@@ -1,6 +1,6 @@
 from . import options, signatures, ctx
 from .decorators import decorators
-from src.wasp.main import run_command
+from .main import run_command
 from .util import FunctionDecorator
 from .commands import Command, command
 from .options import FlagOption, handle_options
