@@ -21,6 +21,9 @@ class Metadata(Serializable):
             return self._other[item]
         return None
 
+    def get(self, item):
+        return self.__getattr__(item)
+
     @classmethod
     def from_json(cls, d):
         self = cls()

@@ -1,6 +1,5 @@
-from .environment import Environment
-from .options import OptionsCollection
 from . import ctx, factory
+
 from .util import Serializable, CannotSerializeError
 
 from itertools import chain
@@ -30,7 +29,7 @@ class ArgumentCollection(Serializable):
             self[arg.key] = arg
             return
         # if arg == self, we get a serious f****up and undebuggable crash, so check this
-        assert issubclass(arg, ArgumentCollection) and arg != self, 'Can only add() Argument or ' \
+        assert isinstance(arg, ArgumentCollection) and arg != self, 'Can only add() Argument or ' \
                                                                     'ArgumentCollection to ArgumentCollection'
         assert arg.name is not None, 'ArgumentCollection() must have a key, otherwise ' \
                                      'it cannot be added to ArgumentCollection'
@@ -181,7 +180,6 @@ class Argument(Serializable):
 
     def __init__(self, key, value=None, type=str):
         self.key = key
-        self._type = type
         self.lowerkey = key.lower()
         self.upperkey = key.upper()
         self._value = None
@@ -200,6 +198,10 @@ class Argument(Serializable):
         value = factory.from_json(d['value'])
         key = d['key']
         return cls(key, value=value, type=type(value))
+
+    @property
+    def type(self):
+        return self._required_type
 
     def get_value(self):
         return self._value
@@ -224,7 +226,11 @@ class Argument(Serializable):
     value = property(get_value, set_value)
 
     def _retrieve_from_single(self, arg):
-        # TODO: argumentcollection
+        from .metadata import Metadata
+        from .config import Config
+        from .environment import Environment
+        from .options import OptionsCollection
+
         if isinstance(arg, Environment):
             # environment variable
             return arg.get(self.upperkey)
@@ -235,6 +241,14 @@ class Argument(Serializable):
         elif isinstance(arg, dict):
             # keyword argument
             return arg.get(self.lowerkey, None)
+        elif isinstance(arg, Metadata):
+            return arg.get(self.lowerkey)
+        elif isinstance(arg, ArgumentCollection):
+            v = arg.get(self.lowerkey)
+            if v is not None:
+                return v.value
+        elif isinstance(arg, Config):
+            return self._retrieve_from_single(arg.arguments)
         elif isinstance(arg, str):
             return arg
         elif isinstance(arg, list):
@@ -249,11 +263,11 @@ class Argument(Serializable):
                 break
         if self.value is None:
             self.value = default
-        return self.value
+        return self
 
     def retrieve_all(self, default=None):
-        self.retrieve(ctx.arguments, ctx.options, ctx.config, ctx.env, default=default)
-        return self.value
+        self.retrieve(ctx.arguments, ctx.options, ctx.config, ctx.meta, ctx.env, default=default)
+        return self
 
     def require_type(self, tp):
         self._required_type = tp

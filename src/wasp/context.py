@@ -20,6 +20,15 @@ import os
 class Context(object):
 
     def __init__(self, meta=None, config=None, recurse_files=[], builddir='build'):
+        self._generators = {}
+        self._tools = {}
+        self._arguments = ArgumentCollection()
+        # initialize options
+        self._options = OptionsCollection()
+        self._env = Environment()
+        self._commands = []
+        self._tasks = TaskCollection()
+        self._tooldir = Directory('wasp-tools')
         # we need to get the initialization order right.
         # the simplest way to do this is to initialize things first
         # that have no dependencies
@@ -48,15 +57,6 @@ class Context(object):
         # such that everything that depends on the cache
         # has valid data and does not accidently read old stuff
         self.load()
-        # initialize options
-        self._options = OptionsCollection()
-        self._env = Environment()
-        self._commands = []
-        self._tasks = TaskCollection()
-        self._tooldir = Directory('wasp-tools')
-        self._tools = {}
-        self._arguments = ArgumentCollection()
-        self._generators = {}
 
     def get_tooldir(self):
         return self._tooldir
@@ -158,13 +158,18 @@ class Context(object):
     def save(self):
         d = self.cache.prefix('script-signatures')
         for fpath, signature in self._scripts_signatures.items():
-            d[fpath] = signature.to_json()
+            d[fpath] = signature
         signatures.save(self._cache)
+        d = self.cache.prefix('generators')
+        for key, generator_collection in self._generators.items():
+            d[key] = generator_collection
         self.cache.save()
 
     def load(self):
         self._cache.load()
         old_signatures.load(self._cache)
+        for key, generator_collection in self._cache.prefix('generators').items():
+            self._generators[key] = generator_collection
         signatures = self._cache.prefix('script-signatures')
         invalid = False
         for (fpath, signature) in self._scripts_signatures.items():
@@ -188,5 +193,5 @@ class Context(object):
         return self._cache
 
     def run_tasks(self):
-        jobs = Argument('jobs', type=int).retrieve_all(default=1)
+        jobs = Argument('jobs', type=int).retrieve_all(default=1).value
         execute(self.tasks, jobs=jobs)

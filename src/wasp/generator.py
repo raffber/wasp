@@ -19,11 +19,18 @@ class GeneratorCollection(dict, Serializable):
     @classmethod
     def from_json(cls, d):
         assert isinstance(d, dict), 'Expected dictionary of serialized generators.'
-        return cls(factory.from_json(d))
+        ret = {}
+        for key, value in d.items():
+            if key == '__type__':
+                continue
+            ret[key] = factory.from_json(value)
+        return cls(ret)
 
     def to_json(self):
         d = super().to_json()
-        d.update(dict((k, factory.to_json(v)) for k, v in self.items()))
+        for k, v in self.items():
+            d[k] = v.to_json()
+        return d
 
 
 factory.register(GeneratorCollection)

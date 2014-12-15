@@ -143,6 +143,15 @@ def run_command(name, executed_commands=[]):
             assert False, 'Unrecognized return value from {0}'.format(name)
         # else tasks is None, thats fine
         found = True
+    for generator in ctx.generators(name).values():
+        found = True
+        tasks = generator.run()
+        if is_iterable(tasks):
+            ctx.tasks.add(tasks)
+        elif isinstance(tasks, Task):
+            ctx.tasks.add(tasks)
+        elif tasks is not None:
+            assert False, 'Unrecognized return value from {0}'.format(name)
     if not found:
         raise NoSuchCommandError('No command with name `{0}` found!'.format(name))
     # now execute all tasks

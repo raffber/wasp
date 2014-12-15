@@ -2,9 +2,14 @@ from .task import Task
 from .util import is_iterable
 
 
+# TODO: refactor, this became pointless, but build improved task collection api here
+
+
 class TaskCollection(dict):
 
-    def __init__(self, traits=[]):
+    def __init__(self, traits=None):
+        if traits is None:
+            traits = []
         self._traits = traits
 
     def add(self, task):

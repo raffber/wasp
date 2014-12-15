@@ -34,7 +34,12 @@ def require_version(*args):
         minor = args[1]
     if len(args) >= 3:
         point = args[2]
-    VERSION.is_compatible(major, minor, point)
+    assert VERSION.is_compatible(major, minor, point), 'Incompatible wasp version used.'
+
+
+from .platform import OSInfo
+osinfo = OSInfo()
+
 
 from .logging import Logger
 log = Logger()
@@ -65,7 +70,6 @@ recurse_files = []
 from .context import Context
 from .options import options, handle_options
 from .argument import Argument,  MissingArgumentError
-from .builtin import build, configure, install
 from .commands import command
 from .hooks import init, create_context
 from .fs import Directory, File
@@ -73,5 +77,4 @@ from .task import Task, group
 from .shell import shell
 from .fs import Directory, TOP_DIR, files
 from .tools import tool
-
-
+from .builtin import build, configure, install

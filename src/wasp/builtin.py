@@ -1,11 +1,19 @@
-from . import options, signatures, ctx
+from . import options, signatures, ctx, init
 from .decorators import decorators
 from .main import run_command
 from .util import FunctionDecorator
 from .commands import Command, command
 from .options import FlagOption, handle_options
 from .argument import Argument
-from .fs import remove, Directory
+from .fs import remove
+
+
+@handle_options
+def _init_default_args(options):
+    arg = Argument('prefix').retrieve_all()
+    if arg.is_empty:
+        ctx.arguments.add(arg.assign('/usr'))
+
 
 @options
 def _add_builtin_options(option_collection):
@@ -48,10 +56,18 @@ class build(FunctionDecorator):
         super().__init__(f)
         decorators.commands.append(Command('build', f, description='Builds the project', depends='configure'))
         found_rebuild = False
+        found_configure = False
         for com in decorators.commands:
             if com.name == 'rebuild':
                 found_rebuild = True
                 break
+            if com.name == 'configure':
+                found_configure = True
+                break
+        if not found_configure:
+            @configure
+            def _configure():
+                return None
         if not found_rebuild:
             # register rebuild command
             @command('rebuild', description='Cleans the project and invokes build afterwards.')
@@ -64,7 +80,15 @@ class install(FunctionDecorator):
     def __init__(self, f):
         super().__init__(f)
         decorators.append(Command('install', f, description='Installs the project', depends='build'))
-
+        found_build = False
+        for com in decorators.commands:
+            if com.name == 'build':
+                found_build = True
+                break
+        if not found_build:
+            @build
+            def _build():
+                return None
 
 class configure(FunctionDecorator):
     def __init__(self, f):

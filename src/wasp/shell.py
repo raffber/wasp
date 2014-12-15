@@ -31,6 +31,8 @@ class ShellTask(Task):
         kw = {'SRC': src_str,
               'TGT': tgt_str}
         for key, arg in self.arguments.items():
+            if arg.type != str and arg.type != list:
+                continue
             val = arg.value
             if isinstance(val, list):
                 val = ' '.join([str(i) for i in list])

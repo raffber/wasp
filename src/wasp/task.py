@@ -81,7 +81,11 @@ class Task(object):
         for arg in self._required_arguments:
             if arg.key not in self.arguments:
                 # attempt to retrieve the argument from the common sources
-                self.arguments.add(Argument(arg.key).retrieve_all())
+                arg = Argument(arg.key).retrieve_all()
+                if arg.is_empty:
+                    raise MissingArgumentError('Missing argument for task "{0}":'
+                                               ' Required argument "{1}" is empty.'.format(self.identifier, arg.key))
+                self.arguments.add(arg)
             elif self.arguments[arg.key].is_empty:
                 self.arguments[arg.key].retrieve_all()
                 if self.arguments[arg.key].is_empty():
@@ -255,13 +259,16 @@ class Task(object):
 
     result = property(get_result, set_result)
 
-    def require(self, arguments):
-        # add arguments to a list and check them before execution
-        if isinstance(arguments, str):
-            arguments = [Argument(arguments)]
-        elif isinstance(arguments, list):
-            arguments = [Argument(arg) if isinstance(arg, str) else arg for arg in arguments]
-        self._required_arguments.extend(arguments)
+    def require(self, *arguments):
+        for arg in arguments:
+            # add arguments to a list and check them before execution
+            if arg is None:
+                continue
+            if isinstance(arg, str):
+                ext = [Argument(arg)]
+            elif isinstance(arg, list):
+                ext = [Argument(x) if isinstance(x, str) else x for x in arguments]
+            self._required_arguments.extend(ext)
         return self
 
 

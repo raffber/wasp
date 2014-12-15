@@ -1,5 +1,7 @@
 import os
 import re
+import shutil
+
 from .node import FileNode
 from .task import Task
 from .util import Serializable, is_iterable
@@ -91,8 +93,6 @@ class Path(Serializable):
                 Path(total).remove()
 
 
-
-
 def paths(*args):
     ret = []
     for item in args:
@@ -125,7 +125,15 @@ class Directory(Path):
 
     def join(self, *args, append=''):
         """Joins the positional arguments as path and appends a string to them"""
-        return os.path.join(self.path, *args) + append
+        new_args = []
+        for arg in args:
+            if isinstance(arg, File) or isinstance(arg, FileNode):
+                new_args.append(arg.path)
+            else:
+                assert isinstance(arg, str), 'Expected either File, FileNode' \
+                                             ' or str, but found `{0}`'.format(type(arg).__name__)
+                new_args.append(arg)
+        return os.path.join(self.path, *new_args) + append
 
     def glob(self, pattern, exclude=None, dirs=True):
         """
@@ -185,6 +193,9 @@ class File(Path):
 
     def is_relative(self):
         return not os.path.isabs(self._path)
+
+    def basename(self):
+        return os.path.basename(self._path)
 
     @property
     def extension(self):
@@ -266,24 +277,52 @@ def remove(*args, recursive=False):
     return RemoveFileTask(args, recursive=recursive)
 
 
-def copy(source, destination, flags=None):
-    raise NotImplementedError
+BINARY_PERMISSIONS = 0o755
+DEFAULT_PERMSSIONS = 0o644
 
 
-BINARY_PERMISSIONS = 755
-DEFAULT_PERMSSIONS = 644
+class CopyFileTask(Task):
+
+    def __init__(self, fs, destination, permissions=DEFAULT_PERMSSIONS, recursive=False):
+        self._recursive = recursive
+        self._permissions = permissions
+        self._destination = Directory(destination)
+        self._files = files(fs, ignore=True)
+        super().__init__(targets=fs, always=True)
+
+    def _run(self):
+        for f in self._files:
+            destpath = self._destination.path
+            kw = {}
+            for k, v in self.arguments.items():
+                if v.type != str:
+                    continue
+                kw[k] = v.value
+            formatted = destpath.format(**kw)
+            if self._recursive:
+                shutil.copytree(str(f), formatted)
+            else:
+                shutil.copy2(str(f), formatted)
+            os.chmod(formatted, self._permissions)
+
+
+def copy(source, destination, permissions=None, recursive=False):
+    return CopyFileTask(source, destination, permissions=permissions, recursive=recursive)
+
+
+factory.register(CopyFileTask)
 
 
 class FileInstallGenerator(Generator):
 
     def __init__(self, fpaths, destination='{PREFIX}/share/{PROJECTID}', permissions=DEFAULT_PERMSSIONS):
-        self._destination = destination
+        self._destination = Directory(destination)
         self._permissions = permissions
         self._files = files(fpaths)
 
     @property
     def key(self):
-        return '-'.join(str(self._files))
+        return '-'.join([str(x) for x in self._files])
 
     @property
     def destination(self):
@@ -291,22 +330,31 @@ class FileInstallGenerator(Generator):
 
     @property
     def permissions(self):
-        return self.permissions
+        return self._permissions
 
     def run(self):
         ret = []
-        destdir = Directory(self.destination)
+        require = None
+        # TODO: require all {asdf} in destination path
+        if '{PREFIX}' in self._destination.path:
+            require = 'PREFIX'
         for f in self._files:
-            cp = copy(f, destdir.join(f)).require_all()
+            cp = copy(f, self._destination.join(f.basename())).require(require)
             ret.append(cp)
         return ret
 
     @classmethod
     def from_json(cls, d):
-        raise NotImplementedError
+        return cls(factory.from_json(d['files'])
+                   , permissions=d['permissions']
+                   , destination=factory.from_json(d['destination']))
 
     def to_json(self):
-        raise NotImplementedError
+        d = super().to_json()
+        d['files'] = factory.to_json(self._files)
+        d['permissions'] = self.permissions
+        d['destination'] = self._destination.to_json()
+        return d
 
 
 factory.register(FileInstallGenerator)

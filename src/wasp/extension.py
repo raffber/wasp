@@ -113,9 +113,3 @@ class ExtensionBase(object):
     @property
     def name(self):
         raise NotImplementedError
-
-
-def has_ext(typ, *extensions):
-    if all([x in ctx.ext for x in extensions]):
-        return typ
-    return type(None)

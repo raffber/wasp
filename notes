@@ -2,11 +2,10 @@ Random thoughts
 ---------------
  * verbosity per decorator (use command class, assign all tasks their logger just after calling a command)
  * removed prefix from context for the time being. Argument('prefix') should be used. probably make a default option --prefix '/usr'
- * waf lock
  * daemon: simply use generator functions. also make an @changed(extension) available
  * could we integrate pip, easy_install? just install extensions as eggs?
- * argumentprovider => register, such that retireve(asdf) works automatically by dispatching.
- * rename File into Path
+ * argumentprovider => register, such that retireve(asdf) works automatically by dispatching. => singledispatch?
+ * improve ctx.commands API
 
 # TODO: note, that at the moment global installation of wasp is not possible
         The implementation of this ``feature`` does not have particular priority, since
@@ -22,10 +21,7 @@ Next Task
 ==========
 
  * extensions
- * configuration
- * recursion
  * implement options => implement an option that consumes several more...
- * metadata => load at start, automerge with argumentcollection (merge_keep)
 
 
 Todos
