@@ -7,6 +7,7 @@ from .task import Task
 from .util import Serializable, is_iterable
 from . import factory, ctx
 from .generator import Generator
+from .argument import format_string, find_argumentkeys_in_string
 from glob import glob
 
 MODULE_DIR = os.path.realpath(os.path.dirname(__file__))
@@ -293,12 +294,7 @@ class CopyFileTask(Task):
     def _run(self):
         for f in self._files:
             destpath = self._destination.path
-            kw = {}
-            for k, v in self.arguments.items():
-                if v.type != str:
-                    continue
-                kw[k] = v.value
-            formatted = destpath.format(**kw)
+            formatted = format_string(destpath, self.arguments)
             if self._recursive:
                 shutil.copytree(str(f), formatted)
             else:
@@ -334,10 +330,7 @@ class FileInstallGenerator(Generator):
 
     def run(self):
         ret = []
-        require = None
-        # TODO: require all {asdf} in destination path
-        if '{PREFIX}' in self._destination.path:
-            require = 'PREFIX'
+        require = find_argumentkeys_in_string(str(self.destination))
         for f in self._files:
             cp = copy(f, self._destination.join(f.basename())).require(require)
             ret.append(cp)

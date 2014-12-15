@@ -267,7 +267,7 @@ class Task(object):
             if isinstance(arg, str):
                 ext = [Argument(arg)]
             elif isinstance(arg, list):
-                ext = [Argument(x) if isinstance(x, str) else x for x in arguments]
+                ext = [Argument(x) if isinstance(x, str) else x for x in arg]
             self._required_arguments.extend(ext)
         return self
 

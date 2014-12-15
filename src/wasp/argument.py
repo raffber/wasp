@@ -1,8 +1,12 @@
 from . import ctx, factory
-
-from .util import Serializable, CannotSerializeError
+import re
+from .util import Serializable, CannotSerializeError, UnusedArgFormatter
 
 from itertools import chain
+
+
+ARGUMENT_KEY_RE_STR = '[\w\d]+[\w\d_-]*'
+ARGUMENT_KEY_RE = re.compile('^' + ARGUMENT_KEY_RE_STR + '$')
 
 
 class MissingArgumentError(Exception):
@@ -186,6 +190,9 @@ class Argument(Serializable):
         self._required_type = None
         self._use_type(type)
         self.set_value(value)
+        m = ARGUMENT_KEY_RE.match(key)
+        if not m:
+            raise ValueError('Invalid argument key, expected `{0}`'.format(ARGUMENT_KEY_RE_STR))
 
     def to_json(self):
         d = super().to_json()
@@ -281,6 +288,24 @@ class Argument(Serializable):
     def assign(self, value):
         self.value = value
         return self
+
+
+def format_string(string, arguments, all_required=False):
+    kw = {}
+    for k, v in arguments.items():
+        if v.type != str:
+            continue
+        kw[k] = v.value
+    if all_required:
+        s = string.format(**kw)
+    else:
+        s = UnusedArgFormatter().format(string, kw)
+    return s
+
+
+def find_argumentkeys_in_string(string):
+    exp = re.compile('\{(?P<argkey>' + ARGUMENT_KEY_RE_STR + ')\}')
+    return exp.findall(string)
 
 
 factory.register(Argument)
