@@ -155,9 +155,23 @@ class ArgumentCollection(Serializable):
     def __iter__(self):
         return self.keys()
 
+    # necessary?!
+    # def __len__(self):
+    #     len_subs = len(self._subs) if self._subs is not None else 0
+    #     return len(self._d) + len_subs
+
     def isempty(self):
         parent_empty = self._parent is None or self._parent.isempty()
-        return len(self._subs) == 0 and parent_empty and len(self._d) == 0
+        return (self._subs is not None and len(self._subs) == 0) or parent_empty or len(self._d) == 0
+
+    def overwrite_merge(self, higher_priority):
+        for k, v in higher_priority.items():
+            self[k] = v
+
+    def keep_merge(self, lower_priority):
+        for k, v in lower_priority.items():
+            if k not in self:
+                self[k] = v
 
 
 factory.register(ArgumentCollection)

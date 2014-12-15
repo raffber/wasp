@@ -36,6 +36,9 @@ def require_version(*args):
         point = args[2]
     VERSION.is_compatible(major, minor, point)
 
+from .logging import Logger
+log = Logger()
+
 
 from .util import Factory, Serializable
 factory = Factory()
@@ -68,7 +71,7 @@ from .hooks import init, create_context
 from .fs import Directory, File
 from .task import Task, group
 from .shell import shell
-from .fs import Directory, TOP_DIR, file, files
+from .fs import Directory, TOP_DIR, files
 from .tools import tool
 
 

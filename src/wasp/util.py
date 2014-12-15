@@ -159,6 +159,15 @@ class FunctionDecorator(object):
         return self._f(*args, **kwargs)
 
 
+class ArgumentFunctionDecorator(object):
+
+    def __call__(self, f):
+        def wrapper(*args, **kw):
+            return f(*args, **kw)
+        functools.update_wrapper(wrapper, f)
+        return wrapper
+
+
 def run_command(cmd, stdout=None, stderr=None, timeout=100):
     cmd = shlex.split(cmd)
     process = Popen(cmd, stdout=PIPE, stderr=PIPE)
@@ -181,6 +190,10 @@ class UnusedArgFormatter(Formatter):
         if isinstance(key, str):
             return kwargs.get(key, '')
 
+
+def parse_assert(condition, msg):
+    if not condition:
+        raise ValueError(msg)
 
 module_cache = {}
 

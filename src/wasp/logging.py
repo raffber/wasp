@@ -8,7 +8,9 @@ class Logger(object):
     INFO = 4
     DEBUG = 5
 
-    def __init__(self, prepend='', verbosity=0, use_stdout=True, io=None):
+    DEFAULT = 3
+
+    def __init__(self, prepend='', verbosity=DEFAULT, use_stdout=True, io=None):
         self._use_stdout = use_stdout
         self._verbosity = verbosity
         self._io = io

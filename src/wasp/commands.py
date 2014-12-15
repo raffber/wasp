@@ -1,5 +1,5 @@
 from .decorators import decorators
-from .util import FunctionDecorator
+from .util import ArgumentFunctionDecorator
 
 
 class CommandFailedError(Exception):
@@ -32,7 +32,12 @@ class Command(object):
         return self._description
 
 
-class command(FunctionDecorator):
-    def __init__(self, f, name, depends=None, description=None):
-        super().__init__(f)
-        decorators.commands.append(Command(name, f, description=description, depends=depends))
+class command(ArgumentFunctionDecorator):
+    def __init__(self, name, depends=None, description=None):
+        self._name = name
+        self._depends = depends
+        self._description = description
+
+    def __call__(self, f):
+        decorators.commands.append(Command(self._name, f, description=self._description, depends=self._depends))
+        return super().__call__(f)

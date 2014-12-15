@@ -24,3 +24,6 @@ class GeneratorCollection(dict, Serializable):
     def to_json(self):
         d = super().to_json()
         d.update(dict((k, factory.to_json(v)) for k, v in self.items()))
+
+
+factory.register(GeneratorCollection)

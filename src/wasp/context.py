@@ -12,21 +12,23 @@ from .logging import Logger
 from .execution import execute
 from .config import Config
 from .generator import GeneratorCollection
+from .metadata import Metadata
 from . import old_signatures, signatures
 import os
 
 
 class Context(object):
 
-    def __init__(self, projectname='myproject', config=None, recurse_files=[], builddir='build'):
+    def __init__(self, meta=None, config=None, recurse_files=[], builddir='build'):
         # we need to get the initialization order right.
         # the simplest way to do this is to initialize things first
         # that have no dependencies
-        self._log = Logger()
-        self.projectname = projectname
+        if meta is None:
+            meta = Metadata()
+        self._meta = meta
         # create the directories
         self._topdir = Directory(TOP_DIR,  make_absolute=True)
-        assert self._topdir.valid, 'The given topdir must exist!!'
+        assert self._topdir.exists, 'The given topdir must exist!!'
         self._builddir = Directory(builddir)
         self._builddir.ensure_exists()
         self._cachedir = Directory(self._builddir.join('c4che'))
@@ -72,6 +74,10 @@ class Context(object):
     def config(self):
         return self._config
 
+    @property
+    def meta(self):
+        return self._meta
+
     def load_tool(self, toolname, *args, path=None):
         if toolname in self._tools:
             ret = self._tools[toolname]
@@ -116,10 +122,6 @@ class Context(object):
         if commandname not in self._generators:
             self._generators[commandname] = GeneratorCollection()
         return self._generators[commandname]
-
-    @property
-    def log(self):
-        return self._log
 
     @property
     def topdir(self):

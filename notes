@@ -5,6 +5,8 @@ Random thoughts
  * waf lock
  * daemon: simply use generator functions. also make an @changed(extension) available
  * could we integrate pip, easy_install? just install extensions as eggs?
+ * argumentprovider => register, such that retireve(asdf) works automatically by dispatching.
+ * rename File into Path
 
 # TODO: note, that at the moment global installation of wasp is not possible
         The implementation of this ``feature`` does not have particular priority, since
@@ -13,11 +15,12 @@ Random thoughts
 Bugs
 =======
 
+    * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
+    * rebuild does not work :(
 
 Next Task
 ==========
 
- * generators
  * extensions
  * configuration
  * recursion

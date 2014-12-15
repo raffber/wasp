@@ -2,9 +2,10 @@ import os
 import re
 from .node import FileNode
 from .task import Task
-from .util import Serializable
+from .util import Serializable, is_iterable
 from . import factory, ctx
 from .generator import Generator
+from glob import glob
 
 MODULE_DIR = os.path.realpath(os.path.dirname(__file__))
 # TODO: this might cause problems if the extraction path of wasp is changed.
@@ -28,7 +29,85 @@ def sanitize_path(fpath):
     return fpath
 
 
-class Directory(Serializable):
+class DirectoryNotEmptyError(Exception):
+    pass
+
+
+class Path(Serializable):
+
+    def __init__(self, path, make_absolute=False):
+        if isinstance(path, Path) or isinstance(path, FileNode):
+            path = path.path
+        if make_absolute:
+            path = os.path.realpath(path)
+        else:
+            path = sanitize_path(path)
+        self._path = path
+        self._absolute = make_absolute
+
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def exists(self):
+        """Checks if the path exits"""
+        return os.path.exists(self._path)
+
+    def __str__(self):
+        return self._path
+
+    @classmethod
+    def from_json(cls, d):
+        return cls(d['path'], make_absolute=d['absolute'])
+
+    def to_json(self):
+        d = super().to_json()
+        d.update({'path': self.path, 'absolute': self._absolute})
+        return d
+
+    def isdir(self):
+        return os.path.isdir(self.path)
+
+    def remove(self, recursive=True):
+        if not self.isdir():
+            os.remove(self.path)
+            return
+        lst = os.listdir(self.path)
+        if len(lst) != 0 and not recursive:
+            raise DirectoryNotEmptyError('Directory not empty: `{0}`'.format(self.path))
+        for path in lst:
+            total = os.path.join(self.path, path)
+            isdir = os.path.isdir(total)
+            if isdir and recursive:
+                Path(total).remove(recursive=True)
+            elif isdir:
+                try:
+                    os.rmdir(total)
+                except OSError:
+                    pass
+            else:
+                Path(total).remove()
+
+
+
+
+def paths(*args):
+    ret = []
+    for item in args:
+        if isinstance(item, Path):
+            ret.append(item)
+        elif isinstance(item, str):
+            ret.append(Path(item))
+        elif isinstance(item, FileNode):
+            ret.append(Path(item.path))
+        elif is_iterable(item):
+            ret.extend(paths(*item))
+    return ret
+
+
+class Directory(Path):
     # TODO: implement serializable
 
     def __init__(self, path, make_absolute=False):
@@ -38,29 +117,35 @@ class Directory(Serializable):
         :param path: Path to a directory or path to a file.
         :param make_absolute: Defines whether the directory should be handleded as an absolute directory or a relative one.
         """
-        if make_absolute:
-            path = os.path.realpath(path)
-        else:
-            path = sanitize_path(path)
+        if isinstance(path, Path) or isinstance(path, FileNode):
+            path = path.path
         if os.path.isfile(path):
             path = os.path.dirname(path)
-        self._path = path
+        super().__init__(path, make_absolute=make_absolute)
 
     def join(self, *args, append=''):
         """Joins the positional arguments as path and appends a string to them"""
         return os.path.join(self.path, *args) + append
 
-    @property
-    def valid(self):
-        """Checks if the directory exits"""
-        return os.path.isdir(self._path)
-
-    @property
-    def path(self):
-        return self._path
-
-    def glob(self, pattern, recusive=False, exclude=None):
-        raise NotImplementedError
+    def glob(self, pattern, exclude=None, dirs=True):
+        """
+        Finds all path names in the directory according to unix-shell rules. The exculde pattern
+        is given in regular expressions. This method uses glob.glob() internally.
+        :param pattern: Unix-shell like pattern to match.
+        :param dirs: If True, directories are matched as well, otherwise, they are excluded
+        :param exclude: Regular expression pattern for exculding files.
+        """
+        ret = []
+        exculde_pattern = re.compile(exclude)
+        globs = glob(os.path.join(self.path, pattern))
+        for x in globs:
+            m = exculde_pattern.match(x)
+            if m:
+                continue
+            if os.path.isdir(x) and not dirs:
+                continue
+            ret.append(x)
+        return ret
 
     def ensure_exists(self):
         try:
@@ -68,28 +153,11 @@ class Directory(Serializable):
         except FileExistsError:
             pass
 
-    def __str__(self):
-        return self._path
-
 
 factory.register(Directory)
 
 
-class File(Serializable):
-    # TODO: implement serializable
-
-    def __init__(self, path, make_absolute=False):
-        """
-        Initializes a file object with the given path.
-        :param path: Path to the file. The file may or may not exist.
-        :param make_absolute: Make the path absolute in all cases.
-        """
-        assert isinstance(path, str), 'Path to file must be given as a string'
-        if make_absolute:
-            self._path = os.path.realpath(path)
-        else:
-            self._path = sanitize_path(path)
-        self._absolute = make_absolute
+class File(Path):
 
     def directory(self):
         """
@@ -122,20 +190,15 @@ class File(Serializable):
     def extension(self):
         return os.path.splitext(self._path)[1]
 
-    @property
-    def path(self):
-        return self._path
-
-    def __str__(self):
-        return self._path
-
-
 factory.register(File)
 
 
 class FileCollection(list):
 
-    def __init__(self, fs):
+    def __init__(self, fs=None):
+        super().__init__()
+        if fs is None:
+            return
         assert isinstance(fs, list) or isinstance(fs, File), \
             'A file collection can only be created from a File or a list thereof'
         if isinstance(fs, list):
@@ -167,54 +230,40 @@ class FileCollection(list):
         return ret
 
 
-def file(arg):
-    if isinstance(arg, FileNode):
-        return File(arg.path)
-    elif isinstance(arg, str):
-        return File(arg)
-
-
-def files(*args):
-    if len(args) == 1:
-        if isinstance(args, list):
-            return files(*args)
+def files(*args, ignore=False):
     ret = FileCollection()
     for f in args:
         if isinstance(f, FileNode):
             ret.append(File(f.path))
         elif isinstance(f, str):
             ret.append(File(f))
+        elif isinstance(f, File):
+            ret.append(f)
+        elif is_iterable(f):
+            ret.extend(files(*f))
+        elif not ignore:
+            raise ValueError('No compatible type given to `files()`. Expected FileNode, str or File.')
     return ret
 
 
-class RemoveTask(Task, Serializable):
+class RemoveFileTask(Task):
 
     def __init__(self, fs, recursive=False):
         self._recursive = recursive
+        self._files = files(fs, ignore=True)
         super().__init__(targets=fs, always=True)
 
-    def _make_id(self):
-        return 'rm ' + ' '.join(files)
-
     def _run(self):
-        raise NotImplementedError
-        # # TODO: implement recursive
-        # for f in self.files:
-        #     os.remove(f)
-
-    def to_json(self):
-        raise NotImplementedError
-
-    @classmethod
-    def from_json(cls, d):
-        raise NotImplementedError
+        for f in self._files:
+            f.remove()
+        self.success = True
 
 
-factory.register(RemoveTask)
+factory.register(RemoveFileTask)
 
 
-def remove(*args):
-    raise NotImplementedError
+def remove(*args, recursive=False):
+    return RemoveFileTask(args, recursive=recursive)
 
 
 def copy(source, destination, flags=None):
@@ -227,8 +276,9 @@ DEFAULT_PERMSSIONS = 644
 
 class FileInstallGenerator(Generator):
 
-    def __init__(self, fpaths, destination='{PREFIX}/share/{PROJECTID}', permissions=BINARY_PERMISSIONS):
+    def __init__(self, fpaths, destination='{PREFIX}/share/{PROJECTID}', permissions=DEFAULT_PERMSSIONS):
         self._destination = destination
+        self._permissions = permissions
         self._files = files(fpaths)
 
     @property
@@ -238,6 +288,10 @@ class FileInstallGenerator(Generator):
     @property
     def destination(self):
         return self._destination
+
+    @property
+    def permissions(self):
+        return self.permissions
 
     def run(self):
         ret = []

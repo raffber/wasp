@@ -6,19 +6,19 @@ from json import dumps
 import os
 
 
-class SignatureProvider(object):
-    def __init__(self):
-        self._db = {}
+class SignatureProvider(dict):
 
     def add(self, signature):
-        self._db[signature.identifier] = signature
+        self[signature.identifier] = signature
 
-    def get(self, signature_identifier):
-        return self._db.get(signature_identifier)
+    def get(self, signature_identifier, *default):
+        if len(default) > 1:
+            raise TypeError('get expected at most 2 arguments, got {0}'.format(len(default)))
+        return super().get(signature_identifier, *default)
 
     def save(self, cache):
         ret = {}
-        for id_, signature in self._db.items():
+        for id_, signature in self.items():
             if signature.valid:
                 ret[signature.identifier] = signature.to_json()
         cache.prefix('signaturedb').update(ret)
@@ -27,7 +27,7 @@ class SignatureProvider(object):
         if isinstance(identifier, Signature):
             identifier = identifier.identifier
         assert isinstance(identifier, str), 'The identifier must be given as either a subclass of signature or str'
-        signature = self._db.get(identifier)
+        signature = self.get(identifier)
         if signature is None:
             raise ValueError('Invalid identifier for signature')
         signature.refresh()
@@ -123,6 +123,12 @@ class FileSignature(Signature):
             self._valid = False
             self._value = None
             return
+        if os.path.isdir(self.path):
+            # TODO: think about this.... maybe use all the content?!
+            # that would be useful for example when packaging a .tgz
+            self._value = 'directory'
+            self._valid = True
+            return self._value
         with open(self.path, 'rb') as f:
             m.update(f.read())
         value = b2a(m.digest())

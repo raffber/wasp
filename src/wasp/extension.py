@@ -1,7 +1,7 @@
 import os
 import json
 from .util import load_module_by_path
-from . import ctx
+from . import ctx, log
 
 
 class ExtensionCollection(dict):
@@ -36,7 +36,7 @@ class ExtensionCollection(dict):
                 self.load_in_search_path(extension, loading=loading_new)
         import_path = os.path.join(fpath, '__init__.py')
         if not os.path.exists(import_path):
-            ctx.log.warn('Extension directory `{0}` exists but does not contain an __init__.py file. Skipping.')
+            log.warn('Extension directory `{0}` exists but does not contain an __init__.py file. Skipping.')
             return
         self._import(import_path, meta=meta)
 

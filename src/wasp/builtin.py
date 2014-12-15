@@ -47,6 +47,17 @@ class build(FunctionDecorator):
     def __init__(self, f):
         super().__init__(f)
         decorators.commands.append(Command('build', f, description='Builds the project', depends='configure'))
+        found_rebuild = False
+        for com in decorators.commands:
+            if com.name == 'rebuild':
+                found_rebuild = True
+                break
+        if not found_rebuild:
+            # register rebuild command
+            @command('rebuild', description='Cleans the project and invokes build afterwards.')
+            def _rebuild():
+                run_command('clean')
+                run_command('build', executed_commands=['clear'])
 
 
 class install(FunctionDecorator):
@@ -75,14 +86,9 @@ def _clear_cache():
 @clean
 def _clean():
     ret = []
-    for f in Directory(ctx.builddir).glob('*', exclude='c4che'):
+    for f in ctx.builddir.glob('*', exclude='c4che'):
         ret.append(remove(f))
-    for signature in signatures:
+    for signature in signatures.values():
         signature.invalidate()
     return ret
 
-
-@command('rebuild', description='Cleans the project and invokes build afterwards.')
-def _rebuild():
-    run_command('clear')
-    run_command('build', executed_commands=['clear'])

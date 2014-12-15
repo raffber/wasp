@@ -1,6 +1,6 @@
 from .task import Task
 from .util import EventLoop, Event, is_iterable
-from . import ctx
+from . import log
 
 from threading import Thread
 
@@ -151,7 +151,7 @@ class Executor(object):
 def preprocess(tasks):
     for task in tasks:
         real_task = task.task
-        real_task.log.configure(verbosity=ctx.log.verbosity)
+        real_task.log.configure(verbosity=log.verbosity)
 
 
 def execute(tasks, jobs=1):

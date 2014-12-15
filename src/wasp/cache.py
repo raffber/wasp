@@ -1,6 +1,6 @@
 import json
 from .fs import Directory
-from . import ctx, factory
+from . import log, factory
 
 CACHE_FILE = 'c4che.json'
 
@@ -48,7 +48,7 @@ class Cache(dict):
             if not isinstance(jsonified, dict):
                 # invalid cache file, ignore
                 # XXX: cannot use ctx.log
-                print('Cachefile is invalid. Ignoring.')
+                log.error('Cachefile is invalid. Ignoring.')
             else:
                 self.update(factory.from_json(jsonified))
         except FileNotFoundError:
