@@ -292,14 +292,20 @@ class CopyFileTask(Task):
         super().__init__(targets=fs, always=True)
 
     def _run(self):
+        self.success = True
         for f in self._files:
             destpath = self._destination.path
             formatted = format_string(destpath, self.arguments)
-            if self._recursive:
-                shutil.copytree(str(f), formatted)
-            else:
-                shutil.copy2(str(f), formatted)
-            os.chmod(formatted, self._permissions)
+            try:
+                if self._recursive:
+                    shutil.copytree(str(f), formatted)
+                else:
+                    shutil.copy2(str(f), formatted)
+                os.chmod(formatted, self._permissions)
+            except OSError as e:
+                self.log.fatal('Failed to copy `{0}` to `{1}`: {2}'.format(str(f), formatted, str(e)))
+                self.success = False
+                break
 
 
 def copy(source, destination, permissions=None, recursive=False):

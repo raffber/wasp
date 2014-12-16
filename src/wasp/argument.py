@@ -299,7 +299,7 @@ def format_string(string, arguments, all_required=False):
     if all_required:
         s = string.format(**kw)
     else:
-        s = UnusedArgFormatter().format(string, kw)
+        s = UnusedArgFormatter().format(string, **kw)
     return s
 
 

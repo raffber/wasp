@@ -29,12 +29,12 @@ def _add_builtin_options(option_collection):
 
 @handle_options
 def _handle_builtin_options(option_handler):
-    verbosity_one = Argument('v', type=bool).retrieve(ctx.options)
-    verbosity_two = Argument('vv', type=bool).retrieve(ctx.options)
-    verbosity_three = Argument('vvv', type=bool).retrieve(ctx.options)
-    verbosity_four = Argument('vvvv', type=bool).retrieve(ctx.options)
-    verbosity_five = Argument('vvvvv', type=bool).retrieve(ctx.options)
-    quiet = Argument('q', type=bool).retrieve(ctx.options)
+    verbosity_one = Argument('v', type=bool).retrieve(ctx.options).value
+    verbosity_two = Argument('vv', type=bool).retrieve(ctx.options).value
+    verbosity_three = Argument('vvv', type=bool).retrieve(ctx.options).value
+    verbosity_four = Argument('vvvv', type=bool).retrieve(ctx.options).value
+    verbosity_five = Argument('vvvvv', type=bool).retrieve(ctx.options).value
+    quiet = Argument('q', type=bool).retrieve(ctx.options).value
     if verbosity_five:
         option_handler.verbosity = 5
     elif verbosity_four:
