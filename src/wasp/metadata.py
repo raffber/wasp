@@ -13,23 +13,31 @@ class Metadata(Serializable):
         self._other = {}
 
     def __setattr__(self, key, value):
-        assert value is None or isinstance(value, str) or all([isinstance(x, str) for x in value])
-        self._other[key] = value
+        self.set(key, value)
 
     def __getattr__(self, item):
-        if item in self._other:
-            return self._other[item]
+        return self.get(item)
+
+    def get(self, key):
+        if key in dir(self):
+            return object.__getattribute__(self, key)
+        if key in self._other:
+            return self._other[key]
         return None
 
-    def get(self, item):
-        return self.__getattr__(item)
+    def set(self, key, value):
+        assert value is None or isinstance(value, str) or all([isinstance(x, str) for x in value])
+        if key not in dir(self):
+            self._other[key] = value
+        object.__setattr__(self, key, value)
 
     @classmethod
     def from_json(cls, d):
         self = cls()
         assert isinstance(d, dict), 'Expected a dict as serialization'
         for k, v in d.items():
-            self.__setattribute__(k, v)
+            self.set(k, v)
+        return self
 
     def to_json(self):
         ret = super().to_json()

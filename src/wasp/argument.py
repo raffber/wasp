@@ -290,6 +290,9 @@ class Argument(Serializable):
         return self
 
 
+factory.register(Argument)
+
+
 def format_string(string, arguments, all_required=False):
     kw = {}
     for k, v in arguments.items():
@@ -308,4 +311,15 @@ def find_argumentkeys_in_string(string):
     return exp.findall(string)
 
 
-factory.register(Argument)
+def value(arg, default=None):
+    if isinstance(arg, Argument):
+        if not arg.is_empty:
+            ret = arg.value
+        else:
+            ret = arg.retrieve_all().value
+    else:
+        assert isinstance(arg, str), 'Expected Argument or str, got `{0}`'.format(type(arg).__name__)
+        ret = Argument(arg).retrieve_all().value
+    if ret is None:
+        return default
+    return ret

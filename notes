@@ -14,12 +14,14 @@ Random thoughts
 Bugs
 =======
 
+    * decoratorstore is bugged!
     * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
     * rebuild does not work :(
 
 Next Task
 ==========
 
+ * util.Namespace class for decorator => inheit metadata, decoratorstore from it
  * extensions
  * implement options => implement an option that consumes several more...
 

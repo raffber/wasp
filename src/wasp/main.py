@@ -87,7 +87,7 @@ def create_context(loaded_files, config=None):
         metadata = config.metadata
         if decorators.metadata is not None:
             metadata = decorators.metadata()
-        context = Context(recurse_files=loaded_files, meta=metadata)
+        context = Context(recurse_files=loaded_files, meta=metadata, config=config)
     context.arguments.overwrite_merge(config.arguments)
     import wasp
     # assign context to proxy

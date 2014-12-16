@@ -4,7 +4,7 @@ from .metadata import Metadata
 from . import log
 import json
 
-CONFIG_FILE_NAMES = ['waprc.json', 'wasprc.user.json']
+CONFIG_FILE_NAMES = ['wasprc.json', 'wasprc.user.json']
 
 
 # TODO: more generic approach than what's here at the moment
@@ -57,8 +57,7 @@ class Config(object):
         for fname in fnames:
             path = str(Directory(fpath).join(fname))
             c = cls.from_file(path)
-            if not c.isempty():
-                ret.append(c)
+            ret.append(c)
         config = None
         for x in ret:
             if config is None:
@@ -95,9 +94,6 @@ class Config(object):
     @property
     def metadata(self):
         return self._metadata
-
-    def isempty(self):
-        return self.arguments.isempty() or self.python_path is None or self._verbosity is None
 
     def _parse_verbosity(self, value):
         value = value.lower().trim()

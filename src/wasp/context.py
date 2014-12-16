@@ -8,12 +8,11 @@ from .util import load_module_by_path
 from .tools import ToolError, NoSuchToolError
 from .tools import proxies
 from .fs import TOP_DIR, Directory
-from .logging import Logger
 from .execution import execute
 from .config import Config
 from .generator import GeneratorCollection
 from .metadata import Metadata
-from . import old_signatures, signatures
+from . import old_signatures, signatures, log
 import os
 
 
@@ -177,7 +176,7 @@ class Context(object):
                 continue
             old_sig = signatures[fpath]
             if old_sig != signature:
-                self.log.info('Build scripts have changed since last execution!'
+                log.info('Build scripts have changed since last execution!'
                               'All previous configurations have been cleared!')
                 invalid = True
                 break
