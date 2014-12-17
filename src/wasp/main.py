@@ -102,6 +102,7 @@ def handle_no_command(options):
     :param options: OptionsCollection with the options specified.
     :return: None
     """
+    # TODO: does not appear to be called
     log.warn('Warning: wasp called without command.')
 
 

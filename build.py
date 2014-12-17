@@ -15,6 +15,7 @@ def meta():
     ret = wasp.Metadata()
     ret.projectname = 'omgasdf'
 
+
 @wasp.build
 def build():
     print(value('projectname'))
@@ -28,3 +29,11 @@ def build():
     link = d.link(one, two)
     return cp, group(one, two, link).use(dc='/usr/bin/dmd')
 
+
+@wasp.command('md')
+def md():
+    mds = wasp.ctx.topdir.glob('*.md')
+    return [wasp.shell('markdown {SRC} > {TGT}'
+                , sources=md
+                , targets=md.to_builddir().replace_extension('html'))
+            for md in wasp.files(mds) ]

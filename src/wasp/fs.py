@@ -145,12 +145,14 @@ class Directory(Path):
         :param exclude: Regular expression pattern for exculding files.
         """
         ret = []
-        exculde_pattern = re.compile(exclude)
+        if exclude is not None:
+            exculde_pattern = re.compile(exclude)
         globs = glob(os.path.join(self.path, pattern))
         for x in globs:
-            m = exculde_pattern.match(x)
-            if m:
-                continue
+            if exclude is not None:
+                m = exculde_pattern.match(x)
+                if m:
+                    continue
             if os.path.isdir(x) and not dirs:
                 continue
             ret.append(x)
@@ -182,7 +184,7 @@ class File(Path):
         :return: A new File object with the processed files.
         """
         root, ext = os.path.splitext(self._path)
-        return File(root + new, make_absolute=self._absolute)
+        return File(root + '.' + new, make_absolute=self._absolute)
 
     def append_extension(self, append):
         if append[0] == '.' or self._path[-1] == '.':
@@ -235,8 +237,11 @@ class FileCollection(list):
         if old is not None:
             old = re.compile(old)
         for f in self:
-            if old is not None and old.match(f.extension):
+            m = old.match(f.extension)
+            if old is not None and m is not None:
                 ret.append(f.replace_extension(new))
+                continue
+            elif m is None:
                 continue
             ret.append(f.replace_extension(new))
         return ret

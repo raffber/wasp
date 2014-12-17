@@ -20,7 +20,7 @@ def main():
     dirname = os.path.dirname(sys.argv[0])
     dirname = os.path.realpath(dirname)
     waspdir = os.path.join(dirname, 'src')
-    target = os.path.join(dirname, 'wasp')
+    target = os.path.join(dirname, 'wasp-build')
     shutil.copy(os.path.join(dirname, 'wasp-prebuild'), target)
     with open(target, 'a') as out:
         out.write('\n\nwasp_packed=[')

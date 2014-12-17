@@ -15,7 +15,7 @@ class MissingArgumentError(Exception):
 
 class ArgumentCollection(Serializable):
     def __init__(self, *args, name=None, parent=None):
-        self._d = dict(*args)
+        self._d = dict(args)
         self._subs = None
         self._parent = None
         self.set_parent(parent)
@@ -168,6 +168,8 @@ class ArgumentCollection(Serializable):
         return (self._subs is not None and len(self._subs) == 0) or parent_empty or len(self._d) == 0
 
     def overwrite_merge(self, higher_priority):
+        if higher_priority is None:
+            return
         for k, v in higher_priority.items():
             self[k] = v
 

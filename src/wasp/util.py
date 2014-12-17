@@ -146,6 +146,8 @@ class EventLoop(object):
                 evt.invoke(*args, **kw)
             self._events.clear()
             # TODO: thread save this; lock on self._events
+            # necessary? these things are atomic in python!
+            # but is clear as well?
 
 
 # XXX: this can still be improved a lot
@@ -169,8 +171,8 @@ class ArgumentFunctionDecorator(object):
 
 
 def run_command(cmd, stdout=None, stderr=None, timeout=100):
-    cmd = shlex.split(cmd)
-    process = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    # cmd = shlex.split(cmd) # no splitting required if shell = True
+    process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
     output, err = process.communicate()
     exit_code = process.wait(timeout=timeout)
     if stdout is not None:

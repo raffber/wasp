@@ -1,7 +1,8 @@
 from .fs import Directory
-from .argument import ArgumentCollection
+from .argument import ArgumentCollection, Argument
 from .metadata import Metadata
 from . import log
+from .util import parse_assert
 import json
 
 CONFIG_FILE_NAMES = ['wasprc.json', 'wasprc.user.json']
@@ -13,28 +14,53 @@ CONFIG_FILE_NAMES = ['wasprc.json', 'wasprc.user.json']
 
 class Config(object):
 
+    class KeyHandler(object):
+        def __init__(self, config, keyname, parser=None, merger=None):
+            self._keyname = keyname
+            self._parser = parser
+            self._value = None
+            self._merger = merger
+
+            def getter(s):
+                return s._handlers[self._keyname]._value
+
+            def setter(s, item):
+                 s._handlers[self._keyname]._value = item
+            setattr(config.__class__, self._keyname, property(getter, setter))
+
+        def parse(self, value):
+            if self._parser is not None:
+                self._value = self._parser(value)
+                return
+            self._value = value
+
+        def overwrite_merge(self, higher_priority):
+            x = getattr(higher_priority, self._keyname)
+            if x is not None:
+                if self._merger:
+                    self._merger(x)
+                    return
+                self._value = x
+
     def __init__(self, json_data=None):
-        self._arguments = ArgumentCollection()
-        self._python_path = None
-        self._verbosity = None
-        self._metadata = None
+        make_handler = lambda k, parser, merger=None: Config.KeyHandler(self, k, parser=parser, merger=merger)
+        self._handlers = {
+            'metadata': make_handler('metadata', lambda x: Metadata.from_json(x)),
+            'pythonpath': make_handler('pythonpath', lambda x: Directory(x)),
+            'verbosity': make_handler('verbosity', self._parse_verbosity),
+            'arguments': make_handler('arguments', self._argument_parser, merger=self._argument_merger),
+        }
         if json_data is None:
             return
         if not isinstance(json_data, dict):
-            raise ValueError
+            raise ValueError('Expected dict as root item of config file, got `{0}`'.format(type(json_data).__name__))
         for key, value in json_data.items():
-            if not isinstance(key, str):
-                raise ValueError
-            if key == 'arguments':
-                if not isinstance(value, dict):
-                    raise ValueError
-                self._arguments.add(**value)
-            elif key == 'pythonpath':
-                self._python_path = Directory(value)
-            elif key == 'metadata':
-                self._metadata = Metadata.from_json(value)
-            elif key == 'verbosity':
-                self._parse_verbosity(value)
+            parse_assert(isinstance(key, str), 'While parsing config file: Expected '
+                                               'string as key, got `{0}`'.format(type(key).__name__))
+            if key in self._handlers:
+                self._handlers[key].parse(value)
+                continue
+            parse_assert(False, 'Unexpected key `{0}`'.format(key))
 
     @classmethod
     def from_file(cls, fpath):
@@ -69,12 +95,8 @@ class Config(object):
         return config
 
     def overwrite_merge(self, higher_priority):
-        hp = higher_priority
-        self._python_path = hp.python_path if hp.python_path is not None else self._python_path
-        self._verbosity = hp.verbosity if hp.verbosity is not None else self._verbosity
-        self._metadata = hp.metadata if hp.metadata is not None else self._metadata
-        if hp.arguments is not None:
-            self._arguments.overwrite_merge(hp.arguments)
+        for handler in self._handlers.values():
+            handler.overwrite_merge(higher_priority)
 
     def keep_merge(self, lower_priority):
         raise NotImplementedError
@@ -91,22 +113,30 @@ class Config(object):
     def verbosity(self):
         return self._verbosity
 
-    @property
-    def metadata(self):
-        return self._metadata
-
     def _parse_verbosity(self, value):
         value = value.lower().trim()
+        ret = 3
         if value == 'debug':
-            self._verbosity = 5
+            ret = 5
         elif value == 'info':
-            self._verbosity = 4
+            ret = 4
         elif value == 'warn':
-            self._verbosity = 3
+            ret = 3
         elif value == 'error':
-            self._verbosity = 2
+            ret = 2
         elif value == 'fatal':
-            self._verbosity = 1
+            ret = 1
         elif value == 'quiet':
-            self._verbosity = 0
+            ret = 0
+        return ret
 
+    def _argument_merger(self, hp):
+        self.arguments.overwrite_merge(hp)
+
+    def _argument_parser(self, d):
+        parse_assert(isinstance(d, dict), 'While parsing config file: Expected a '
+                                          'dictionary for key `arguments` in config file.')
+        ret = ArgumentCollection()
+        for key, value in d.items():
+            ret[key] = Argument(key).assign(value)
+        return ret

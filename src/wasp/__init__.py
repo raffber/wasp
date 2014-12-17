@@ -70,7 +70,7 @@ recurse_files = []
 from .context import Context
 from .options import options, handle_options
 from .argument import Argument, value, format_string, find_argumentkeys_in_string, ArgumentCollection
-from .commands import command
+from .commands import command, Command
 from .hooks import init, create_context
 from .fs import Directory, File
 from .task import Task, group
