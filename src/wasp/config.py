@@ -43,12 +43,13 @@ class Config(object):
                 self._value = x
 
     def __init__(self, json_data=None):
-        make_handler = lambda k, parser, merger=None: Config.KeyHandler(self, k, parser=parser, merger=merger)
+        make_handler = lambda k, parser=None, merger=None: Config.KeyHandler(self, k, parser=parser, merger=merger)
         self._handlers = {
-            'metadata': make_handler('metadata', lambda x: Metadata.from_json(x)),
-            'pythonpath': make_handler('pythonpath', lambda x: Directory(x)),
-            'verbosity': make_handler('verbosity', self._parse_verbosity),
-            'arguments': make_handler('arguments', self._argument_parser, merger=self._argument_merger),
+            'metadata': make_handler('metadata', parser=lambda x: Metadata.from_json(x)),
+            'pythonpath': make_handler('pythonpath', parser=lambda x: Directory(x)),
+            'verbosity': make_handler('verbosity', parser=self._parse_verbosity),
+            'arguments': make_handler('arguments', parser=self._argument_parser, merger=self._argument_merger),
+            'default_command': make_handler('default_command')
         }
         if json_data is None:
             return
@@ -72,8 +73,8 @@ class Config(object):
             log.debug('Config file at {0} does not exist.'.format(fpath))
         try:
             config = Config(json_data=d)
-        except ValueError:
-            log.warn('Invalid config file at {0}. Ignoring.'.format(fpath))
+        except ValueError as e:
+            log.warn('Invalid config file at {0}. Ignoring. Error was:\n{1}'.format(fpath, str(e)))
             return Config()
         return config
 

@@ -102,8 +102,10 @@ def handle_no_command(options):
     :param options: OptionsCollection with the options specified.
     :return: None
     """
-    # TODO: does not appear to be called
-    log.warn('Warning: wasp called without command.')
+    if ctx.config.default_command is not None:
+        run_command(ctx.config.default_command)
+    else:
+        log.warn('Warning: wasp called without command and no default command specified.')
 
 
 def run_command(name, executed_commands=[]):
@@ -183,6 +185,8 @@ def handle_commands(options):
         if not success:
             break
         executed_comands.append(command)
+    if len(executed_comands) == 0:
+        handle_no_command(options)
     return success
 
 

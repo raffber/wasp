@@ -6,9 +6,7 @@ Random thoughts
  * could we integrate pip, easy_install? just install extensions as eggs?
  * argumentprovider => register, such that retireve(asdf) works automatically by dispatching. => singledispatch?
  * improve ctx.commands API
- * Config.default_command
  * @config decorator for returning configuation data => decorator data overwrites config file
- * improve config key handling using factory pattern or sth like this => possibly just use arguments and ArgumentCollection?!
 
 # TODO: note, that at the moment global installation of wasp is not possible
         The implementation of this ``feature`` does not have particular priority, since
