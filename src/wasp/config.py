@@ -115,7 +115,7 @@ class Config(object):
         return self._verbosity
 
     def _parse_verbosity(self, value):
-        value = value.lower().trim()
+        value = value.lower().strip()
         ret = 3
         if value == 'debug':
             ret = 5
