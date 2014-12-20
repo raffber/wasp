@@ -3,7 +3,7 @@ from .decorators import decorators
 from .context import Context
 from .config import Config
 from .task import Task
-from . import recurse_files, ctx, log
+from . import recurse_files, ctx, log, extensions
 from .util import is_iterable
 import argparse
 import os
@@ -242,6 +242,12 @@ def retrieve_verbosity():
     return log.DEFAULT
 
 
+def load_extensions():
+    extpath = os.path.join(os.path.dirname(__file__), 'ext')
+    extensions.search_path.append(extpath)
+    extensions.load_in_search_path()
+
+
 def run(dir_path):
     """
     Runs the application from the given directory. It is assumed that:
@@ -253,6 +259,8 @@ def run(dir_path):
     """
     # first and foremost, initialize logging
     log.configure(retrieve_verbosity())
+    # load all extensions
+    load_extensions()
     # import all modules
     loaded_files = load_directory(dir_path)
     if len(loaded_files) == 0:

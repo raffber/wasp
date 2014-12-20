@@ -1,9 +1,8 @@
 import threading
 import os
-import sys
 import imp  # TODO: ...
 from subprocess import Popen, PIPE
-import shlex
+import sys
 from threading import Event as ThreadingEvent
 from binascii import a2b_base64, b2a_base64
 from string import Formatter
@@ -197,18 +196,19 @@ def parse_assert(condition, msg):
     if not condition:
         raise ValueError(msg)
 
-module_cache = {}
 
-
-def load_module_by_path(fpath):
+def load_module_by_path(fpath, module_name=None):
     """
     Heavily inspired by waf's load_module
     """
     fpath = os.path.realpath(fpath)
-    module = module_cache.get(fpath)
-    if module is not None:
-        return module
-    module = imp.new_module(str(uuid()))
+    # TODO: fpath to module name...
+    # module = module_cache.get(fpath)
+    # if module is not None:
+    #     return module
+    if module_name is None:
+        module_name = str(uuid())
+    module = imp.new_module(module_name)
     dirname = os.path.dirname(fpath)
     sys.path.insert(0, dirname)
     with open(fpath, 'r') as f:
@@ -216,7 +216,7 @@ def load_module_by_path(fpath):
     comp = compile(code, fpath, 'exec')
     exec(comp, module.__dict__)
     sys.path.remove(dirname)
-    module_cache[fpath] = module
+    # module_cache[fpath] = module
     return module
 
 

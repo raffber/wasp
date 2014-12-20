@@ -48,9 +48,14 @@ log = Logger()
 from .util import Factory, Serializable
 factory = Factory()
 
+
 from .signature import SignatureProvider, SignatureStore
 signatures = SignatureProvider()
 old_signatures = SignatureStore()
+
+
+from .extension import ExtensionCollection, ExtensionMetadata
+extensions = ExtensionCollection()
 
 
 def recurse(*fpaths):

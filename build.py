@@ -1,5 +1,6 @@
 from wasp import ctx, File, group, shell, tool, Argument, value
 import wasp
+from wasp.ext.daemon import daemon
 
 
 d = tool('d')
@@ -14,6 +15,7 @@ def init():
 def meta():
     ret = wasp.Metadata()
     ret.projectname = 'omgasdf'
+    return ret
 
 
 @wasp.build

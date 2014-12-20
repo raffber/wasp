@@ -44,7 +44,7 @@ class Metadata(Serializable):
         for k in dir(self):
             if k.startswith('__') or k == 'to_json':
                 continue
-            ret[k] = self.__getattribute__(k)
+            ret[k] = self.get(k)
         for k, v in self._other.items():
             ret[k] = v
         return ret

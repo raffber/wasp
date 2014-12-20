@@ -1,12 +1,14 @@
 import os
 import json
 from .util import load_module_by_path
-from . import ctx, log
+from . import log
 
 
 class ExtensionCollection(dict):
 
-    def __init__(self, search_path):
+    def __init__(self, search_path=None):
+        if search_path is None:
+            search_path = []
         assert isinstance(search_path, str) or (isinstance(search_path, list)
             and all([isinstance(x, str) for x in search_path])), 'Argument search_path: expected str or list thereof.'
         self._search_path = search_path if isinstance(search_path, list) else [search_path]
@@ -14,12 +16,23 @@ class ExtensionCollection(dict):
         self._meta = {}
         self._recently_added = []
 
-    def register(self, extension, meta=None):
-        self._recently_added.append(extension.name)
-        self._extension[extension.name] = extension
-        self._meta[extension.name] = meta
+    def register(self, extension=None, meta=None):
+        assert extension is not None or meta is not None, 'Either an extension or ' \
+                                                          'the metadata to it or both must be given.'
+        if extension is None:
+            name = meta.name
+        else:
+            name = extension.name
+        if name in self._extension:
+            log.warn('Extension `{0}` loaded twice. Ignoring.'.format(name))
+            return
+        self._recently_added.append(name)
+        self._extension[name] = extension
+        self._meta[name] = meta
 
     def load_from_directory(self, fpath, loading=None):
+        if '__pycache__' in fpath:
+            return
         meta = os.path.join(fpath, 'meta.json')
         if os.path.exists(meta):
             with open(meta, 'r') as f:
@@ -33,18 +46,36 @@ class ExtensionCollection(dict):
             for extension in meta.requires:
                 if extension in self._extension:
                     continue
-                self.load_in_search_path(extension, loading=loading_new)
+                self.load_in_search_path(name=extension, loading=loading_new)
         import_path = os.path.join(fpath, '__init__.py')
         if not os.path.exists(import_path):
-            log.warn('Extension directory `{0}` exists but does not contain an __init__.py file. Skipping.')
+            log.warn('Extension directory `{0}` exists but does not contain an __init__.py file. Skipping.'.format(import_path))
             return
         self._import(import_path, meta=meta)
 
-    def load_in_search_path(self, extension, loading=None):
-        pass
+    def load_in_search_path(self, name=None, loading=None):
+        for sp in self.search_path:
+            if name is not None:
+                dirpath = os.path.join(sp, name)
+                fpath = os.path.join(sp, name, '.py')
+                if os.path.isdir(dirpath):
+                    self.load_from_directory(dirpath, loading=loading)
+                elif os.path.isfile(fpath):
+                    self.load_from_file(fpath, loading=loading)
+            else:
+                for fpath in os.listdir(sp):
+                    fpath = os.path.join(sp, fpath)
+                    if os.path.isdir(fpath):
+                        self.load_from_directory(fpath, loading=loading)
+                    elif os.path.isfile(fpath):
+                        self.load_from_file(fpath, loading=loading)
+
+    @property
+    def search_path(self):
+        return self._search_path
 
     def load_from_file(self, fpath,  loading=None):
-        pass
+        self._import(fpath, meta=None)
 
     def _import(self, fpath, meta=None):
         self._recently_added = []
@@ -53,9 +84,6 @@ class ExtensionCollection(dict):
             if self._meta[key] is not None:
                 self._meta = meta
         self._recently_added = []
-
-    def _parse_meta(self, d):
-        pass
 
 
 class ExtensionMetadata(object):
