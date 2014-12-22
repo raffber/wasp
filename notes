@@ -7,19 +7,22 @@ Random thoughts
  * improve ctx.commands API
  * @config decorator for returning configuation data => decorator data overwrites config file
  * util.Namespace class for decorator => inherit metadata, decoratorstore from it
+ * task decorator for assigning a function to a command and a
+ * automatically create a symbolic node for function with <name> which is called ':def-<name>'
+ * command task decorator allows defining a target node
+ * automatically load tools that have not been loaded after init (but declared)
+ * only allow module paths for extensions, load extensions in all those module paths automatically
+ * remove requires and wants from extensions
+
+
+Global Installation and call from subdirectory
+==============================================
+
 
 # TODO: note, that at the moment global installation of wasp is not possible
         The implementation of this ``feature`` does not have particular priority, since
         it is not the intended design of wasp. Though it might be useful for performance enhancement.
 
-Import Problem
-===============
-
- * search closest path in sys.path
- * if it is a subpath, import it using __import__
- * get path components and execute __import__
- * do not add wasp.ext to sys.path
- * => keep meta.json, because it is useful!
 
 Bugs
 =======

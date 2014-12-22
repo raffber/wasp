@@ -100,7 +100,7 @@ class Context(object):
                     data['obj'] = module
                 ret = module
             except FileNotFoundError:
-                raise NoSuchToolError('No such tool: {0}'.format(toolname))
+                raise NoSuchToolError('Tool with name `{0}` not found in `{1}`'.format(toolname, path))
         if len(args) > 0:
             ret = [ret]
         for arg in args:
@@ -145,10 +145,6 @@ class Context(object):
     @property
     def options(self):
         return self._options
-
-    @property
-    def store(self):
-        return self._store
 
     @property
     def commands(self):

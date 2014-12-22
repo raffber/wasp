@@ -1,7 +1,6 @@
 import threading
 import os
 import imp  # TODO: ...
-from subprocess import Popen, PIPE
 import sys
 from threading import Event as ThreadingEvent
 from binascii import a2b_base64, b2a_base64
@@ -169,18 +168,6 @@ class ArgumentFunctionDecorator(object):
         return wrapper
 
 
-def run_command(cmd, stdout=None, stderr=None, timeout=100):
-    # cmd = shlex.split(cmd) # no splitting required if shell = True
-    process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
-    output, err = process.communicate()
-    exit_code = process.wait(timeout=timeout)
-    if stdout is not None:
-        stdout.write(output.decode('UTF-8'))
-    if stderr is not None:
-        stderr.write(err.decode('UTF-8'))
-    return exit_code
-
-
 class UnusedArgFormatter(Formatter):
     def check_unused_args(self, used_args, args, kwargs):
         pass
@@ -214,6 +201,7 @@ def load_module_by_path(fpath, module_name=None):
     with open(fpath, 'r') as f:
         code = f.read()
     comp = compile(code, fpath, 'exec')
+    module.__dict__['__file__'] = fpath
     exec(comp, module.__dict__)
     sys.path.remove(dirname)
     # module_cache[fpath] = module

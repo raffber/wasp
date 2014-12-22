@@ -14,7 +14,7 @@ class MissingArgumentError(Exception):
 
 
 class Task(object):
-    def __init__(self, sources=[], targets=[], children=[], always=False, identifier=None):
+    def __init__(self, sources=[], targets=[], children=[], always=False, identifier=None, fun=None):
         self._sources = make_nodes(sources)
         self._targets = make_nodes(targets)
         if len(self._sources) == 0 and len(self._targets) == 0:
@@ -31,6 +31,8 @@ class Task(object):
             self._id = identifier
         self._run_list = CallableList()
         self._run_list.append(self._run)
+        if fun is not None:
+            self._run_list.append(fun)
         self._prepare_list = CallableList()
         self._prepare_list.append(self._prepare)
         self._success_list = CallableList()
@@ -341,3 +343,7 @@ def group(*args, collapse=True):
     if len(args) == 1 and collapse:
         return args[0]
     return TaskGroup(args)
+
+
+def sequential(*args):
+    raise NotImplementedError

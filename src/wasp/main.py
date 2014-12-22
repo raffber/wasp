@@ -3,6 +3,7 @@ from .decorators import decorators
 from .context import Context
 from .config import Config
 from .task import Task
+from .tools import proxies as tool_proxies, NoSuchToolError
 from . import recurse_files, ctx, log, extensions
 from .util import is_iterable
 import argparse
@@ -248,6 +249,15 @@ def load_extensions():
     extensions.load_in_search_path()
 
 
+def load_tools():
+    try:
+        for proxy_name in tool_proxies:
+            ctx.load_tool(proxy_name)
+    except NoSuchToolError as e:
+        log.fatal('Not all tools were loaded during init. Autoloading failed:')
+        log.fatal(str(e))
+
+
 def run(dir_path):
     """
     Runs the application from the given directory. It is assumed that:
@@ -282,6 +292,9 @@ def run(dir_path):
     # run all init() hooks
     for hook in decorators.init:
         hook()
+    # autoload all tools that have not been loaded
+    load_tools()
+    # parse options
     options = OptionHandler()
     log.configure(options.verbosity)
     success = handle_commands(options)

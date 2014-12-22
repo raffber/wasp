@@ -1,8 +1,9 @@
 from .task import Task
 from .node import FileNode
 from .argument import Argument
-from .util import UnusedArgFormatter, run_command
+from .util import UnusedArgFormatter
 from io import StringIO
+from subprocess import Popen, PIPE
 
 
 class ShellTask(Task):
@@ -59,7 +60,7 @@ class ShellTask(Task):
         commandstring = self._format_cmd(**kw)
         out = StringIO()
         err = StringIO()
-        exit_code = run_command(commandstring, stdout=out, stderr=err)
+        exit_code = run(commandstring, stdout=out, stderr=err)
         self.log.info(commandstring + ': ' + str(exit_code))
         self.success = exit_code == 0
         self.has_run = True
@@ -91,3 +92,15 @@ class ShellTask(Task):
 
 def shell(cmd, sources=[], targets=[], always=False):
     return ShellTask(sources=sources, targets=targets, cmd=cmd, always=always)
+
+
+def run(cmd, stdout=None, stderr=None, timeout=100):
+    # cmd = shlex.split(cmd) # no splitting required if shell = True
+    process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
+    output, err = process.communicate()
+    exit_code = process.wait(timeout=timeout)
+    if stdout is not None:
+        stdout.write(output.decode('UTF-8'))
+    if stderr is not None:
+        stderr.write(err.decode('UTF-8'))
+    return exit_code

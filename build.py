@@ -1,27 +1,12 @@
-from wasp import ctx, File, group, shell, tool, Argument, value
+from wasp import File, group, shell, tool, Directory
 import wasp
-from wasp.ext.daemon import daemon
-
 
 d = tool('d')
-
-
-@wasp.init
-def init():
-    ctx.load_tool('d', path='wasp-tools')
-
-
-@wasp.metadata
-def meta():
-    ret = wasp.Metadata()
-    ret.projectname = 'omgasdf'
-    return ret
+current_dir = Directory(__file__)
 
 
 @wasp.build
 def build():
-    print(value('projectname'))
-    print(value('projectid'))
     f = File('notes')
     cp = shell('cp {CPFLAGS} {SRC} {TGT}',
                sources=f, targets=f.to_builddir()
@@ -34,8 +19,7 @@ def build():
 
 @wasp.command('md')
 def md():
-    mds = wasp.ctx.topdir.glob('*.md')
-    return [wasp.shell('markdown {SRC} > {TGT}'
-                , sources=md
-                , targets=md.to_builddir().replace_extension('html'))
-            for md in wasp.files(mds) ]
+    mds = current_dir.glob('*.md')
+    return [wasp.shell('markdown {SRC} > {TGT}', sources=md,
+                       targets=md.to_builddir().replace_extension('html'))
+            for md in wasp.files(mds)]
