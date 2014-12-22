@@ -4,13 +4,12 @@ Random thoughts
  * daemon: simply use generator functions. also make an @changed(extension) available
  * could we integrate pip, easy_install? just install extensions as eggs? => test for import pip
  * argumentprovider => register, such that retireve(asdf) works automatically by dispatching. => singledispatch?
- * improve ctx.commands API
  * @config decorator for returning configuation data => decorator data overwrites config file
  * util.Namespace class for decorator => inherit metadata, decoratorstore from it
  * task decorator for assigning a function to a command and a
+ * improve ctx.commands API
  * automatically create a symbolic node for function with <name> which is called ':def-<name>'
  * command task decorator allows defining a target node
- * automatically load tools that have not been loaded after init (but declared)
  * only allow module paths for extensions, load extensions in all those module paths automatically
  * remove requires and wants from extensions
 
@@ -32,6 +31,7 @@ Bugs
 Next Task
 ==========
 
+ * fix import crap
  * extensions
  * implement options => implement an option that consumes several more...
 

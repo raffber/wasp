@@ -2,7 +2,7 @@ from .util import load_module_by_path
 from .decorators import decorators
 from .context import Context
 from .config import Config
-from .task import Task
+from .task import Task, group
 from .tools import proxies as tool_proxies, NoSuchToolError
 from . import recurse_files, ctx, log, extensions
 from .util import is_iterable
@@ -140,8 +140,12 @@ def run_command(name, executed_commands=[]):
             continue
         tasks = command.run()
         if is_iterable(tasks):
+            if command.produce is not None:
+                tasks = group(tasks).produce(command.produce)
             ctx.tasks.add(tasks)
         elif isinstance(tasks, Task):
+            if command.produce is not None:
+                tasks.produce(command.produce)
             ctx.tasks.add(tasks)
         elif tasks is not None:
             assert False, 'Unrecognized return value from {0}'.format(name)
