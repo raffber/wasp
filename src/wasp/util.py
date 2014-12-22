@@ -1,7 +1,7 @@
+import importlib
 import threading
 import os
-import imp  # TODO: ...
-import sys
+from importlib.machinery import SourceFileLoader
 from threading import Event as ThreadingEvent
 from binascii import a2b_base64, b2a_base64
 from string import Formatter
@@ -185,27 +185,16 @@ def parse_assert(condition, msg):
 
 
 def load_module_by_path(fpath, module_name=None):
-    """
-    Heavily inspired by waf's load_module
-    """
-    fpath = os.path.realpath(fpath)
-    # TODO: fpath to module name...
-    # module = module_cache.get(fpath)
-    # if module is not None:
-    #     return module
     if module_name is None:
         module_name = str(uuid())
-    module = imp.new_module(module_name)
-    dirname = os.path.dirname(fpath)
-    sys.path.insert(0, dirname)
-    with open(fpath, 'r') as f:
-        code = f.read()
-    comp = compile(code, fpath, 'exec')
-    module.__dict__['__file__'] = fpath
-    exec(comp, module.__dict__)
-    sys.path.remove(dirname)
-    # module_cache[fpath] = module
-    return module
+    fpath = os.path.realpath(fpath)
+    loader = SourceFileLoader(module_name, fpath)
+    m = loader.load_module()
+    return m
+
+
+def load_module_by_name(name):
+    return importlib.import_module(name)
 
 
 def is_iterable(arg):
