@@ -2,7 +2,8 @@ from .fs import Directory
 from .argument import ArgumentCollection, Argument
 from .metadata import Metadata
 from . import log
-from .util import parse_assert
+from .util import parse_assert, FunctionDecorator
+from .decorators import decorators
 import json
 
 CONFIG_FILE_NAMES = ['wasprc.json', 'wasprc.user.json']
@@ -102,18 +103,6 @@ class Config(object):
     def keep_merge(self, lower_priority):
         raise NotImplementedError
 
-    @property
-    def arguments(self):
-        return self._arguments
-
-    @property
-    def python_path(self):
-        return self._python_path
-
-    @property
-    def verbosity(self):
-        return self._verbosity
-
     def _parse_verbosity(self, value):
         value = value.lower().strip()
         ret = 3
@@ -141,3 +130,8 @@ class Config(object):
         for key, value in d.items():
             ret[key] = Argument(key).assign(value)
         return ret
+
+
+class config(FunctionDecorator):
+    def __init__(self, f):
+        decorators.config.append(f)

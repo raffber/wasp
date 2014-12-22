@@ -1,17 +1,35 @@
-Random thoughts
----------------
- * verbosity per decorator (use command class, assign all tasks their logger just after calling a command)
- * daemon: simply use generator functions. also make an @changed(extension) available
- * could we integrate pip, easy_install? just install extensions as eggs? => test for import pip
- * argumentprovider => register, such that retireve(asdf) works automatically by dispatching. => singledispatch?
- * @config decorator for returning configuation data => decorator data overwrites config file
- * util.Namespace class for decorator => inherit metadata, decoratorstore from it
- * task decorator for assigning a function to a command and a
- * improve ctx.commands API
- * automatically create a symbolic node for function with <name> which is called ':def-<name>'
- * command task decorator allows defining a target node
+Next Task
+==========
+
  * only allow module paths for extensions, load extensions in all those module paths automatically
  * remove requires and wants from extensions
+ * extensions
+ * implement options => implement an option that consumes several more...
+ * ArgumentCollection.load('asdf.json') to load an ArgumentCollection from a file
+ * enable building only a specific target with: ./wasp <command> --target :whatever
+ * daemon: simply use generator functions. also make an @changed(extension) available
+ * task decorator for assigning a function to a command and defines sources and targets
+
+Lower Priorieties
+===================
+
+ * verbosity per decorator (use command class, assign all tasks their logger just after calling a command)
+ * argumentprovider => register, such that retireve(asdf) works automatically by dispatching. => singledispatch?
+ * util.Namespace class for decorator => inherit metadata, decoratorstore from it
+ * improve ctx.commands API
+ * optimize execution, detect if task is a noop => check all lists empty, and look if _run overridden
+ * make sure thread safety is ensured if symbolic nodes are written, i.e. write them upon completion, result is just argument collection
+ * escape : in filename (.replace('\:', ':') at str[0:1])
+ * proper subproject handling (implemented as plugin to the recursion algorithm)
+ * some way to make commands run again if specified implict as a dependency for another command and the former has already
+   completed successfully. Use case might be an updated git repo which gets pulled in by "./wasp fetch" and should be updated
+   regularly. => ctx.commands['configure'].invalidate()
+ * refactor signature identifier to key: generally, refactor all "identifier" to "key"
+
+Random thoughts
+---------------
+
+ * could we integrate pip, easy_install? just install extensions as eggs? => test for import pip
 
 
 Global Installation and call from subdirectory
@@ -22,41 +40,12 @@ Global Installation and call from subdirectory
         The implementation of this ``feature`` does not have particular priority, since
         it is not the intended design of wasp. Though it might be useful for performance enhancement.
 
-
 Bugs
 =======
 
  * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
 
-Next Task
-==========
-
- * fix import crap
- * extensions
- * implement options => implement an option that consumes several more...
-
-
-Todos
-=======
- * make sure thread safety is ensured if symbolic nodes are written, i.e. write them upon completion, result is just argument collection
- * escape : in filename (.replace('\:', ':') at str[0:1])
- * dependencies (command internal using nodes, command external? just using required arguments?)
- * proper subproject handling (implemented as plugin to the recursion algorithm)
- * some way to make commands run again if specified implict as a dependency for another command and the former has already
-   completed successfully. Use case might be an updated git repo which gets pulled in by "./wasp fetch" and should be updated
-   regularly. => ctx.commands['configure'].invalidate()
- * refactor signature identifier to key: generally, refactor all "identifier" to "key"
-
-Implement before initial API stability
-=======================================
- * enable building only a specific target with: ./wasp <command> --target :whatever
- * ArgumentCollection.load('asdf.json') to load an ArgumentCollection from a file
-
-Refactor steps
-==============
-
-
-subproject plugin
+subproject Extension
 ------------------
 
  * think about plugin api such that possible, what kind of hooks are required?
@@ -65,15 +54,13 @@ subproject plugin
  * same with deactivate
  * options --<subprojname> and --no-<subprojname> --all --none
 
-Generators
-===========
+Extensions
+-----------
 
- * create a generator() task
- * while building, run generators for the targets that are created
- * add command_name='clean' to filter for command name
- * add tags='asdf', then wasp.generator(tags='asfd') can be run. => generator must include tag
- * add a collect attribute, meaning all tasks are run before the generator is run. The generator is then invoked
-   with **all** sources.
+ * templates (fetch using git from external repo, copy over, keep a template-readme.txt)
+ * gui (tkinter)
+ * bashcompletion
+
 
 Declarative
 ============
@@ -116,77 +103,3 @@ Declarative
         }
     }
 }
-
-Extensions
------------
-
- * templates (fetch using git from external repo, copy over, keep a template-readme.txt)
- * metadata (e.g. for package generation) => use metadata.{json, yml} => wasp.use_metadata('metadata.json', format=...)
- * gui (tkinter)
- * bashcompletion
-
-
-=================================
-
-
-import wasp
-
-wasp.require_version('0.1')
-wasp.load('dlang', 'wasp-tools')
-
-@wasp.init
-def init(ctx):
-    # add options...
-    ctx.options += wasp.EnableOption('asdfasdf'..)
-    
-@wasp.depends('.d')
-def compile_d_file(ctx, sources):
-    target = ctx.builddir.join(sources, append='.o')
-    task = wasp.tasks.DCompile(ctx, source=sources, target=target)
-    return task
-
-@wasp.depends('.d.o', type='program')
-def link_d_files(ctx, sources, target):
-    if target is None:
-        target = ctx.projectname
-    task = wasp.tasks.DLink(ctx, source=sources, target=ctx.builddir.join(target))
-    return task
-
-@wasp.configure
-def configure(ctx):
-    ctx.store['env'] = ctx.env
-
-@wasp.build
-def build(ctx):
-    files = ctx.dir.source.find_all('*.d')
-    objfiles = ctx.generate(files)
-    executable = ctx.generate(objfiles, target='bloxr', type='program')
-    ctx.run(executable)
-
-#equivalent to @wasp.install
-@wasp.command('install', require='build')
-def install(ctx):
-    task = wasp.tasks.Install(ctx, source=ctx.builddir.join('bloxr'), target=ctx.prefix.join('bloxr'))
-    ctx.run(task)
-
-class DCompile(wasp.Task):
-    def __init__(self, ctx, source=[], target=[]):
-        super(self, wasp.Task).__init__(ctx, source, target)
-
-    def run(self, ctx):
-        pass
-
-
-@wasp.generate('*.o')
-def link(files):
-    return cpp.link(files)
-
-@wasp.generate(['c', 'cpp'], command='clean')
-def compile(files):
-    return cpp.compile(files)
-
-
-
-
-
- ================================

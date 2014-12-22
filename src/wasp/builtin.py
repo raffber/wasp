@@ -52,6 +52,7 @@ def _handle_builtin_options(option_handler):
 
 
 class build(FunctionDecorator):
+    # TODO: implement produce=
     def __init__(self, f):
         super().__init__(f)
         decorators.commands.append(Command('build', f, description='Builds the project', depends='configure'))
@@ -77,6 +78,7 @@ class build(FunctionDecorator):
 
 
 class install(FunctionDecorator):
+    # TODO: implement produce=
     def __init__(self, f):
         super().__init__(f)
         decorators.append(Command('install', f, description='Installs the project', depends='build'))
@@ -90,13 +92,16 @@ class install(FunctionDecorator):
             def _build():
                 return None
 
+
 class configure(FunctionDecorator):
+    # TODO: implement produce=
     def __init__(self, f):
         super().__init__(f)
         decorators.commands.append(Command('configure', f, description='Configures the project'))
 
 
 class clean(FunctionDecorator):
+    # TODO: implement produce=
     def __init__(self, f):
         super().__init__(f)
         decorators.commands.append(Command('clean', f, description='Clean generated files.'))

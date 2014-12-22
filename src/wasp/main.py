@@ -262,6 +262,21 @@ def load_tools():
         log.fatal(str(e))
 
 
+def load_decorator_config(config):
+    # run all config decorators:
+    for x in decorators.config:
+        c = x()
+        if c is None:
+            log.warn('Empty return value from @config function. Ignoring.')
+            continue
+        assert isinstance(c, Config), 'Expected a return value of type Config.'
+        config.overwrite_merge(c)
+    if config.verbosity is not None and log.verbosity == log.DEFAULT:
+        # configuration overwrites default from command line/env
+        log.configure(config.verbosity)
+    return config
+
+
 def run(dir_path):
     """
     Runs the application from the given directory. It is assumed that:
@@ -273,6 +288,11 @@ def run(dir_path):
     """
     # first and foremost, initialize logging
     log.configure(retrieve_verbosity())
+    # load configuration from current directory
+    config = Config.load_from_directory(dir_path)
+    if config.verbosity is not None and log.verbosity == log.DEFAULT:
+        # configuration overwrites default from command line/env
+        log.configure(config.verbosity)
     # load all extensions
     load_extensions()
     # import all modules
@@ -281,11 +301,8 @@ def run(dir_path):
         return False  # nothing was loaded, no point in continuing
     # load recursive files
     loaded_files.extend(load_recursive())
-    # load configuration from current directory
-    config = Config.load_from_directory(dir_path)
-    if config.verbosity is not None and log.verbosity == log.DEFAULT:
-        # configuration overwrites default from command line/env
-        log.configure(config.verbosity)
+    # load/overwrite config from decorators
+    config = load_decorator_config(config)
     # create the context using the files that were loaded.
     # the list is mainly required to determine if the build
     # files have changed.
