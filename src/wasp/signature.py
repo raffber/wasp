@@ -141,8 +141,8 @@ factory.register(FileSignature)
 class CacheSignature(Signature):
     def __init__(self, identifier, prefix=None, key=None, value=None, valid=True):
         super().__init__(value, valid=valid, identifier=identifier)
+        self._cache = ctx.cache.prefix(prefix)
         self._prefix = prefix
-        self._cache = ctx.cache.prefix(self._prefix)
         self._key = key
         self.refresh(value)
 
@@ -160,8 +160,13 @@ class CacheSignature(Signature):
         if value is not None:
             self._value = value
             return value
+        data = self._cache.get(self._key, None)
+        if data is None:
+            self._valid = False
+            self._value = None
+            return None
         # XXX: not very efficient, benchmark to see if optimization required
-        jsonarr = factory.to_json(self._cache.prefix(self._prefix)[self._key])
+        jsonarr = factory.to_json(data)
         value = checksum(dumps(jsonarr))
         self._value = value
         return value

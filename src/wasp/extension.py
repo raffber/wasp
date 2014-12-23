@@ -36,7 +36,10 @@ class ExtensionCollection(dict):
             self.load(name)
 
     def load(self, module_name):
-        load_module_by_name(module_name)
+        try:
+            load_module_by_name(module_name)
+        except ImportError as e:
+            log.warn('Could not load extension {0}: import failed with: {1}'.format(module_name, str(e)))
 
     @property
     def search_packages(self):

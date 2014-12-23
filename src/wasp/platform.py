@@ -16,3 +16,11 @@ class OSInfo(object):
     @property
     def windows(self):
         return self._name == 'Windows'
+
+    @property
+    def linux(self):
+        return self._name == 'Linux'
+
+    @property
+    def osx(self):
+        return self._name == 'Darwin'

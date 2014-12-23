@@ -1,5 +1,5 @@
 from .util import Proxy
-ctx = Proxy('The wasp context wasp.ctx can only be accessed after initialization.')
+ctx = Proxy('The wasp context wasp.ctx can only be accessed after initialization.', lock_thread=False)
 
 
 class WaspVersion(object):

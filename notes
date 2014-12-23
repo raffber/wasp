@@ -1,14 +1,26 @@
 Next Task
 ==========
 
- * only allow module paths for extensions, load extensions in all those module paths automatically
- * remove requires and wants from extensions
- * extensions
+ * handle keyboard interrupt for execution
  * implement options => implement an option that consumes several more...
  * ArgumentCollection.load('asdf.json') to load an ArgumentCollection from a file
  * enable building only a specific target with: ./wasp <command> --target :whatever
  * daemon: simply use generator functions. also make an @changed(extension) available
  * task decorator for assigning a function to a command and defines sources and targets
+
+ * finish d tool with find task => see what can be imported into core
+ * test, test, test, test and write doc
+
+TODOs
+========
+
+ * extensions => think about what they should be able to do
+
+Bugs
+=======
+
+ * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
+ * md is run always?!
 
 Lower Priorieties
 ===================
@@ -40,10 +52,6 @@ Global Installation and call from subdirectory
         The implementation of this ``feature`` does not have particular priority, since
         it is not the intended design of wasp. Though it might be useful for performance enhancement.
 
-Bugs
-=======
-
- * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
 
 subproject Extension
 ------------------

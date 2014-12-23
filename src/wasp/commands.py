@@ -1,5 +1,4 @@
 from .decorators import decorators
-from .util import ArgumentFunctionDecorator
 
 
 class CommandFailedError(Exception):
@@ -37,7 +36,7 @@ class Command(object):
         return self._produce
 
 
-class command(ArgumentFunctionDecorator):
+class command(object):
     def __init__(self, name, depends=None, description=None, produce=None):
         self._name = name
         self._depends = depends
@@ -52,4 +51,4 @@ class command(ArgumentFunctionDecorator):
         decorators.commands.append(Command(self._name, f,
                                            description=self._description, depends=self._depends,
                                            produce=produce))
-        return super().__call__(f)
+        return f

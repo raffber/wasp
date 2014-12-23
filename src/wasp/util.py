@@ -106,7 +106,7 @@ class Event(object):
     # that it stays in the standard library
     # also, this would require python3.4 at minimum
     # one could also provide fallback options...
-    def __init__(self, loop):
+    def __init__(self, loop=None):
         self._funs = []
         self._loop = loop
 
@@ -118,7 +118,10 @@ class Event(object):
         self._funs.remove(fun)
 
     def fire(self, *args, **kw):
-        self._loop.fire_event(self, args, kw)
+        if self._loop is None:
+            self.invoke(*args, **kw)
+        else:
+            self._loop.fire_event(self, args, kw)
 
     def invoke(self, *args, **kw):
         for fun in self._funs:
@@ -126,10 +129,11 @@ class Event(object):
 
 
 class EventLoop(object):
-    def __init__(self):
+    def __init__(self, interrupted=None):
         self._threading_event = ThreadingEvent()
         self._events = []
         self._cancel = False
+        self._interrupted = interrupted
 
     def fire_event(self, evt, args, kw):
         self._events.append((evt, args, kw))
@@ -140,17 +144,21 @@ class EventLoop(object):
         self._threading_event.set()
 
     def run(self):
-        while True:
-            self._threading_event.wait()
-            self._threading_event.clear()
-            if self._cancel:
-                return
-            for (evt, args, kw) in self._events:
-                evt.invoke(*args, **kw)
-            self._events.clear()
-            # TODO: thread save this; lock on self._events
-            # necessary? these things are atomic in python!
-            # but is clear as well?
+        try:
+            while True:
+                self._threading_event.wait()
+                self._threading_event.clear()
+                if self._cancel:
+                    return
+                for (evt, args, kw) in self._events:
+                    evt.invoke(*args, **kw)
+                self._events.clear()
+                # TODO: thread save this; lock on self._events
+                # necessary? these things are atomic in python!
+                # but is clear as well?
+        except KeyboardInterrupt:
+            if self._interrupted is not None:
+                self._interrupted()
 
 
 # XXX: this can still be improved a lot
@@ -162,15 +170,6 @@ class FunctionDecorator(object):
 
     def __call__(self, *args, **kwargs):
         return self._f(*args, **kwargs)
-
-
-class ArgumentFunctionDecorator(object):
-
-    def __call__(self, f):
-        def wrapper(*args, **kw):
-            return f(*args, **kw)
-        functools.update_wrapper(wrapper, f)
-        return wrapper
 
 
 class UnusedArgFormatter(Formatter):
