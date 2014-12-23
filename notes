@@ -1,11 +1,16 @@
 Next Task
 ==========
 
+ * polish watch plugin
+   - allow execution of tasks from handler function
+   - proper platform independence i.e. provide dummies for public API
+   - @watch argument handling
+   - allow watching regexp
+   - remove double added folders
  * handle keyboard interrupt for execution
  * implement options => implement an option that consumes several more...
  * ArgumentCollection.load('asdf.json') to load an ArgumentCollection from a file
  * enable building only a specific target with: ./wasp <command> --target :whatever
- * daemon: simply use generator functions. also make an @changed(extension) available
  * task decorator for assigning a function to a command and defines sources and targets
 
  * finish d tool with find task => see what can be imported into core

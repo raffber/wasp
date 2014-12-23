@@ -1,6 +1,6 @@
 from wasp import File, group, shell, tool, Directory
 import wasp
-from wasp.ext.daemon import daemon
+from wasp.ext.watch import watch
 
 d = tool('d')
 current_dir = Directory(__file__)
@@ -18,7 +18,7 @@ def build():
     return cp, group(one, two, link).use(dc='/usr/bin/dmd')
 
 
-@daemon('stuff.md', command='md')
+@watch('stuff.md', command='md')
 def files_changed():
     print('MD files changed, markdowning them!')
 
