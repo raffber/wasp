@@ -6,6 +6,7 @@ from threading import Event as ThreadingEvent
 from binascii import a2b_base64, b2a_base64
 from string import Formatter
 from uuid import uuid4 as uuid
+from zlib import adler32
 import functools
 
 
@@ -15,6 +16,10 @@ def a2b(s):
 
 def b2a(b):
     return b2a_base64(b)[:-1].decode('UTF-8')
+
+
+def checksum(data):
+    return '{0}'.format(adler32(data) & 0xffffffff)
 
 
 class Factory(object):

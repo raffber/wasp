@@ -248,9 +248,7 @@ def retrieve_verbosity():
 
 
 def load_extensions():
-    extpath = os.path.join(os.path.dirname(__file__), 'ext')
-    extensions.search_path.append(extpath)
-    extensions.load_in_search_path()
+    extensions.load_all('wasp.ext')
 
 
 def load_tools():

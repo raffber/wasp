@@ -1,5 +1,6 @@
 from wasp import File, group, shell, tool, Directory
 import wasp
+from wasp.ext import daemon
 
 d = tool('d')
 current_dir = Directory(__file__)

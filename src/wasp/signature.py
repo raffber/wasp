@@ -1,6 +1,5 @@
-from .util import Serializable, b2a
+from .util import Serializable, checksum
 from uuid import uuid4 as generate_uuid
-from hashlib import md5
 from . import factory, ctx
 from json import dumps
 import os
@@ -118,7 +117,6 @@ class FileSignature(Signature):
             self._value = value
             self._valid = True
             return value
-        m = md5()
         if not os.path.exists(self.path):
             self._valid = False
             self._value = None
@@ -130,8 +128,8 @@ class FileSignature(Signature):
             self._valid = True
             return self._value
         with open(self.path, 'rb') as f:
-            m.update(f.read())
-        value = b2a(m.digest())
+            data = f.read()
+        value = checksum(data)
         self._value = value
         self._valid = True
         return value
@@ -163,10 +161,8 @@ class CacheSignature(Signature):
             self._value = value
             return value
         # XXX: not very efficient, benchmark to see if optimization required
-        m = md5()
         jsonarr = factory.to_json(self._cache.prefix(self._prefix)[self._key])
-        m.update(dumps(jsonarr))
-        value = b2a(m.digest())
+        value = checksum(dumps(jsonarr))
         self._value = value
         return value
 
