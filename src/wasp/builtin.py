@@ -81,7 +81,7 @@ class install(FunctionDecorator):
     # TODO: implement produce=
     def __init__(self, f):
         super().__init__(f)
-        decorators.append(Command('install', f, description='Installs the project', depends='build'))
+        decorators.commands.append(Command('install', f, description='Installs the project', depends='build'))
         found_build = False
         for com in decorators.commands:
             if com.name == 'build':

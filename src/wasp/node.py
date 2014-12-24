@@ -91,6 +91,8 @@ def is_symbolic_node_string(arg):
 
 
 def make_nodes(arg):
+    if arg is None:
+        return []
     from .task import Task
     lst = []
     if isinstance(arg, list) or isinstance(arg, tuple):

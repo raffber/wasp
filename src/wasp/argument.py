@@ -1,6 +1,7 @@
 from . import ctx, factory
 import re
-from .util import Serializable, CannotSerializeError, UnusedArgFormatter
+import json
+from .util import Serializable, CannotSerializeError, UnusedArgFormatter, parse_assert
 
 from itertools import chain
 
@@ -177,6 +178,20 @@ class ArgumentCollection(Serializable):
         for k, v in lower_priority.items():
             if k not in self:
                 self[k] = v
+
+    @classmethod
+    def load(cls, fpath):
+        d = {}
+        with open(fpath, 'r') as f:
+            try:
+                d = json.load(f)
+            except ValueError as e:
+                raise ValueError('Invalid json file `{0}`'.format(fpath))
+        self = cls()
+        parse_assert(isinstance(d, dict), 'json file for ArgumentCollection must start with at dictionary.')
+        for k, v in d.items():
+            self.add(Argument(k).assign(v))
+        return self
 
 
 factory.register(ArgumentCollection)

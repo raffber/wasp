@@ -79,7 +79,7 @@ from .argument import Argument, value, format_string, find_argumentkeys_in_strin
 from .commands import command, Command
 from .hooks import init, create_context
 from .fs import Directory, File
-from .task import Task, group
+from .task import Task, group, sequential, task
 from .task_collection import TaskCollection
 from .shell import shell
 from .fs import Directory, TOP_DIR, files

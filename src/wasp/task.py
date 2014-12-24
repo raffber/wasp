@@ -3,6 +3,8 @@ from uuid import uuid4 as uuid
 from .util import CallableList, is_iterable
 from .argument import Argument, ArgumentCollection
 from .logging import Logger
+from .decorators import decorators
+from .commands import Command
 
 from functools import reduce
 from itertools import chain
@@ -14,11 +16,13 @@ class MissingArgumentError(Exception):
 
 
 class Task(object):
-    def __init__(self, sources=[], targets=[], children=[], always=False, identifier=None, fun=None):
+    def __init__(self, sources=None, targets=None, children=None, always=False, identifier=None, fun=None):
         self._sources = make_nodes(sources)
         self._targets = make_nodes(targets)
         if len(self._sources) == 0 and len(self._targets) == 0:
             always = True
+        if children is None:
+            children = []
         assert isinstance(children, list)
         self.children = children
         self._has_run = False
@@ -347,3 +351,21 @@ def group(*args, collapse=True):
 
 def sequential(*args):
     raise NotImplementedError
+
+
+class task(object):
+    def __init__(self, command, sources=None, targets=None, always=False, description=None, command_depends=None):
+        self._command = command
+        self._sources = sources
+        self._targets = targets
+        self._always = always
+        self._description = description
+        self._command_depends = command_depends
+
+    def __call__(self, f):
+        def command_fun():
+            t = Task(sources=self._sources, targets=self._targets, always=self._always, fun=f)
+            return t
+        com = Command(self._command, command_fun, description=self._description, depends=self._command_depends)
+        decorators.commands.append(com)
+        return f

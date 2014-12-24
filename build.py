@@ -1,6 +1,7 @@
 from wasp import File, group, shell, tool, Directory
 import wasp
 #from wasp.ext.watch import watch
+from wasp import ArgumentCollection
 
 d = tool('d')
 current_dir = Directory(__file__)
@@ -23,6 +24,17 @@ def build():
 #    t = wasp.Task(always=True, fun=lambda: print('YAY!'))
     #print('MD files changed, markdowning them!')
     #return t
+
+@wasp.command('test')
+def test():
+    col = ArgumentCollection.load('test.json')
+    for k, v in col.items():
+        print('{0}: {1}'.format(k, v.value))
+
+@wasp.task('test', always=True)
+def _task_injection():
+    print('asdf')
+
 
 @wasp.command('md')
 def md():

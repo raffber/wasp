@@ -109,7 +109,7 @@ def handle_no_command(options):
         log.warn('Warning: wasp called without command and no default command specified.')
 
 
-def run_command(name, executed_commands=[]):
+def run_command(name, executed_commands=None):
     """
     Runs a command specified by name. All dependencies of the command are
     executed, if they have not successfully executed before.
@@ -117,6 +117,8 @@ def run_command(name, executed_commands=[]):
     :param executed_commands: List of commands that have already been executed.
     :return: True if the executed is successful, False otherwise
     """
+    if executed_commands is None:
+        executed_commands = []
     command_cache = ctx.cache.prefix('commands')
     if name in executed_commands:
         return

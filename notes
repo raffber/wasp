@@ -1,9 +1,8 @@
 Next Task
 ==========
 
-
+ * empty sources list at execute time implies always=True!
  * implement options => implement an option that consumes several more...
- * ArgumentCollection.load('asdf.json') to load an ArgumentCollection from a file
  * enable building only a specific target with: ./wasp <command> --target :whatever
  * task decorator for assigning a function to a command and defines sources and targets
 
