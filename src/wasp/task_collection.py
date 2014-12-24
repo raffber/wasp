@@ -15,5 +15,9 @@ class TaskCollection(dict):
                 self.add(task)
 
     def add(self, task):
-        self[task.identifier] = task
+        if is_iterable(task):
+            for t in task:
+                self.add(t)
+        else:
+            self[task.identifier] = task
 
