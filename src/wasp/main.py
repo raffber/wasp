@@ -4,7 +4,7 @@ from .context import Context
 from .config import Config
 from .task import Task, group
 from .tools import proxies as tool_proxies, NoSuchToolError
-from . import recurse_files, ctx, log, extensions
+from . import recurse_files, ctx, log, extensions, FatalError
 from .util import is_iterable
 import argparse
 import os
@@ -44,7 +44,7 @@ class OptionHandler(object):
             self._argparse.add_argument(name, help=descriptions[name], action=CommandAction, default=None, nargs='?')
         # option decorators => TODO: different groups for command options
         for option_decorator in decorators.options:
-                option_decorator(ctx.options)
+            option_decorator(ctx.options)
         ctx.options.add_to_argparse(self._argparse)
         parsed = self._argparse.parse_args()
         self._commands = parsed.commands
@@ -286,38 +286,42 @@ def run(dir_path):
     :param dir_path: The directory from which is used as TOPDIR
     :return: True if a build file was found in `dir_path`, False otherwise
     """
-    # first and foremost, initialize logging
-    log.configure(retrieve_verbosity())
-    # load configuration from current directory
-    config = Config.load_from_directory(dir_path)
-    if config.verbosity is not None and log.verbosity == log.DEFAULT:
-        # configuration overwrites default from command line/env
-        log.configure(config.verbosity)
-    # load all extensions
-    load_extensions()
-    # import all modules
-    loaded_files = load_directory(dir_path)
-    if len(loaded_files) == 0:
-        return False  # nothing was loaded, no point in continuing
-    # load recursive files
-    loaded_files.extend(load_recursive())
-    # load/overwrite config from decorators
-    config = load_decorator_config(config)
-    # create the context using the files that were loaded.
-    # the list is mainly required to determine if the build
-    # files have changed.
-    create_context(loaded_files, config=config)
-    # load all command decorators into the context
-    for com in decorators.commands:
-        ctx.commands.append(com)
-    # run all init() hooks
-    for hook in decorators.init:
-        hook()
-    # autoload all tools that have not been loaded
-    load_tools()
-    # parse options
-    options = OptionHandler()
-    log.configure(options.verbosity)
-    success = handle_commands(options)
+    try:
+        # first and foremost, initialize logging
+        log.configure(retrieve_verbosity())
+        # load configuration from current directory
+        config = Config.load_from_directory(dir_path)
+        if config.verbosity is not None and log.verbosity == log.DEFAULT:
+            # configuration overwrites default from command line/env
+            log.configure(config.verbosity)
+        # load all extensions
+        load_extensions()
+        # import all modules
+        loaded_files = load_directory(dir_path)
+        if len(loaded_files) == 0:
+            return False  # nothing was loaded, no point in continuing
+        # load recursive files
+        loaded_files.extend(load_recursive())
+        # load/overwrite config from decorators
+        config = load_decorator_config(config)
+        # create the context using the files that were loaded.
+        # the list is mainly required to determine if the build
+        # files have changed.
+        create_context(loaded_files, config=config)
+        # load all command decorators into the context
+        for com in decorators.commands:
+            ctx.commands.append(com)
+        # run all init() hooks
+        for hook in decorators.init:
+            hook()
+        # autoload all tools that have not been loaded
+        load_tools()
+        # parse options
+        options = OptionHandler()
+        log.configure(options.verbosity)
+        success = handle_commands(options)
+    except FatalError:
+        success = False
+        pass
     ctx.save()
     return success

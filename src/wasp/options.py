@@ -48,6 +48,14 @@ class OptionsCollection(dict):
             ret.update(group.all())
         return ret
 
+    def save(self):
+        # ctx.cache.prefix('options')[groupname]
+        raise NotImplementedError
+
+    def load(self):
+        # ctx.cache.prefix('options')[groupname]
+        raise NotImplementedError
+
 
 def sanitize_name(name):
     return name.replace(' ', '_').lower()
@@ -58,7 +66,7 @@ def name_to_key(name):
 
 
 class Option(Serializable):
-    def __init__(self, name, description, key=None, group=None, value=None, prefix=None):
+    def __init__(self, name, description, key=None, value=None, prefix=None):
         # support *args and **kw such that parent constructor can be called with *args, **kw
         assert isinstance(name, str), 'name must be a string'
         assert isinstance(description, str), 'Description must be a string'
@@ -67,7 +75,6 @@ class Option(Serializable):
             key = name_to_key(self._name)
         self._key = key
         self._description = description
-        self._group = group
         self._value = None
         self.value = value # such that property.setter can be overridden
         if len(self.key) == 1 and prefix is None:
@@ -94,10 +101,6 @@ class Option(Serializable):
         return self._key
 
     @property
-    def group(self):
-        return self._group
-
-    @property
     def description(self):
         return self._description
 
@@ -109,8 +112,7 @@ class Option(Serializable):
 
     @staticmethod
     def from_json(cls, d):
-        return cls(d['name'], d['description'], value=d['value']
-                   , key=d['key'], group=d['group'])
+        return cls(d['name'], d['description'], value=d['value'], key=d['key'], prefix=d['prefix'])
 
     def to_json(self):
         ret = super().to_json()
@@ -119,7 +121,6 @@ class Option(Serializable):
             'key': self._key,
             'description': self._description,
             'value': self.value,
-            'group': self.group,
             'prefix': self._prefix})
         return ret
 
@@ -180,6 +181,19 @@ class EnableOption(Option):
         assert isinstance(v, bool), 'Value must be a bool'
         self._value = v
 
+    def to_json(self):
+        d = super().to_json()
+        d['enable_prefix'] = self._enable_prefix
+        d['disable_prefix'] = self._disable_prefix
+        return d
+
+    @property
+    def from_json(cls, d):
+        self = super().from_json(d)
+        self._enable_prefix = d['enable_prefix']
+        self._disable_prefix = d['disable_prefix']
+        return self
+
 
 factory.register(EnableOption)
 
@@ -199,12 +213,9 @@ factory.register(IntOption)
 
 
 class options(FunctionDecorator):
-    def __init__(self, f, *commands):
-        super().__init__(f)
-        self.commands = commands
-        for com in commands:
-            assert isinstance(com, str), 'commands must be given as strings'
-        decorators.options.append(self)
+    def __init__(self, f):
+        decorators.options.append(f)
+        self.f = f
 
 
 class handle_options(FunctionDecorator):

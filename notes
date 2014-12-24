@@ -1,6 +1,7 @@
 Next Task
 ==========
 
+ * extension: autoload modules which have stuff available => catch import errors, provide required = True for load
  * implement options => implement an option that consumes several more...
  * enable building only a specific target with: ./wasp <command> --target :whatever
 
@@ -11,6 +12,7 @@ TODOs
 ========
 
  * extensions => think about what they should be able to do
+ * warn user if he uses @options instead of @options
 
 Bugs
 =======

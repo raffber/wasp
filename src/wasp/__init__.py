@@ -37,6 +37,10 @@ def require_version(*args):
     assert VERSION.is_compatible(major, minor, point), 'Incompatible wasp version used.'
 
 
+class FatalError(Exception):
+    pass
+
+
 from .platform import OSInfo
 osinfo = OSInfo()
 

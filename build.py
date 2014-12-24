@@ -1,4 +1,4 @@
-from wasp import File, group, shell, tool, Directory, Argument, EnableOption
+from wasp import File, group, shell, tool, Directory, Argument, EnableOption, value, arg
 import wasp
 from wasp import ArgumentCollection
 
@@ -8,7 +8,6 @@ current_dir = Directory(__file__)
 
 @wasp.build
 def build():
-    print(Argument('asdf').retrieve_all())
     f = File('notes')
     cp = shell('cp {CPFLAGS} {SRC} {TGT}',
                sources=f, targets=f.to_builddir()

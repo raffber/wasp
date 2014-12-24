@@ -1,5 +1,6 @@
 from . import log
 from .util import load_module_by_name
+from . import FatalError
 
 from pkgutil import walk_packages
 from importlib import import_module
@@ -35,11 +36,14 @@ class ExtensionCollection(dict):
         for (module_finder, name, ispkg) in walk_packages(module.__path__, package_name + '.'):
             self.load(name)
 
-    def load(self, module_name):
+    def load(self, module_name, required=False):
         try:
             load_module_by_name(module_name)
         except ImportError as e:
-            log.warn('Could not load extension {0}: import failed with: {1}'.format(module_name, str(e)))
+            if required:
+                s = 'Could not load extension {0}: import failed with: {1}'.format(module_name, str(e))
+                log.fatal(s)
+                raise FatalError(s)
 
     @property
     def search_packages(self):
