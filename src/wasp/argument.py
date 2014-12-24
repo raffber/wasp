@@ -23,6 +23,15 @@ class ArgumentCollection(Serializable):
         self._name = None
         self.set_name(name)
 
+    @classmethod
+    def from_dict(cls, d):
+        if d is None:
+            return cls()
+        return cls((k, v) for k, v in d.items())
+
+    def dict(self):
+        return {arg.key: arg.value for arg in self.values()}
+
     def add(self, *args, **kw):
         for arg in args:
             self._add_single(arg)
@@ -123,7 +132,7 @@ class ArgumentCollection(Serializable):
     def copy(self):
         ret = ArgumentCollection(name=self.name, parent=self.parent)
         ret.update(dict(self._d.items()))  # TODO: test
-        ret.subcollections.update(self._subs)
+        ret._subs.update(self._subs)
         return ret
 
     def shallowcopy(self):

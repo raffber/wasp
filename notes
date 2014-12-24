@@ -20,6 +20,7 @@ Bugs
  * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
  * md is run always?!
  * `./wasp build build` gives: 'No build file found. Exiting.'
+ * properly handle exceptions occuring in a task
 
 Lower Priorieties
 ===================

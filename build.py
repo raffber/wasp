@@ -1,6 +1,7 @@
 from wasp import File, group, shell, tool, Directory, Argument, EnableOption, value, arg
 import wasp
 from wasp import ArgumentCollection
+from wasp.ext.templating import template
 
 d = tool('d')
 current_dir = Directory(__file__)
@@ -23,15 +24,15 @@ def test_options(col):
     col.group('test').add(EnableOption('asdf', 'Enable or disable asdf', value=True))
 
 
-@wasp.command('test')
-def test():
-    col = ArgumentCollection.load('test.json')
-    for k, v in col.items():
-        print('{0}: {1}'.format(k, v.value))
-
 @wasp.task('test')
 def _task_injection():
     print('asdf')
+
+
+@wasp.command('template')
+def _template():
+    return template('stuff.md.in', 'stuff.md').use(
+        ArgumentCollection.load('test.json'))
 
 
 @wasp.command('md')

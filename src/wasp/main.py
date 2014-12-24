@@ -249,8 +249,10 @@ def retrieve_verbosity():
     return log.DEFAULT
 
 
-def load_extensions():
+def load_extensions(config):
     extensions.load_all('wasp.ext')
+    for ext_name in config.extensions:
+        extensions.load('wasp.ext.' + ext_name, required=True)
 
 
 def load_tools():
@@ -295,11 +297,12 @@ def run(dir_path):
             # configuration overwrites default from command line/env
             log.configure(config.verbosity)
         # load all extensions
-        load_extensions()
+        load_extensions(config)
         # import all modules
         loaded_files = load_directory(dir_path)
         if len(loaded_files) == 0:
-            return False  # nothing was loaded, no point in continuing
+            log.fatal('No build file found. Exiting.')
+            return True  # nothing was loaded, no point in continuing
         # load recursive files
         loaded_files.extend(load_recursive())
         # load/overwrite config from decorators
@@ -308,6 +311,9 @@ def run(dir_path):
         # the list is mainly required to determine if the build
         # files have changed.
         create_context(loaded_files, config=config)
+    except FatalError:
+        return False
+    try:
         # load all command decorators into the context
         for com in decorators.commands:
             ctx.commands.append(com)
@@ -319,9 +325,9 @@ def run(dir_path):
         # parse options
         options = OptionHandler()
         log.configure(options.verbosity)
-        success = handle_commands(options)
+        successs = handle_commands(options)
     except FatalError:
-        success = False
-        pass
-    ctx.save()
-    return success
+        successs = False
+    finally:
+        ctx.save()
+    return successs

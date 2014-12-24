@@ -3,5 +3,6 @@
     "projectname": "buildtest",
     "projectid": "somethingelse"
   },
-  "default_command": "rebuild"
+  "default_command": "rebuild",
+  "extensions": ["templating"]
 }

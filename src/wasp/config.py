@@ -44,14 +44,8 @@ class Config(object):
                 self._value = x
 
     def __init__(self, json_data=None):
-        make_handler = lambda k, parser=None, merger=None: Config.KeyHandler(self, k, parser=parser, merger=merger)
-        self._handlers = {
-            'metadata': make_handler('metadata', parser=lambda x: Metadata.from_json(x)),
-            'pythonpath': make_handler('pythonpath', parser=lambda x: Directory(x)),
-            'verbosity': make_handler('verbosity', parser=self._parse_verbosity),
-            'arguments': make_handler('arguments', parser=self._argument_parser, merger=self._argument_merger),
-            'default_command': make_handler('default_command')
-        }
+        self._handlers = None
+        self.populate_handlers()
         if json_data is None:
             return
         if not isinstance(json_data, dict):
@@ -63,6 +57,17 @@ class Config(object):
                 self._handlers[key].parse(value)
                 continue
             parse_assert(False, 'Unexpected key `{0}`'.format(key))
+
+    def populate_handlers(self):
+        make_handler = lambda k, parser=None, merger=None: Config.KeyHandler(self, k, parser=parser, merger=merger)
+        self._handlers = {
+            'extensions': make_handler('extensions', parser=self._parse_extensions, merger=self._merge_extensions),
+            'metadata': make_handler('metadata', parser=lambda x: Metadata.from_json(x)),
+            'pythonpath': make_handler('pythonpath', parser=lambda x: Directory(x)),
+            'verbosity': make_handler('verbosity', parser=self._parse_verbosity),
+            'arguments': make_handler('arguments', parser=self._argument_parser, merger=self._argument_merger),
+            'default_command': make_handler('default_command')
+        }
 
     @classmethod
     def from_file(cls, fpath):
@@ -119,6 +124,18 @@ class Config(object):
         elif value == 'quiet':
             ret = 0
         return ret
+
+    def _merge_extensions(self, hp):
+        if self.extension is not None:
+            self.extensions.extend(hp)
+        else:
+            self.extensions = set()
+
+    def _parse_extensions(self, lst):
+        parse_assert(isinstance(lst, list), 'While parsing config file: Expected a list of string for `extensions`.')
+        parse_assert(all([isinstance(x, str) for x in lst]), 'While parsing config file: '
+                                                             'Expected a list of string for `extensions`.')
+        return set(lst)
 
     def _argument_merger(self, hp):
         self.arguments.overwrite_merge(hp)
