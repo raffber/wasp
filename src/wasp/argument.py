@@ -349,3 +349,7 @@ def value(arg, default=None):
     if ret is None:
         return default
     return ret
+
+
+def arg(arg):
+    return Argument(arg)

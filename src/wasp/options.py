@@ -159,20 +159,22 @@ class EnableOption(Option):
         return self._prefix + self._disable_prefix + self.key
 
     def add_to_argparse(self, args):
-        args.add_argument(self._enable_string, action='store_true', default=self.value,
-                          help=self._description, dest='enable-' + self.name)
-        args.add_argument(self._disable_string, action='store_true', default=not self.value,
-                          help=self._description, dest='disable-' + self.name)
+        if not self._value:
+            args.add_argument(self._enable_string, action='store_true', default=False,
+                              help=self._description, dest='enable-' + self.name)
+        if self._value:
+            args.add_argument(self._disable_string, action='store_true', default=False,
+                              help=self._description, dest='disable-' + self.name)
 
     def retrieve_from_dict(self, args):
-        enabled = args['enable-' + self.name]
-        disabled = args['disable-' + self.name]
+        enabled = args.get('enable-' + self.name, False)
+        disabled = args.get('disable-' + self.name, False)
         if enabled and self.value:
             # enabled is default so check disabled
-            self._value = disabled
+            self._value = not disabled  # True iff disabled not set
         if disabled and self._value:
             # disabled is default so check enabled
-            self._value = enabled
+            self._value = enabled  # True iff enabled set
 
     def set_value(self, v):
         assert isinstance(v, bool), 'Value must be a bool'
