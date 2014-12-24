@@ -18,9 +18,11 @@ def build():
     return cp, group(one, two, link).use(dc='/usr/bin/dmd')
 
 
-@watch('stuff.md', command='md')
+@watch(regexp='[^\.]*?\.md$', directory='.', command='md')
 def files_changed():
+    t = wasp.Task(always=True, fun=lambda: print('YAY!'))
     print('MD files changed, markdowning them!')
+    return t
 
 @wasp.command('md')
 def md():

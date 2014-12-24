@@ -80,6 +80,7 @@ from .commands import command, Command
 from .hooks import init, create_context
 from .fs import Directory, File
 from .task import Task, group
+from .task_collection import TaskCollection
 from .shell import shell
 from .fs import Directory, TOP_DIR, files
 from .tools import tool

@@ -203,7 +203,7 @@ def load_module_by_name(name):
 
 def is_iterable(arg):
     # TODO: incorrect
-    return isinstance(arg, list) or isinstance(arg, tuple)
+    return isinstance(arg, list) or isinstance(arg, tuple) or isinstance(arg, set)
 
 
 class Proxy(object):

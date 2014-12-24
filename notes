@@ -1,12 +1,6 @@
 Next Task
 ==========
 
- * polish watch plugin
-   - allow execution of tasks from handler function
-   - proper platform independence i.e. provide dummies for public API
-   - @watch argument handling
-   - allow watching regexp
-   - remove double added folders
  * handle keyboard interrupt for execution
  * implement options => implement an option that consumes several more...
  * ArgumentCollection.load('asdf.json') to load an ArgumentCollection from a file
@@ -56,6 +50,10 @@ Global Installation and call from subdirectory
 # TODO: note, that at the moment global installation of wasp is not possible
         The implementation of this ``feature`` does not have particular priority, since
         it is not the intended design of wasp. Though it might be useful for performance enhancement.
+
+ * subfiles must know the the topdir
+ * with each command, save its origin with inspect.<whatever>()
+ * if invoked in a subdir, only execute the commands in there
 
 
 subproject Extension
