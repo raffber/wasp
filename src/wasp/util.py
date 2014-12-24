@@ -135,6 +135,7 @@ class EventLoop(object):
         self._cancel = False
         self._interrupted = interrupted
         self._running = False
+        self._started = False
 
     def fire_event(self, evt, args, kw):
         self._events.append((evt, args, kw))
@@ -148,7 +149,12 @@ class EventLoop(object):
     def running(self):
         return self._running
 
+    @property
+    def started(self):
+        return self._started
+
     def run(self):
+        self._started = True
         self._running = True
         try:
             while True:

@@ -129,7 +129,7 @@ class Executor(object):
 
     def start(self):
         while self._current_jobs < self._jobs:
-            if not self._loop.running:
+            if not self._loop.running and self._loop.started:
                 break
             if self._dag.has_finished():
                 self._loop.cancel()

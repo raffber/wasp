@@ -1,6 +1,6 @@
 from wasp import File, group, shell, tool, Directory
 import wasp
-from wasp.ext.watch import watch
+#from wasp.ext.watch import watch
 
 d = tool('d')
 current_dir = Directory(__file__)
@@ -18,11 +18,11 @@ def build():
     return cp, group(one, two, link).use(dc='/usr/bin/dmd')
 
 
-@watch(regexp='[^\.]*?\.md$', directory='.', command='md')
-def files_changed():
-    t = wasp.Task(always=True, fun=lambda: print('YAY!'))
-    print('MD files changed, markdowning them!')
-    return t
+#@watch(regexp='[^\.]*?\.md$', directory='.', command='md')
+#def files_changed():
+#    t = wasp.Task(always=True, fun=lambda: print('YAY!'))
+    #print('MD files changed, markdowning them!')
+    #return t
 
 @wasp.command('md')
 def md():
