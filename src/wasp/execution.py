@@ -154,6 +154,9 @@ def preprocess(tasks):
     for task in tasks:
         real_task = task.task
         real_task.log.configure(verbosity=log.verbosity)
+        # if this would not be the case, the task would never be executed
+        if len(real_task.sources) == 0 and len(real_task.targets) == 0:
+            real_task.always = True
 
 
 def execute(tasks, jobs=1):

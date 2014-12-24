@@ -31,7 +31,7 @@ def test():
     for k, v in col.items():
         print('{0}: {1}'.format(k, v.value))
 
-@wasp.task('test', always=True)
+@wasp.task('test')
 def _task_injection():
     print('asdf')
 

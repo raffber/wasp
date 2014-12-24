@@ -4,7 +4,6 @@ Next Task
  * empty sources list at execute time implies always=True!
  * implement options => implement an option that consumes several more...
  * enable building only a specific target with: ./wasp <command> --target :whatever
- * task decorator for assigning a function to a command and defines sources and targets
 
  * finish d tool with find task => see what can be imported into core
  * test, test, test, test and write doc

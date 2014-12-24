@@ -59,9 +59,11 @@ class Task(object):
     def log(self):
         return self._logger
 
-    @property
-    def always(self):
+    def get_always(self):
         return self._always
+
+    def set_always(self, value):
+        self._always = value
 
     @property
     def sources(self):
