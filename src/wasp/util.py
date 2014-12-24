@@ -134,6 +134,7 @@ class EventLoop(object):
         self._events = []
         self._cancel = False
         self._interrupted = interrupted
+        self._running = False
 
     def fire_event(self, evt, args, kw):
         self._events.append((evt, args, kw))
@@ -143,13 +144,18 @@ class EventLoop(object):
         self._cancel = True
         self._threading_event.set()
 
+    @property
+    def running(self):
+        return self._running
+
     def run(self):
+        self._running = True
         try:
             while True:
                 self._threading_event.wait()
                 self._threading_event.clear()
                 if self._cancel:
-                    return
+                    break
                 for (evt, args, kw) in self._events:
                     evt.invoke(*args, **kw)
                 self._events.clear()
@@ -157,8 +163,12 @@ class EventLoop(object):
                 # necessary? these things are atomic in python!
                 # but is clear as well?
         except KeyboardInterrupt:
+            self._running = False
             if self._interrupted is not None:
                 self._interrupted()
+            return False
+        self._running = False
+        return True
 
 
 # XXX: this can still be improved a lot

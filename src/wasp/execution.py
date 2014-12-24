@@ -129,6 +129,8 @@ class Executor(object):
 
     def start(self):
         while self._current_jobs < self._jobs:
+            if not self._loop.running:
+                break
             if self._dag.has_finished():
                 self._loop.cancel()
                 break
@@ -163,7 +165,8 @@ def execute(tasks, jobs=1):
     loop = EventLoop()
     executor = Executor(dag, loop, jobs=jobs)
     executor.start()
-    loop.run()
+    if not loop.run():
+        executor.cancel()
 
 
 def run_task(task, success_event=None, failed_event=None):
