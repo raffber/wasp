@@ -65,6 +65,8 @@ class Task(object):
     def set_always(self, value):
         self._always = value
 
+    always = property(get_always, set_always)
+
     @property
     def sources(self):
         return self._sources

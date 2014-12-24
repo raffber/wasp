@@ -199,7 +199,7 @@ factory.register(ArgumentCollection)
 
 class Argument(Serializable):
 
-    def __init__(self, key, value=None, type=str):
+    def __init__(self, key, value=None, type=None):
         self.key = key
         self.lowerkey = key.lower()
         self.upperkey = key.upper()
@@ -231,7 +231,7 @@ class Argument(Serializable):
         return self._value
 
     def _use_type(self, tp):
-        assert tp == str or \
+        assert tp is None or tp == str or \
             tp == int or tp == bool or tp == float or tp == list or tp == dict or issubclass(tp, Serializable)
         self._required_type = tp
         self.set_value(self.value)
@@ -245,6 +245,9 @@ class Argument(Serializable):
                 'Argument {0} must be of type {1}, but found type {2}!' \
                 ''.format(self.lowerkey, self._required_type.__name__, type(value).__name__)
             self._value = (self._required_type)(value)
+            return
+        if self._required_type is None and value is not None:
+            self._use_type(type(value))
         self._value = value
 
     value = property(get_value, set_value)
@@ -305,6 +308,12 @@ class Argument(Serializable):
     def assign(self, value):
         self.value = value
         return self
+
+    def __str__(self):
+        return '{0} = `{1}`'.format(self.key, str(self.value))
+
+    def __repr__(self):
+        return '<Argument: {0} = `{1}`>'.format(self.key, str(self.value))
 
 
 factory.register(Argument)

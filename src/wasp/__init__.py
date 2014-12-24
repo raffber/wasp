@@ -74,7 +74,7 @@ recurse_files = []
 
 from .context import Context
 from .config import config, Config
-from .options import options, handle_options
+from .options import options, handle_options, FlagOption, EnableOption, StringOption, IntOption
 from .argument import Argument, value, format_string, find_argumentkeys_in_string, ArgumentCollection
 from .commands import command, Command
 from .hooks import init, create_context

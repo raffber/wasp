@@ -1,6 +1,5 @@
-from wasp import File, group, shell, tool, Directory
+from wasp import File, group, shell, tool, Directory, Argument, EnableOption
 import wasp
-#from wasp.ext.watch import watch
 from wasp import ArgumentCollection
 
 d = tool('d')
@@ -9,6 +8,7 @@ current_dir = Directory(__file__)
 
 @wasp.build
 def build():
+    print(Argument('asdf').retrieve_all())
     f = File('notes')
     cp = shell('cp {CPFLAGS} {SRC} {TGT}',
                sources=f, targets=f.to_builddir()
@@ -19,11 +19,10 @@ def build():
     return cp, group(one, two, link).use(dc='/usr/bin/dmd')
 
 
-#@watch(regexp='[^\.]*?\.md$', directory='.', command='md')
-#def files_changed():
-#    t = wasp.Task(always=True, fun=lambda: print('YAY!'))
-    #print('MD files changed, markdowning them!')
-    #return t
+@wasp.options
+def test_options(col):
+    col.group('test').add(EnableOption('asdf', 'Enable or disable asdf', value=True))
+
 
 @wasp.command('test')
 def test():

@@ -58,7 +58,8 @@ def name_to_key(name):
 
 
 class Option(Serializable):
-    def __init__(self, name, description, key=None, group=None, value=None):
+    def __init__(self, name, description, key=None, group=None, value=None, prefix=None):
+        # support *args and **kw such that parent constructor can be called with *args, **kw
         assert isinstance(name, str), 'name must be a string'
         assert isinstance(description, str), 'Description must be a string'
         self._name = sanitize_name(name)
@@ -67,7 +68,14 @@ class Option(Serializable):
         self._key = key
         self._description = description
         self._group = group
-        self._value = value
+        self._value = None
+        self.value = value # such that property.setter can be overridden
+        if len(self.key) == 1 and prefix is None:
+            prefix = '-'
+        elif prefix is None:
+            prefix = '--'
+        self._prefix = prefix
+
 
     @property
     def name(self):
@@ -111,19 +119,12 @@ class Option(Serializable):
             'key': self._key,
             'description': self._description,
             'value': self.value,
-            'group': self.group})
+            'group': self.group,
+            'prefix': self._prefix})
         return ret
 
 
 class FlagOption(Option):
-    def __init__(self, name, description, prefix=None, value=False, group=None):
-        super().__init__(name, description, value=value, group=group)
-        assert isinstance(value, bool), 'Value must be a bool'
-        if len(self.key) == 1 and prefix is None:
-            prefix = '-'
-        elif prefix is None:
-            prefix = '--'
-        self._prefix = prefix
 
     def add_to_argparse(self, args):
         args.add_argument(self._prefix + self.key, action='store_true', default=self.value,
@@ -134,25 +135,48 @@ class FlagOption(Option):
         self.value = args[self.name]
 
     def set_value(self, v):
+        if v is None:
+            self._value = False
         assert isinstance(v, bool), 'Value must be a bool'
         self._value = v
-
-    @classmethod
-    def from_json(cls, d):
-        return cls(str(d['name']), str(d['description']), prefix=d['prefix'],
-                   value=bool(d['value']), key=d['key'], group=d['group'])
-
-    def to_json(self):
-        ret = super().to_json()
-        ret.update({'prefix': self._prefix})
-        return ret
 
 
 factory.register(FlagOption)
 
 
 class EnableOption(Option):
-    pass
+    def __init__(self, *args, enable_prefix='enable-', disable_prefix='disable-', **kw):
+        super().__init__(*args, **kw)
+        self._enable_prefix = enable_prefix
+        self._disable_prefix = disable_prefix
+
+    @property
+    def _enable_string(self):
+        return self._prefix + self._enable_prefix + self.key
+
+    @property
+    def _disable_string(self):
+        return self._prefix + self._disable_prefix + self.key
+
+    def add_to_argparse(self, args):
+        args.add_argument(self._enable_string, action='store_true', default=self.value,
+                          help=self._description, dest='enable-' + self.name)
+        args.add_argument(self._disable_string, action='store_true', default=not self.value,
+                          help=self._description, dest='disable-' + self.name)
+
+    def retrieve_from_dict(self, args):
+        enabled = args['enable-' + self.name]
+        disabled = args['disable-' + self.name]
+        if enabled and self.value:
+            # enabled is default so check disabled
+            self._value = disabled
+        if disabled and self._value:
+            # disabled is default so check enabled
+            self._value = enabled
+
+    def set_value(self, v):
+        assert isinstance(v, bool), 'Value must be a bool'
+        self._value = v
 
 
 factory.register(EnableOption)
