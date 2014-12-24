@@ -54,19 +54,32 @@ def sanitize_name(name):
 
 
 def name_to_key(name):
-    return name.replace('_', '_')
+    return name.replace('-', '_')
 
 
 class Option(Serializable):
-    def __init__(self, name, description, group=None):
+    def __init__(self, name, description, key=None, group=None, value=None):
+        assert isinstance(name, str), 'name must be a string'
+        assert isinstance(description, str), 'Description must be a string'
         self._name = sanitize_name(name)
-        self._key = name_to_key(self._name)
+        if key is None:
+            key = name_to_key(self._name)
+        self._key = key
         self._description = description
         self._group = group
+        self._value = value
 
     @property
     def name(self):
         return self._name
+
+    def set_value(self, v):
+        self._value = v
+
+    def get_value(self):
+        return self._value
+
+    value = property(get_value, set_value)
 
     @property
     def key(self):
@@ -80,11 +93,6 @@ class Option(Serializable):
     def description(self):
         return self._description
 
-    def to_json(self):
-        d = super.to_json()
-        d.update({'name': self._name, 'description': self._description})
-        return d
-
     def add_to_argparse(self, args):
         raise NotImplementedError
 
@@ -93,45 +101,50 @@ class Option(Serializable):
 
     @staticmethod
     def from_json(cls, d):
-        return cls(d['name'], d['description'])
+        return cls(d['name'], d['description'], value=d['value']
+                   , key=d['key'], group=d['group'])
+
+    def to_json(self):
+        ret = super().to_json()
+        ret.update({
+            'name': self._name,
+            'key': self._key,
+            'description': self._description,
+            'value': self.value,
+            'group': self.group})
+        return ret
 
 
 class FlagOption(Option):
-    def __init__(self, name, description, prefix=None, default=False):
-        super().__init__(name, description)
-        self._value = False
-        self._default = default
+    def __init__(self, name, description, prefix=None, value=False, group=None):
+        super().__init__(name, description, value=value, group=group)
+        assert isinstance(value, bool), 'Value must be a bool'
         if len(self.key) == 1 and prefix is None:
             prefix = '-'
         elif prefix is None:
             prefix = '--'
         self._prefix = prefix
 
-    def set_value(self, v):
-        assert isinstance(v, bool), 'You can only set a flag option to True or False'
-        self._value = v
-
-    def get_value(self):
-        return self._value
-
-    value = property(get_value, set_value)
-
     def add_to_argparse(self, args):
-        # TODO: groups are ignored for the time being.
-        args.add_argument(self._prefix + self.key, action='store_true', default=self._default,
+        args.add_argument(self._prefix + self.key, action='store_true', default=self.value,
                           help=self._description, dest=self.name)
 
     def retrieve_from_dict(self, args):
         assert self.name in args, 'Option was never added to the collection and never parsed.'
         self.value = args[self.name]
 
+    def set_value(self, v):
+        assert isinstance(v, bool), 'Value must be a bool'
+        self._value = v
+
     @classmethod
     def from_json(cls, d):
-        return cls(str(d['name']), str(d['description']), default=bool(d['default']))
+        return cls(str(d['name']), str(d['description']), prefix=d['prefix'],
+                   value=bool(d['value']), key=d['key'], group=d['group'])
 
     def to_json(self):
         ret = super().to_json()
-        ret['value'] = self.value
+        ret.update({'prefix': self._prefix})
         return ret
 
 
@@ -168,6 +181,7 @@ class options(FunctionDecorator):
         decorators.options.append(self)
 
 
-class handle_options(object):
+class handle_options(FunctionDecorator):
     def __init__(self, f):
+        super().__init__(f)
         decorators.handle_options.append(f)
