@@ -7,6 +7,7 @@ from .task_collection import TaskCollection
 from .tools import proxies as tool_proxies, NoSuchToolError
 from .options import StringOption
 from .execution import execute
+from .node import make_node
 from .argument import Argument
 from . import recurse_files, ctx, log, extensions, FatalError
 from .util import is_iterable
@@ -174,7 +175,10 @@ def run_command(name, executed_commands=None):
         raise NoSuchCommandError('No command with name `{0}` found!'.format(name))
     # now execute all tasks
     jobs = Argument('jobs', type=int).retrieve_all(default=1).value
-    execute(tasks_col, jobs=jobs)
+    produce = ctx.options.group(name)['target'].value
+    if produce is not None:
+        produce = make_node(produce)
+    execute(tasks_col, jobs=jobs, produce=produce)
     # check all tasks if successful
     for key, task in tasks_col.items():
         if not task.success:

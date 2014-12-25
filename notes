@@ -9,6 +9,7 @@ Next Task
 Option Parsing
 ===============
 
+ * enable using no command
  * use ordered dict for options => ordering
  * enable building only a specific target with: ./wasp <command> --target :whatever
  * retrieve verbosity option in the beginning (possibly approximate matching)
