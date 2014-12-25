@@ -1,3 +1,40 @@
+from . import osinfo
+
+
+class LogStringBase(object):
+    pass
+
+
+if osinfo.posix:
+    class LogString(LogStringBase):
+        def __init__(self, *strings):
+            self._strings = strings
+
+        def to_string(self):
+            pass
+
+        def to_terminal(self):
+            pass
+elif osinfo.windows:
+    class LogString(LogStringBase):
+        def __init__(self, *strings):
+            self._strings = strings
+
+        def to_string(self):
+            pass
+
+        def to_terminal(self):
+            pass
+else:
+    class LogString(LogStringBase):
+        def __init__(self, *strings):
+            self._strings = strings
+
+        def to_string(self):
+            pass
+
+        def to_terminal(self):
+            pass
 
 
 class Logger(object):
