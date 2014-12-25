@@ -4,9 +4,6 @@ from .decorators import decorators
 from .util import FunctionDecorator
 
 
-# TODO: implemnt more options
-
-
 class OptionsCollection(dict):
 
     def __init__(self, groupname=None):
@@ -199,14 +196,42 @@ factory.register(EnableOption)
 
 
 class StringOption(Option):
-    pass
+
+    def add_to_argparse(self, args):
+        args.add_argument(self._prefix + self.key, type=str, action='store_true', default=self.value,
+                          help=self._description, dest=self.name)
+
+    def retrieve_from_dict(self, args):
+        assert self.name in args, 'Option was never added to the collection and never parsed.'
+        self.value = args[self.name]
+
+    def set_value(self, v):
+        if v is None:
+            self._value = None
+            return
+        assert isinstance(v, str), 'Value must be a bool'
+        self._value = v
 
 
 factory.register(StringOption)
 
 
 class IntOption(Option):
-    pass
+
+    def add_to_argparse(self, args):
+        args.add_argument(self._prefix + self.key, nargs=1, type=int, default=self.value,
+                          help=self._description, dest=self.name)
+
+    def retrieve_from_dict(self, args):
+        assert self.name in args, 'Option was never added to the collection and never parsed.'
+        self.value = args[self.name]
+
+    def set_value(self, v):
+        if v is None:
+            self._value = None
+            return
+        assert isinstance(v, int), 'Value must be a int'
+        self._value = v
 
 
 factory.register(IntOption)
