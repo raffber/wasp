@@ -6,34 +6,47 @@ from .util import FunctionDecorator
 
 class OptionsCollection(dict):
 
-    def __init__(self, groupname=None):
+    def __init__(self, name=None, description=None):
         super().__init__()
         self._groups = {}
-        self._groupname = groupname
+        self._name = name
+        self._description = None
 
     @property
-    def groupname(self):
-        return self._groupname
+    def name(self):
+        return self._name
+
+    def set_description(self, desc):
+        self._description = desc
+
+    def get_description(self):
+        return self._description
+
+    description = property(get_description, set_description)
 
     def add(self, option):
         self[option.name] = option
 
     def add_to_argparse(self, args):
+        subparsers = None
         for option in self.values():
             option.add_to_argparse(args)
-        for group in self._groups.values():
-            group.add_to_argparse(args)
+        for name, group in self._groups.items():
+            if subparsers is None:
+                subparsers = args.add_subparsers(dest='command')
+            groupargs = subparsers.add_parser(name)
+            group.add_to_argparse(groupargs)
 
     def retrieve_from_dict(self, args):
         for option in self.values():
             option.retrieve_from_dict(args)
-        for group in self._groups.values():
+        for name, group in self._groups.items():
             group.retrieve_from_dict(args)
 
-    def group(self, groupname):
-        if groupname not in self._groups.keys():
-            self._groups[groupname] = OptionsCollection()
-        return self._groups[groupname]
+    def group(self, name):
+        if name not in self._groups.keys():
+            self._groups[name] = OptionsCollection(name)
+        return self._groups[name]
 
     def remove_group(self, groupname):
         if groupname in self._groups.keys():
@@ -63,23 +76,30 @@ def name_to_key(name):
 
 
 class Option(Serializable):
-    def __init__(self, name, description, key=None, value=None, prefix=None):
-        # support *args and **kw such that parent constructor can be called with *args, **kw
+    def __init__(self, name, description, keys=None, value=None, prefix=None):
         assert isinstance(name, str), 'name must be a string'
         assert isinstance(description, str), 'Description must be a string'
         self._name = sanitize_name(name)
-        if key is None:
-            key = name_to_key(self._name)
-        self._key = key
+        if keys is None:
+            keys = [name_to_key(self._name)]
+        assert isinstance(keys, list) or isinstance(keys, str), 'Keys must either be given as a string or list thereof'
+        self._keys = keys
         self._description = description
         self._value = None
-        self.value = value # such that property.setter can be overridden
-        if len(self.key) == 1 and prefix is None:
-            prefix = '-'
-        elif prefix is None:
-            prefix = '--'
-        self._prefix = prefix
-
+        self.value = value  # such that property.setter can be overridden
+        self._prefix = []
+        if isinstance(prefix, str):
+            self._prefix = [prefix]
+        elif isinstance(prefix, list):
+            self._prefix = prefix
+        for key in self._keys:
+            if len(key) == 1 and prefix is None:
+                self._prefix.append('-')
+            elif prefix is None:
+                self._prefix.append('--')
+        if len(self._prefix) == 1 and len(self._keys) > 1:
+            self._prefix *= len(self._keys)
+        assert len(self._prefix) == len(self._keys)
 
     @property
     def name(self):
@@ -95,7 +115,7 @@ class Option(Serializable):
 
     @property
     def key(self):
-        return self._key
+        return self._keys
 
     @property
     def description(self):
@@ -115,7 +135,7 @@ class Option(Serializable):
         ret = super().to_json()
         ret.update({
             'name': self._name,
-            'key': self._key,
+            'key': self._keys,
             'description': self._description,
             'value': self.value,
             'prefix': self._prefix})
@@ -125,12 +145,14 @@ class Option(Serializable):
 class FlagOption(Option):
 
     def add_to_argparse(self, args):
-        args.add_argument(self._prefix + self.key, action='store_true', default=self.value,
+        strings = []
+        for prefix, key in zip(self._prefix, self._keys):
+            strings.append(prefix + key)
+        args.add_argument(*strings, action='store_true', default=self.value,
                           help=self._description, dest=self.name)
 
     def retrieve_from_dict(self, args):
-        assert self.name in args, 'Option was never added to the collection and never parsed.'
-        self.value = args[self.name]
+        self.value = args.get(self.name, None)
 
     def set_value(self, v):
         if v is None:
@@ -148,20 +170,18 @@ class EnableOption(Option):
         self._enable_prefix = enable_prefix
         self._disable_prefix = disable_prefix
 
-    @property
-    def _enable_string(self):
-        return self._prefix + self._enable_prefix + self.key
-
-    @property
-    def _disable_string(self):
-        return self._prefix + self._disable_prefix + self.key
-
     def add_to_argparse(self, args):
         if not self._value:
-            args.add_argument(self._enable_string, action='store_true', default=False,
+            strings = []
+            for prefix, key in zip(self._prefix, self._keys):
+                strings.append(prefix + self._enable_prefix + key)
+            args.add_argument(*strings, action='store_true', default=False,
                               help=self._description, dest='enable-' + self.name)
         if self._value:
-            args.add_argument(self._disable_string, action='store_true', default=False,
+            strings = []
+            for prefix, key in zip(self._prefix, self._keys):
+                strings.append(prefix + self._disable_prefix + key)
+            args.add_argument(*strings, action='store_true', default=False,
                               help=self._description, dest='disable-' + self.name)
 
     def retrieve_from_dict(self, args):
@@ -198,12 +218,14 @@ factory.register(EnableOption)
 class StringOption(Option):
 
     def add_to_argparse(self, args):
-        args.add_argument(self._prefix + self.key, type=str, action='store_true', default=self.value,
+        strings = []
+        for prefix, key in zip(self._prefix, self._keys):
+            strings.append(prefix + key)
+        args.add_argument(*strings, action='store_true', default=self.value,
                           help=self._description, dest=self.name)
 
     def retrieve_from_dict(self, args):
-        assert self.name in args, 'Option was never added to the collection and never parsed.'
-        self.value = args[self.name]
+        self.value = args.get(self.name, None)
 
     def set_value(self, v):
         if v is None:
@@ -219,12 +241,14 @@ factory.register(StringOption)
 class IntOption(Option):
 
     def add_to_argparse(self, args):
-        args.add_argument(self._prefix + self.key, nargs=1, type=int, default=self.value,
+        strings = []
+        for prefix, key in zip(self._prefix, self._keys):
+            strings.append(prefix + key)
+        args.add_argument(*strings, nargs=1, type=int, default=self.value,
                           help=self._description, dest=self.name)
 
     def retrieve_from_dict(self, args):
-        assert self.name in args, 'Option was never added to the collection and never parsed.'
-        self.value = args[self.name]
+        self.value = args.get(self.name, None)
 
     def set_value(self, v):
         if v is None:

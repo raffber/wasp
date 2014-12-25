@@ -16,47 +16,40 @@ def _init_default_args(options):
 
 
 @options
-def _add_builtin_options(option_collection):
-    builtin_group = option_collection.group('builtin')
+def _add_builtin_options(col):
     desc_quiet = 'Set verbosity level to 0 [QUIET]'
     desc_fatal = 'Set verbosity level to 1 [FATAL]'
     desc_error = 'Set verbosity level to 2 [ERROR]'
     desc_warn = 'Set verbosity level to 3 [WARN] <- default'
     desc_info = 'Set verbosity level to 4 [INFO]'
     desc_debug = 'Set verbosity level to 5 [DEBUG]'
-    builtin_group.description = 'Builtin options for wasp'
-    builtin_group.add(FlagOption('q', desc_quiet, prefix='-'))
-    builtin_group.add(FlagOption('v', desc_fatal, prefix='-'))
-    builtin_group.add(FlagOption('vv', desc_error, prefix='-'))
-    builtin_group.add(FlagOption('vvv', desc_warn, value=True, prefix='-'))
-    builtin_group.add(FlagOption('vvvv', desc_info, prefix='-'))
-    builtin_group.add(FlagOption('vvvvv', desc_debug, prefix='-'))
-    builtin_group.add(FlagOption('v0', desc_quiet, prefix='-'))
-    builtin_group.add(FlagOption('v1', desc_fatal, prefix='-'))
-    builtin_group.add(FlagOption('v2', desc_error, prefix='-'))
-    builtin_group.add(FlagOption('v3', desc_warn, value=True, prefix='-'))
-    builtin_group.add(FlagOption('v4', desc_info, prefix='-'))
-    builtin_group.add(FlagOption('v5', desc_debug, prefix='-'))
-    builtin_group.add(FlagOption('vquiet', desc_quiet))
-    builtin_group.add(FlagOption('vfatal', desc_fatal))
-    builtin_group.add(FlagOption('verror', desc_error))
-    builtin_group.add(FlagOption('vwarn', desc_warn, value=True))
-    builtin_group.add(FlagOption('vinfo', desc_info))
-    builtin_group.add(FlagOption('vdebug', desc_debug))
+    col.description = 'Builtin options for wasp'
+    col.add(FlagOption(name='verbosity-quiet', keys=['q', 'v0', 'vquiet']
+                       , description=desc_quiet, prefix=['-', '-', '--']))
+    col.add(FlagOption(name='verbosity-fatal', keys=['v', 'v1', 'vfatal']
+                       , description=desc_fatal, prefix=['-', '-', '--']))
+    col.add(FlagOption(name='verbosity-error', keys=['vv', 'v2', 'verror']
+                       , description=desc_error, prefix=['-', '-', '--']))
+    col.add(FlagOption(name='verbosity-warn', keys=['vvv', 'v3', 'vwarn']
+                       , description=desc_warn, value=True, prefix=['-', '-', '--']))
+    col.add(FlagOption(name='verbosity-info', keys=['vvvv', 'v4', 'vinfo']
+                       , description=desc_info, prefix=['-', '-', '--']))
+    col.add(FlagOption(name='verbosity-debug', keys=['vvvvv', 'v5', 'vdebug']
+                       , description=desc_debug, prefix=['-', '-', '--']))
 
 
 @handle_options
 def _handle_builtin_options(option_handler):
     d = ctx.options.all()
 
-    def retrieve(flag_one, flag_two, flag_three):
-        return d[flag_one].value or d[flag_two].value or d[flag_three].value
-    verbosity_one = retrieve('v', 'v1', 'vfatal')
-    verbosity_two = retrieve('vv', 'v2', 'verror')
-    verbosity_three = retrieve('vvv', 'v3', 'vwarn')
-    verbosity_four = retrieve('vvvv', 'v4', 'vinfo')
-    verbosity_five = retrieve('vvvvv', 'v5', 'vdebug')
-    quiet = retrieve('q', 'v0', 'vquiet')
+    def retrieve(flag):
+        return d[flag].value
+    verbosity_one = retrieve('verbosity-fatal')
+    verbosity_two = retrieve('verbosity-error')
+    verbosity_three = retrieve('verbosity-warn')
+    verbosity_four = retrieve('verbosity-info')
+    verbosity_five = retrieve('verbosity-debug')
+    quiet = retrieve('verbosity-quiet')
     if verbosity_five:
         option_handler.verbosity = 5
     elif verbosity_four:

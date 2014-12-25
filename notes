@@ -1,20 +1,44 @@
 Next Task
 ==========
 
- * implement options => implement an option that consumes several more...
- * enable building only a specific target with: ./wasp <command> --target :whatever
-
+ * option parsing
+ * colored terminal output => implement in log
  * finish d tool with find task => see what can be imported into core
  * test, test, test, test and write doc
+
+Option Parsing
+===============
+
+ * use ordered dict for options => ordering
+ * enable building only a specific target with: ./wasp <command> --target :whatever
+ * retrieve verbosity option in the beginning (possibly approximate matching)
+ * allow multiple commands (see http://stackoverflow.com/questions/10448200/how-to-parse-multiple-sub-commands-using-python-argparse)
+ * introduce group aliases e.g. for rebuild (should take the same options as build)
+ * bashcompletion (test if argcomplete is installed, if yes, use it)
+
+Extensions
+===========
+=> think about what they should be able to do
+   - report state of DAG => implement wasp.ext.progress
+   - make sure DAG can be inherited s.t. it can be used without executing tasks (simulate their execution) => wasp.ext.ninja
+   - execution_started(tasks)
+   - task_started(task)
+   - task_finished(task)
+   - preprocess_tasks(tasks)
+   - execution_finished(tasks)
+   - context_created()
+   - initialized()
+   - options_parsed()
+   - command_execution_started()
+   - command_execution_finished()
+   - tasks_loaded(tasks)
 
 TODOs
 ========
 
- * nice terminal output
- * make ordering of options correct, condense output (s.t. verbosity stuff is shorter)
- * extensions => think about what they should be able to do
- * warn user if he uses @options instead of @options
- * bashcompletion (test if argcomplete is installed, if yes, use it)
+ * think about background daemons (daemon autostart extension?!) Daemon('adsf').ensure_running().produce(':daemon')
+ * think about: does use() implies depends? in the case of nodes and tasks
+
 
 Bugs
 =======

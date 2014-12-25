@@ -4,6 +4,7 @@ from .context import Context
 from .config import Config
 from .task import Task, group
 from .tools import proxies as tool_proxies, NoSuchToolError
+from .options import StringOption
 from . import recurse_files, ctx, log, extensions, FatalError
 from .util import is_iterable
 import argparse
@@ -16,16 +17,17 @@ class NoSuchCommandError(Exception):
     pass
 
 
-class CommandAction(argparse.Action):
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        if 'commands' not in namespace:
-            setattr(namespace, 'commands', [])
-        if values is None:
-            return
-        previous = namespace.commands
-        previous.append(values)
-        setattr(namespace, 'commands', previous)
+# TODO: remove
+# class CommandAction(argparse.Action):
+#
+#     def __call__(self, parser, namespace, values, option_string=None):
+#         if 'commands' not in namespace:
+#             setattr(namespace, 'commands', [])
+#         if values is None:
+#             return
+#         previous = namespace.commands
+#         previous.append(values)
+#         setattr(namespace, 'commands', previous)
 
 
 class OptionHandler(object):
@@ -34,22 +36,24 @@ class OptionHandler(object):
         self._verbosity = 0
         self._argparse = argparse.ArgumentParser(description='Welcome to {0}'.format(ctx.meta.projectname))
         # retrieve descriptions of commands
-        descriptions = {}
-        for com in ctx.commands:
-            descriptions[com.name] = com.description
+        descriptions = {com.name: com.description for com in ctx.commands}
         # create a set of command names that can be called
         command_names = set(map(lambda x: x.name, ctx.commands))
         # TODO: check sorting, how?!
         for name in command_names:
-            self._argparse.add_argument(name, help=descriptions[name], action=CommandAction, default=None, nargs='?')
+            # add the group
+            grp = ctx.options.group(name=name)
+            grp.description = descriptions[name]
+            grp.add(StringOption('target', 'Only produce the given target.', keys=['t', 'target']))
         # option decorators => TODO: different groups for command options
         for option_decorator in decorators.options:
             option_decorator(ctx.options)
         ctx.options.add_to_argparse(self._argparse)
         parsed = self._argparse.parse_args()
-        self._commands = parsed.commands
-        ctx.options.retrieve_from_dict(vars(parsed))
-        self._options_dict = vars(parsed)
+        parsed = vars(parsed)
+        self._commands = [parsed['command']]
+        ctx.options.retrieve_from_dict(parsed)
+        self._options_dict = parsed
         for fun in decorators.handle_options:
             fun(self)
 
