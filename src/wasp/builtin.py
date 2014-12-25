@@ -86,7 +86,7 @@ class build(FunctionDecorator):
                 return None
         if not found_rebuild:
             # register rebuild command
-            @command('rebuild', description='Cleans the project and invokes build afterwards.')
+            @command('rebuild', description='Cleans the project and invokes build afterwards.', option_alias='build')
             def _rebuild():
                 run_command('clean')
                 run_command('build', executed_commands=['clear'])

@@ -23,37 +23,40 @@ class NoSuchCommandError(Exception):
     pass
 
 
-# TODO: remove
-# class CommandAction(argparse.Action):
-#
-#     def __call__(self, parser, namespace, values, option_string=None):
-#         if 'commands' not in namespace:
-#             setattr(namespace, 'commands', [])
-#         if values is None:
-#             return
-#         previous = namespace.commands
-#         previous.append(values)
-#         setattr(namespace, 'commands', previous)
-
-
 class OptionHandler(object):
     def __init__(self):
         self._commands = []
         self._verbosity = 0
         self._argparse = argparse.ArgumentParser(description='Welcome to {0}'.format(ctx.meta.projectname))
-        # retrieve descriptions of commands
-        # TODO: use com.description if not None
-        descriptions = {com.name: com.description for com in ctx.commands}
+        # use description if it is not None
+        descriptions = {}
+        for com in ctx.commands:
+            if com.name not in descriptions:
+                descriptions[com.name] = com.description
+            elif com.description is not None:
+                descriptions[com.name] = com.description
         # create a set of command names that can be called
         command_names = set(map(lambda x: x.name, ctx.commands))
-        # TODO: setup alias from commands
+        alias = {com.name: com.option_alias for com in ctx.commands}
+        # don't add commands with an alias to another command
+        # setup OptionCollection with defined alias
         for name in command_names:
+            if alias[name] is not None:
+                ctx.options.alias(name, alias[name])
+                continue
+        # add all subparsers for
+        for name in command_names:
+            # ignore commands with aliases, since those would get added double
+            if alias[name] is not None:
+                continue
             # add the group
             grp = ctx.options.group(name=name)
             grp.description = descriptions[name]
             grp.add(StringOption('target', 'Only produce the given target.', keys=['t', 'target']))
+        # call option decorators
         for option_decorator in decorators.options:
             option_decorator(ctx.options)
+        # setup argument parser
         ctx.options.add_to_argparse(self._argparse)
         parsed = self._argparse.parse_args()
         parsed = vars(parsed)
