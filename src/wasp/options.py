@@ -3,14 +3,20 @@ from . import factory
 from .decorators import decorators
 from .util import FunctionDecorator
 
+from collections import OrderedDict
 
-class OptionsCollection(dict):
+
+class OptionsCollection(OrderedDict):
 
     def __init__(self, name=None, description=None):
         super().__init__()
         self._groups = {}
         self._name = name
-        self._description = None
+        self._description = description
+        self._alias = {}
+
+    def alias(self, from_, to_):
+        self._alias[from_] = to_
 
     @property
     def name(self):
@@ -27,7 +33,7 @@ class OptionsCollection(dict):
     def add(self, option):
         self[option.name] = option
 
-    def add_to_argparse(self, args):
+    def add_to_argparse(self, args, default_command=None):
         subparsers = None
         for option in self.values():
             option.add_to_argparse(args)
@@ -35,7 +41,16 @@ class OptionsCollection(dict):
             if subparsers is None:
                 subparsers = args.add_subparsers(dest='command')
             groupargs = subparsers.add_parser(name)
+            groupargs.required = False
             group.add_to_argparse(groupargs)
+            # TODO: collect rest
+            # add subparser for alias as well
+            for name_from, name_to in self._alias.items():
+                if name_to != name:
+                    continue
+                groupargs = subparsers.add_parser(name_from)
+                group.add_to_argparse(groupargs)
+                # TODO: collect rest
 
     def retrieve_from_dict(self, args):
         for option in self.values():
@@ -44,6 +59,8 @@ class OptionsCollection(dict):
             group.retrieve_from_dict(args)
 
     def group(self, name):
+        if name in self._alias:
+            name = self._alias[name]
         if name not in self._groups.keys():
             self._groups[name] = OptionsCollection(name)
         return self._groups[name]
@@ -221,8 +238,7 @@ class StringOption(Option):
         strings = []
         for prefix, key in zip(self._prefix, self._keys):
             strings.append(prefix + key)
-        args.add_argument(*strings, action='store_true', default=self.value,
-                          help=self._description, dest=self.name)
+        args.add_argument(*strings, default=self.value, help=self._description, dest=self.name)
 
     def retrieve_from_dict(self, args):
         self.value = args.get(self.name, None)

@@ -1,4 +1,4 @@
-from . import options, signatures, ctx, init
+from . import options, signatures, ctx
 from .decorators import decorators
 from .main import run_command
 from .util import FunctionDecorator

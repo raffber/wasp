@@ -6,7 +6,7 @@ class CommandFailedError(Exception):
 
 
 class Command(object):
-    def __init__(self, name, fun, description=None, depends=None, produce=None):
+    def __init__(self, name, fun, description=None, depends=None, produce=None, option_alias=None):
         self._depends = [] if depends is None else depends
         if isinstance(self._depends, str):
             self._depends = [self._depends]
@@ -15,6 +15,7 @@ class Command(object):
         self._fun = fun
         self._description = description or name
         self._produce = produce
+        self._option_alias = option_alias
 
     @property
     def depends(self):
@@ -35,13 +36,18 @@ class Command(object):
     def produce(self):
         return self._produce
 
+    @property
+    def option_alias(self):
+        return self._option_alias
+
 
 class command(object):
-    def __init__(self, name, depends=None, description=None, produce=None):
+    def __init__(self, name, depends=None, description=None, produce=None, option_alias=None):
         self._name = name
         self._depends = depends
         self._description = description
         self._produce = produce
+        self._option_alias = option_alias
 
     def __call__(self, f):
         if self._produce is not None:
@@ -50,5 +56,5 @@ class command(object):
             produce = ':def-' + f.__name__
         decorators.commands.append(Command(self._name, f,
                                            description=self._description, depends=self._depends,
-                                           produce=produce))
+                                           produce=produce, option_alias=self._option_alias))
         return f

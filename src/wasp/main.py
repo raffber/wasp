@@ -7,12 +7,14 @@ from .task_collection import TaskCollection
 from .tools import proxies as tool_proxies, NoSuchToolError
 from .options import StringOption
 from .execution import execute
-from .node import make_node
+from .node import make_nodes
 from .argument import Argument
 from . import recurse_files, ctx, log, extensions, FatalError
 from .util import is_iterable
+
 import argparse
 import os
+import sys
 
 FILE_NAMES = ['build.py', 'build.user.py', 'BUILD', 'BUILD.user']
 
@@ -40,22 +42,30 @@ class OptionHandler(object):
         self._verbosity = 0
         self._argparse = argparse.ArgumentParser(description='Welcome to {0}'.format(ctx.meta.projectname))
         # retrieve descriptions of commands
+        # TODO: use com.description if not None
         descriptions = {com.name: com.description for com in ctx.commands}
         # create a set of command names that can be called
         command_names = set(map(lambda x: x.name, ctx.commands))
-        # TODO: check sorting, how?!
+        # TODO: setup alias from commands
         for name in command_names:
             # add the group
             grp = ctx.options.group(name=name)
             grp.description = descriptions[name]
             grp.add(StringOption('target', 'Only produce the given target.', keys=['t', 'target']))
-        # option decorators => TODO: different groups for command options
         for option_decorator in decorators.options:
             option_decorator(ctx.options)
         ctx.options.add_to_argparse(self._argparse)
         parsed = self._argparse.parse_args()
         parsed = vars(parsed)
-        self._commands = [parsed['command']]
+        com = parsed['command']
+        if com is not None:
+            self._commands = [com]
+        else:
+            com = ctx.config.default_command
+            if com is not None:
+                self._commands = [com]
+            else:
+                log.warn('Warning: wasp called without command and no default command specified.')
         ctx.options.retrieve_from_dict(parsed)
         self._options_dict = parsed
         for fun in decorators.handle_options:
@@ -102,19 +112,6 @@ def create_context(loaded_files, config=None):
     # assign context to proxy
     wasp.ctx.__assign_object(context)
     return context
-
-
-def handle_no_command(options):
-    """
-    This function is called if no commands are to be executed.
-    At the moment, this function only warns that no command is being executed.
-    :param options: OptionsCollection with the options specified.
-    :return: None
-    """
-    if ctx.config.default_command is not None:
-        run_command(ctx.config.default_command)
-    else:
-        log.warn('Warning: wasp called without command and no default command specified.')
 
 
 def run_command(name, executed_commands=None):
@@ -177,7 +174,7 @@ def run_command(name, executed_commands=None):
     jobs = Argument('jobs', type=int).retrieve_all(default=1).value
     produce = ctx.options.group(name)['target'].value
     if produce is not None:
-        produce = make_node(produce)
+        produce = make_nodes(produce)
     execute(tasks_col, jobs=jobs, produce=produce)
     # check all tasks if successful
     for key, task in tasks_col.items():
@@ -204,8 +201,6 @@ def handle_commands(options):
         if not success:
             break
         executed_comands.append(command)
-    if len(executed_comands) == 0:
-        handle_no_command(options)
     return success
 
 
@@ -251,13 +246,38 @@ def retrieve_verbosity():
     default is -vvv (warn)
     :return: the verbosity level 0 <= verbosity <= 5
     """
-    # TODO: ... only partially parse all the options... can argparse do this?!
-    # that's difficult anyways... we certainly need to reparse the options again
-    # but then ignore the result of it.
-    # only accept verbosity as first argument?! => see how other people do it
-    # let this go for the time being, as it's not that important. We will just miss
-    # out on log.INFO and log.DEBUG messages during @create_context, @init and @options
-    # after that, everything is fine
+    # retrieve from argv
+    argv = sys.argv
+    if '-v0' in argv or '-q' in argv or '--vquiet' in argv:
+        return log.QUIET
+    if '-v1' in argv or '-v' in argv or '--vfatal' in argv:
+        return log.FATAL
+    if '-v2' in argv or '-vv' in argv or '--verror' in argv:
+        return log.ERROR
+    if '-v3' in argv or '-vvv' in argv or '--vwarn' in argv:
+        return log.WARN
+    if '-v4' in argv or '-vvvv' in argv or '--vinfo' in argv:
+        return log.INFO
+    if '-v5' in argv or '-vvvvv' in argv or '--vdebug' in argv:
+        return log.DEBUG
+    # retrieve from environment
+    name = 'WASP_VERBOSITY'
+    if name not in os.environ:
+        return log.DEFAULT
+    value = os.environ[name]
+    if value == '0' or value == 'quiet':
+        return log.QUIET
+    if value == '1' or value == 'fatal':
+        return log.FATAL
+    if value == '2' or value == 'error':
+        return log.ERROR
+    if value == '3' or value == 'warn':
+        return log.WARN
+    if value == '4' or value == 'info':
+        return log.INFO
+    if value == '5' or value == 'debug':
+        return log.DEBUG
+    log.warn('Unrecognized value of environment variable `{0}`: `{1}`'.format(name, value))
     return log.DEFAULT
 
 
@@ -307,6 +327,7 @@ def run(dir_path):
         config = Config.load_from_directory(dir_path)
         if config.verbosity is not None and log.verbosity == log.DEFAULT:
             # configuration overwrites default from command line/env
+            # but NOT if verbosity was modified from default
             log.configure(config.verbosity)
         # load all extensions
         load_extensions(config)

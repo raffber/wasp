@@ -4,17 +4,13 @@ Next Task
  * option parsing
  * colored terminal output => implement in log
  * finish d tool with find task => see what can be imported into core
+ * execution: limit production to a list of nodes given by produce in DAG
  * test, test, test, test and write doc
 
 Option Parsing
 ===============
 
- * enable using no command
- * use ordered dict for options => ordering
- * enable building only a specific target with: ./wasp <command> --target :whatever
- * retrieve verbosity option in the beginning (possibly approximate matching)
  * allow multiple commands (see http://stackoverflow.com/questions/10448200/how-to-parse-multiple-sub-commands-using-python-argparse)
- * introduce group aliases e.g. for rebuild (should take the same options as build)
  * bashcompletion (test if argcomplete is installed, if yes, use it)
 
 Extensions
