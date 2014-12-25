@@ -39,13 +39,17 @@ class RunnableTaskContainer(object):
 
 
 class DAG(object):
-    def __init__(self, tasks):
+    def __init__(self, tasks, produce=None):
         self._tasks = []
         self._target_map = {}
         self.insert(tasks)
         self._runnable_tasks = []
         self._waiting_tasks = tasks
         self._executing_tasks = []
+        self._produce = produce
+        # TODO: implement produce
+        # => remove all tasks not required for producing the nodes i.e. look for all nodes
+        # producing `produce`, then recursively add all dependencies
 
     def update_runnable(self):
         # TODO: short and easy... BUT very inefficient
@@ -159,12 +163,12 @@ def preprocess(tasks):
             real_task.always = True
 
 
-def execute(tasks, jobs=1):
+def execute(tasks, jobs=1, produce=None):
     tasks = flatten(tasks.values())
     if len(tasks) == 0:
         return
     preprocess(tasks)
-    dag = DAG(tasks)
+    dag = DAG(tasks, produce=produce)
     loop = EventLoop()
     executor = Executor(dag, loop, jobs=jobs)
     executor.start()

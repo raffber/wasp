@@ -3,8 +3,11 @@ from .decorators import decorators
 from .context import Context
 from .config import Config
 from .task import Task, group
+from .task_collection import TaskCollection
 from .tools import proxies as tool_proxies, NoSuchToolError
 from .options import StringOption
+from .execution import execute
+from .argument import Argument
 from . import recurse_files, ctx, log, extensions, FatalError
 from .util import is_iterable
 import argparse
@@ -141,6 +144,7 @@ def run_command(name, executed_commands=None):
                 # dependency not executed successfully
                 run_command(dependency, executed_commands=executed_commands)
     # now run the commands
+    tasks_col = TaskCollection()
     for command in ctx.commands:
         if command.name != name:
             continue
@@ -148,11 +152,11 @@ def run_command(name, executed_commands=None):
         if is_iterable(tasks):
             if command.produce is not None:
                 tasks = group(tasks).produce(command.produce)
-            ctx.tasks.add(tasks)
+            tasks_col.add(tasks)
         elif isinstance(tasks, Task):
             if command.produce is not None:
                 tasks.produce(command.produce)
-            ctx.tasks.add(tasks)
+            tasks_col.add(tasks)
         elif tasks is not None:
             assert False, 'Unrecognized return value from {0}'.format(name)
         # else tasks is None, thats fine
@@ -161,23 +165,23 @@ def run_command(name, executed_commands=None):
         found = True
         tasks = generator.run()
         if is_iterable(tasks):
-            ctx.tasks.add(tasks)
+            tasks_col.add(tasks)
         elif isinstance(tasks, Task):
-            ctx.tasks.add(tasks)
+            tasks_col.add(tasks)
         elif tasks is not None:
             assert False, 'Unrecognized return value from {0}'.format(name)
     if not found:
         raise NoSuchCommandError('No command with name `{0}` found!'.format(name))
     # now execute all tasks
-    ctx.run_tasks()
+    jobs = Argument('jobs', type=int).retrieve_all(default=1).value
+    execute(tasks_col, jobs=jobs)
     # check all tasks if successful
-    for key, task in ctx.tasks.items():
+    for key, task in tasks_col.items():
         if not task.success:
             log.fatal('Command `{0}` failed.'.format(name))
             ctx.cache.prefix('commands')[name] = {'success': False}
             return False
     log.info('SUCCESS: Command `{0}` executed successfully!'.format(name))
-    ctx.tasks.clear()
     ctx.cache.prefix('commands')[name] = {'success': True}
     return True
 

@@ -1,14 +1,12 @@
-from .task_collection import TaskCollection
 from .options import OptionsCollection
 from .cache import Cache
 from .signature import FileSignature
-from .argument import Argument, ArgumentCollection
+from .argument import ArgumentCollection
 from .environment import Environment
 from .util import load_module_by_path
 from .tools import ToolError, NoSuchToolError
 from .tools import proxies
 from .fs import TOP_DIR, Directory
-from .execution import execute
 from .config import Config
 from .generator import GeneratorCollection
 from .metadata import Metadata
@@ -26,7 +24,6 @@ class Context(object):
         self._options = OptionsCollection()
         self._env = Environment()
         self._commands = []
-        self._tasks = TaskCollection()
         self._tooldir = Directory('wasp-tools')
         # we need to get the initialization order right.
         # the simplest way to do this is to initialize things first
@@ -180,13 +177,5 @@ class Context(object):
             self._cache.clear()
 
     @property
-    def tasks(self):
-        return self._tasks
-
-    @property
     def cache(self):
         return self._cache
-
-    def run_tasks(self):
-        jobs = Argument('jobs', type=int).retrieve_all(default=1).value
-        execute(self.tasks, jobs=jobs)
