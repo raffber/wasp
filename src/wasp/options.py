@@ -43,14 +43,14 @@ class OptionsCollection(OrderedDict):
             groupargs = subparsers.add_parser(name)
             groupargs.required = False
             group.add_to_argparse(groupargs)
-            # TODO: collect rest
+            groupargs.add_argument('other_commands', nargs="*", help='Other commands')
             # add subparser for alias as well
             for name_from, name_to in self._alias.items():
                 if name_to != name:
                     continue
                 groupargs = subparsers.add_parser(name_from)
                 group.add_to_argparse(groupargs)
-                # TODO: collect rest
+                groupargs.add_argument('other_commands', nargs="*", help='Other commands')
 
     def retrieve_from_dict(self, args):
         for option in self.values():

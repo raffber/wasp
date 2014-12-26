@@ -59,7 +59,9 @@ class OptionHandler(object):
         # setup argument parser
         ctx.options.add_to_argparse(self._argparse)
         parsed = self._argparse.parse_args()
+        extra = parsed.other_commands
         parsed = vars(parsed)
+        ctx.options.retrieve_from_dict(parsed)
         com = parsed['command']
         if com is not None:
             self._commands = [com]
@@ -69,14 +71,14 @@ class OptionHandler(object):
                 self._commands = [com]
             else:
                 log.warn('Warning: wasp called without command and no default command specified.')
-        ctx.options.retrieve_from_dict(parsed)
-        self._options_dict = parsed
+        while extra:
+            more = vars(self._argparse.parse_args(extra))
+            com = more['command']
+            self._commands.append(com)
+            ctx.options.group(com).retrieve_from_dict(more)
+            extra = more['other_commands']
         for fun in decorators.handle_options:
             fun(self)
-
-    @property
-    def options_dict(self):
-        return self._options_dict
 
     @property
     def commands(self):
@@ -196,7 +198,7 @@ def run_command(name, executed_commands=None):
             log.fatal(log.format_fail() + 'Command `{0}` failed.'.format(name))
             ctx.cache.prefix('commands')[name] = {'success': False}
             return False
-    log.info(log.format_success() + 'Command `{0}` executed successfully!'.format(name))
+    log.info(log.format_success() + 'Command: `{0}`'.format(name))
     ctx.cache.prefix('commands')[name] = {'success': True}
     return True
 
@@ -208,13 +210,11 @@ def handle_commands(options):
     :param options: OptionsCollection(), the options given to wasp
     :return: True if the commands have been executed successfully.
     """
-    executed_comands = []
     success = True
     for command in options.commands:
-        success = run_command(command, executed_comands)
+        success = run_command(command)
         if not success:
             break
-        executed_comands.append(command)
     return success
 
 

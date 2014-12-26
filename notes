@@ -10,7 +10,6 @@ Next Task
 Option Parsing
 ===============
 
- * allow multiple commands (see http://stackoverflow.com/questions/10448200/how-to-parse-multiple-sub-commands-using-python-argparse)
  * bashcompletion (test if argcomplete is installed, if yes, use it)
 
 Extensions
@@ -40,11 +39,26 @@ TODOs
 Bugs
 =======
 
- * if a task failed (e.g. template) other tasks get executed?! dafuq?!
  * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
  * md is run always?!
- * `./wasp build build` gives: 'No build file found. Exiting.'
  * properly handle exceptions occuring in a task
+
+----->8--------
+
+./wasp --vdebug rebuild build
+Config file at ./wasprc.user.json does not exist.
+[SUCC]  Command: `clean`
+[SUCC]  /usr/bin/dmd  -c /home/raff/raffbuild/two.d -of/home/raff/raffbuild/build/two.d.o
+[SUCC]  /usr/bin/dmd  -c /home/raff/raffbuild/one.d -of/home/raff/raffbuild/build/one.d.o
+[SUCC]  cp -r /home/raff/raffbuild/notes /home/raff/raffbuild/build/notes
+[SUCC]  /usr/bin/dmd  /home/raff/raffbuild/build/one.d.o /home/raff/raffbuild/build/two.d.o -of/home/raff/raffbuild/build/main
+[SUCC]  Command: `build`
+[SUCC]  Command: `rebuild`
+[SUCC]  /usr/bin/dmd  -c /home/raff/raffbuild/one.d -of/home/raff/raffbuild/build/one.d.o
+[SUCC]  /usr/bin/dmd  /home/raff/raffbuild/build/one.d.o /home/raff/raffbuild/build/two.d.o -of/home/raff/raffbuild/build/main
+[SUCC]  Command: `build`
+
+----------8<---------
 
 Lower Priorieties
 ===================
