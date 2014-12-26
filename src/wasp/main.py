@@ -9,7 +9,7 @@ from .options import StringOption
 from .execution import execute
 from .node import make_nodes
 from .argument import Argument
-from . import recurse_files, ctx, log, extensions, FatalError, color
+from . import recurse_files, ctx, log, extensions, FatalError, CommandFailedError
 from .util import is_iterable
 
 import argparse
@@ -125,6 +125,7 @@ def run_command(name, executed_commands=None):
     :param executed_commands: List of commands that have already been executed.
     :return: True if the executed is successful, False otherwise
     """
+    succ = True
     if executed_commands is None:
         executed_commands = []
     command_cache = ctx.cache.prefix('commands')
@@ -138,18 +139,24 @@ def run_command(name, executed_commands=None):
         # run all dependencies automatically
         # if they fail, this command fails as well
         for dependency in command.depends:
-            if not dependency in command_cache:
+            if dependency not in command_cache:
                 # dependency never executed
-                run_command(dependency, executed_commands=executed_commands)
+                succ = run_command(dependency, executed_commands=executed_commands)
             elif not command_cache[dependency]['success']:
                 # dependency not executed successfully
-                run_command(dependency, executed_commands=executed_commands)
+                succ = run_command(dependency, executed_commands=executed_commands)
+            if not succ:
+                return False
     # now run the commands
     tasks_col = TaskCollection()
     for command in ctx.commands:
         if command.name != name:
             continue
-        tasks = command.run()
+        try:
+            tasks = command.run()
+        except CommandFailedError as e:
+            log.fatal(log.format_fail() + 'Command `{0}` failed: {1}'.format(name, str(e)))
+            return False
         if is_iterable(tasks):
             if command.produce is not None:
                 tasks = group(tasks).produce(command.produce)
@@ -164,7 +171,11 @@ def run_command(name, executed_commands=None):
         found = True
     for generator in ctx.generators(name).values():
         found = True
-        tasks = generator.run()
+        try:
+            tasks = generator.run()
+        except CommandFailedError as e:
+            log.fatal(log.fail() + 'Command `{0}` failed: {1}'.format(name, str(e)))
+            return False
         if is_iterable(tasks):
             tasks_col.add(tasks)
         elif isinstance(tasks, Task):
@@ -182,10 +193,10 @@ def run_command(name, executed_commands=None):
     # check all tasks if successful
     for key, task in tasks_col.items():
         if not task.success:
-            log.fatal('Command `{0}` failed.'.format(name))
+            log.fatal(log.format_fail() + 'Command `{0}` failed.'.format(name))
             ctx.cache.prefix('commands')[name] = {'success': False}
             return False
-    log.info(color('SUCCESS: Command `{0}` executed successfully!'.format(name), fg='green', style='bright'))
+    log.info(log.format_success() + 'Command `{0}` executed successfully!'.format(name))
     ctx.cache.prefix('commands')[name] = {'success': True}
     return True
 
@@ -310,7 +321,7 @@ def load_decorator_config(config):
         config.overwrite_merge(c)
     if config.verbosity is not None and log.verbosity == log.DEFAULT:
         # configuration overwrites default from command line/env
-        log.configure(config.verbosity)
+        log.configure(verbosity=config.verbosity)
     return config
 
 
@@ -325,7 +336,7 @@ def run(dir_path):
     """
     try:
         # first and foremost, initialize logging
-        log.configure(retrieve_verbosity())
+        log.configure(verbosity=retrieve_verbosity())
         # load configuration from current directory
         config = Config.load_from_directory(dir_path)
         if config.verbosity is not None and log.verbosity == log.DEFAULT:

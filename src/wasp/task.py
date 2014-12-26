@@ -5,6 +5,7 @@ from .argument import Argument, ArgumentCollection
 from .logging import Logger
 from .decorators import decorators
 from .commands import Command
+from . import log
 
 from functools import reduce
 from itertools import chain
@@ -47,7 +48,7 @@ class Task(object):
         self._postprocess_list.append(self._postprocess)
         self._spawn_list = CallableList().collect(lambda ret: reduce(operator.add, ret))
         self._spawn_list.append(self._spawn)
-        self._logger = Logger()
+        self._logger = log.clone()
         self._result = ArgumentCollection()
         self._used_nodes = []
         self._required_arguments = []
@@ -355,6 +356,15 @@ def group(*args, collapse=True):
 
 def sequential(*args):
     raise NotImplementedError
+
+
+def fail():
+    t = Task(always=True)
+
+    def _fail():
+        t.success = False
+    t.run.append(_fail)
+    return task
 
 
 class task(object):

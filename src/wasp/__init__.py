@@ -45,8 +45,8 @@ from .platform import OSInfo
 osinfo = OSInfo()
 
 
-from .logging import Logger, color
-log = Logger()
+from .logging import Logger
+log = Logger(pretty=False)
 
 
 from .util import Factory, Serializable
@@ -80,7 +80,7 @@ from .context import Context
 from .config import config, Config
 from .options import options, handle_options, FlagOption, EnableOption, StringOption, IntOption
 from .argument import Argument, value, arg, format_string, find_argumentkeys_in_string, ArgumentCollection
-from .commands import command, Command
+from .commands import command, Command, CommandFailedError
 from .hooks import init, create_context
 from .fs import Directory, File
 from .task import Task, group, sequential, task

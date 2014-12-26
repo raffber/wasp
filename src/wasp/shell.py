@@ -2,6 +2,7 @@ from .task import Task
 from .node import FileNode
 from .argument import Argument
 from .util import UnusedArgFormatter
+from .logging import LogStr
 from io import StringIO
 from subprocess import Popen, PIPE
 
@@ -61,18 +62,22 @@ class ShellTask(Task):
         out = StringIO()
         err = StringIO()
         exit_code = run(commandstring, stdout=out, stderr=err)
-        self.log.info(commandstring + ': ' + str(exit_code))
         self.success = exit_code == 0
+        if self.success:
+            self.log.info(self.log.format_success() + commandstring)
         self.has_run = True
         stdout = out.getvalue()
         errout = err.getvalue()
         if stdout != '':
-            self.log.info(stdout.strip())
-        if errout != '' and not self.success:
-            self.log.fatal(errout.strip())
-            self.log.fatal('While executing:\n' + commandstring)
+            out = self.log.format_info(stdout.strip())
+            self.log.info(out)
+        if not self.success:
+            return_value_format = self.log.color('  --> ' + str(exit_code), fg='red', style='bright')
+            fatal_print = self.log.format_fail(LogStr(commandstring) + return_value_format, errout.strip())
+            self.log.fatal(fatal_print)
         elif errout != '':
-            self.log.error(errout)
+            warn_print = self.log.format_warn(LogStr(commandstring), errout.strip())
+            self.log.warn(warn_print)
         ret = self._finished(exit_code, stdout, errout)
         if ret is not None:
             if not isinstance(ret, list) or isinstance(ret, tuple):

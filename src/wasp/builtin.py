@@ -1,4 +1,4 @@
-from . import options, signatures, ctx
+from . import options, signatures, ctx, CommandFailedError
 from .decorators import decorators
 from .main import run_command
 from .util import FunctionDecorator
@@ -88,8 +88,12 @@ class build(FunctionDecorator):
             # register rebuild command
             @command('rebuild', description='Cleans the project and invokes build afterwards.', option_alias='build')
             def _rebuild():
-                run_command('clean')
-                run_command('build', executed_commands=['clear'])
+                succ = run_command('clean')
+                if not succ:
+                    raise CommandFailedError
+                succ = run_command('build', executed_commands=['clear'])
+                if not succ:
+                    raise CommandFailedError
 
 
 class install(FunctionDecorator):

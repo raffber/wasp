@@ -1,13 +1,10 @@
 from .terminal import Color, Style
 import os
+import sys
 
 CSI = '\033['
 OSC = '\033]'
 BEL = '\007'
-
-
-def print_noendl(s):
-    print(s, end='', flush=True)
 
 
 fgcolor_to_code = {
@@ -35,7 +32,7 @@ bgcolor_to_code = {
 }
 
 style_to_code = {
-    None: 0,
+    None: 22,
     'bright': 1,
     'dim': 2
 }
@@ -46,38 +43,45 @@ def code(arg):
 
 
 class Cursor(object):
+    def __init__(self, term):
+        self._term = term
+
     def up(self, num=1):
         assert num > 0
-        print_noendl(CSI + str(num) + 'A')
+        self._term.print_noendl(CSI + str(num) + 'A')
 
     def down(self, num=1):
         assert num > 0
-        print_noendl(CSI + str(num) + 'B')
+        self._term.print_noendl(CSI + str(num) + 'B')
 
     def right(self, num=1):
         assert num > 0
-        print_noendl(CSI + str(num) + 'C')
+        self._term.print_noendl(CSI + str(num) + 'C')
 
     def left(self, num=1):
         assert num > 0
-        print_noendl(CSI + str(num) + 'D')
+        self._term.print_noendl(CSI + str(num) + 'D')
 
     def to_pos(self, x, y):
         assert x > 0 and y > 0
-        print_noendl(CSI + str(y) + ';' + str(x) + 'H')
+        self._term.print_noendl(CSI + str(y) + ';' + str(x) + 'H')
 
 
 class Terminal(object):
 
-    def __init__(self):
-        self._cursor = Cursor()
+    def __init__(self, file=None):
+        if file is None:
+            self._file = sys.stdout
+        else:
+            self._file = file
+        self._cursor = Cursor(self)
 
     @property
     def cursor(self):
         return self._cursor
 
     def set_title(self, title):
-        print_noendl(OSC + '2;' + title + BEL)
+        self.print_noendl(OSC + '2;' + title + BEL)
 
     @property
     def width(self):
@@ -109,15 +113,21 @@ class Terminal(object):
                 code(bgcolor_to_code[Color.default]) +
                 code(style_to_code[Style.normal]))
         if endl:
-            print(start + s + stop)
+            self.print(start + s + stop)
         else:
-            print_noendl(start + s + stop)
+            self.print_noendl(start + s + stop)
+
+    def print_noendl(self, s):
+        print(s, end='', flush=True, file=self._file)
+
+    def print(self, s):
+        print(s, file=self._file)
 
     def clear_screen(self):
-        print_noendl(CSI + '2J')
+        self.print_noendl(CSI + '2J')
 
     def clear_line(self):
-        print_noendl(CSI + '2K')
+        self.print_noendl(CSI + '2K')
 
     def newline(self):
-        print()
+        print(file=self._file)
