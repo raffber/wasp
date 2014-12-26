@@ -66,7 +66,8 @@ class Config(object):
             'pythonpath': make_handler('pythonpath', parser=lambda x: Directory(x)),
             'verbosity': make_handler('verbosity', parser=self._parse_verbosity),
             'arguments': make_handler('arguments', parser=self._argument_parser, merger=self._argument_merger),
-            'default_command': make_handler('default_command')
+            'default_command': make_handler('default_command'),
+            'pretty': make_handler('pretty')
         }
 
     @classmethod

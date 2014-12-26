@@ -36,6 +36,8 @@ def _add_builtin_options(col):
                        , description=desc_info, prefix=['-', '-', '--']))
     col.add(FlagOption(name='verbosity-debug', keys=['vvvvv', 'v5', 'vdebug']
                        , description=desc_debug, prefix=['-', '-', '--']))
+    col.add(FlagOption(name='no-pretty', description='Disable pretty printing'
+                       , keys=['u', 'no-pretty', 'ugly']))
 
 
 @handle_options

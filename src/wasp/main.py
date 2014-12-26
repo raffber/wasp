@@ -295,6 +295,14 @@ def retrieve_verbosity():
     return log.DEFAULT
 
 
+def retrieve_pretty_printing():
+    argv = sys.argv
+    if '-u' in argv or '--no-pretty' in argv or '--ugly' in argv:
+        return False
+    return True
+
+
+
 def load_extensions(config):
     extensions.load_all('wasp.ext')
     for ext_name in config.extensions:
@@ -336,13 +344,13 @@ def run(dir_path):
     """
     try:
         # first and foremost, initialize logging
-        log.configure(verbosity=retrieve_verbosity())
+        log.configure(verbosity=retrieve_verbosity(), pretty=retrieve_pretty_printing())
         # load configuration from current directory
         config = Config.load_from_directory(dir_path)
         if config.verbosity is not None and log.verbosity == log.DEFAULT:
             # configuration overwrites default from command line/env
             # but NOT if verbosity was modified from default
-            log.configure(config.verbosity)
+            log.configure(verbosity=config.verbosity, pretty=config.pretty)
         # load all extensions
         load_extensions(config)
         # import all modules
