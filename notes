@@ -1,9 +1,8 @@
 Next Task
 ==========
 
- * simple way to make a command alias
  * option parsing
- * colored terminal output => implement in log
+ * extension api
  * finish d tool with find task => see what can be imported into core
  * execution: limit production to a list of nodes given by produce in DAG
  * test, test, test, test and write doc

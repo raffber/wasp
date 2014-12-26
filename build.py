@@ -41,3 +41,6 @@ def md():
     return [wasp.shell('markdown {SRC} > {TGT}', sources=md,
                        targets=md.to_builddir().replace_extension('html'))
             for md in wasp.files(mds)]
+
+
+wasp.alias('asdf', 'build')

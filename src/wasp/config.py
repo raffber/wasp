@@ -9,10 +9,6 @@ import json
 CONFIG_FILE_NAMES = ['wasprc.json', 'wasprc.user.json']
 
 
-# TODO: more generic approach than what's here at the moment
-# though for the time being this is probably the simplest.
-
-
 class Config(object):
 
     class KeyHandler(object):

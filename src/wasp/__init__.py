@@ -88,5 +88,5 @@ from .task_collection import TaskCollection
 from .shell import shell
 from .fs import Directory, TOP_DIR, files
 from .tools import tool
-from .builtin import build, configure, install
+from .builtin import build, configure, install, alias
 from .metadata import metadata, Metadata

@@ -142,3 +142,14 @@ def _clean():
         signature.invalidate()
     return ret
 
+
+def alias(from_, to_):
+    description = None
+    for com in decorators.commands:
+        if com.name == to_:
+            description = com.description
+
+    @command(from_, description=description, option_alias=to_)
+    def _from():
+        from .main import run_command
+        run_command(to_)
