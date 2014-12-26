@@ -1,6 +1,7 @@
 Next Task
 ==========
 
+ * simple way to make a command alias
  * option parsing
  * colored terminal output => implement in log
  * finish d tool with find task => see what can be imported into core

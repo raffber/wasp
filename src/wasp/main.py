@@ -9,7 +9,7 @@ from .options import StringOption
 from .execution import execute
 from .node import make_nodes
 from .argument import Argument
-from . import recurse_files, ctx, log, extensions, FatalError
+from . import recurse_files, ctx, log, extensions, FatalError, color
 from .util import is_iterable
 
 import argparse
@@ -185,7 +185,7 @@ def run_command(name, executed_commands=None):
             log.fatal('Command `{0}` failed.'.format(name))
             ctx.cache.prefix('commands')[name] = {'success': False}
             return False
-    log.info('SUCCESS: Command `{0}` executed successfully!'.format(name))
+    log.info(color('SUCCESS: Command `{0}` executed successfully!'.format(name), fg='green', style='bright'))
     ctx.cache.prefix('commands')[name] = {'success': True}
     return True
 

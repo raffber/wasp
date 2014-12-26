@@ -45,7 +45,7 @@ from .platform import OSInfo
 osinfo = OSInfo()
 
 
-from .logging import Logger
+from .logging import Logger, color
 log = Logger()
 
 

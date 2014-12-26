@@ -3,6 +3,7 @@
     "projectname": "buildtest",
     "projectid": "somethingelse"
   },
+  "verbosity": "info",
   "default_command": "rebuild",
   "extensions": ["templating"]
 }

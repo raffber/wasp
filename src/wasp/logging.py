@@ -1,40 +1,39 @@
-from . import osinfo
+from .terminal import Terminal
+import sys
 
 
-class LogStringBase(object):
-    pass
+class LogStr(object):
+    def __init__(self, *strs, fg=None, style=None):
+        self._strings = list(strs)
+        self._fg = fg
+        self._style = style
+
+    def __str__(self):
+        return self.to_string()
+
+    def to_string(self):
+        ret = ''
+        for s in self._strings:
+            ret += str(s)
+        return ret
+
+    def write_to_terminal(self, term=None, endl=False):
+        if term is None:
+            term = Terminal()
+        for s in self._strings:
+            if isinstance(s, LogStr):
+                s.write_to_terminal(term)
+            else:
+                term.write(s, fg=self._fg, style=self._style, endl=False)
+        if endl:
+            term.newline()
+
+    def __add__(self, other):
+        self._strings.append(other)
 
 
-if osinfo.posix:
-    class LogString(LogStringBase):
-        def __init__(self, *strings):
-            self._strings = strings
-
-        def to_string(self):
-            pass
-
-        def to_terminal(self):
-            pass
-elif osinfo.windows:
-    class LogString(LogStringBase):
-        def __init__(self, *strings):
-            self._strings = strings
-
-        def to_string(self):
-            pass
-
-        def to_terminal(self):
-            pass
-else:
-    class LogString(LogStringBase):
-        def __init__(self, *strings):
-            self._strings = strings
-
-        def to_string(self):
-            pass
-
-        def to_terminal(self):
-            pass
+def color(s, fg=None, style=None):
+    return LogStr(s, fg=fg, style=style)
 
 
 class Logger(object):
@@ -60,11 +59,14 @@ class Logger(object):
     def log(self, msg, level=None):
         if level > self._verbosity:
             return
-        msg = self._prepend + msg
+        msg = LogStr(self._prepend, msg)
+        str_msg = str(msg)
         if self._io is not None:
-            self._io.write(msg)
-        if self._use_stdout:
-            print(msg)
+            self._io.write(str_msg)
+        if self._use_stdout and sys.stdout.isatty():
+            msg.write_to_terminal(endl=True)
+        else:
+            print(str_msg)
 
     def configure(self, verbosity):
         self._verbosity = verbosity
