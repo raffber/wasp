@@ -6,7 +6,7 @@ from .task import Task, group
 from .task_collection import TaskCollection
 from .tools import proxies as tool_proxies, NoSuchToolError
 from .options import StringOption
-from .execution import execute
+from .execution import execute, ParallelExecutor
 from .node import make_nodes
 from .argument import Argument
 from . import recurse_files, ctx, log, extensions, FatalError, CommandFailedError
@@ -126,37 +126,8 @@ def create_context(loaded_files, config=None):
     return context
 
 
-def run_command(name, executed_commands=None):
-    """
-    Runs a command specified by name. All dependencies of the command are
-    executed, if they have not successfully executed before.
-    :param name: The name of the command in question.
-    :param executed_commands: List of commands that have already been executed.
-    :return: True if the executed is successful, False otherwise
-    """
-    succ = True
-    if executed_commands is None:
-        executed_commands = []
-    command_cache = ctx.cache.prefix('commands')
-    if name in executed_commands:
-        return
+def retrieve_command_tasks(name):
     found = False
-    # run all dependencies
-    for command in ctx.commands:
-        if command.name != name:
-            continue
-        # run all dependencies automatically
-        # if they fail, this command fails as well
-        for dependency in command.depends:
-            if dependency not in command_cache:
-                # dependency never executed
-                succ = run_command(dependency, executed_commands=executed_commands)
-            elif not command_cache[dependency]['success']:
-                # dependency not executed successfully
-                succ = run_command(dependency, executed_commands=executed_commands)
-            if not succ:
-                return False
-    # now run the commands
     tasks_col = TaskCollection()
     for command in ctx.commands:
         if command.name != name:
@@ -193,12 +164,40 @@ def run_command(name, executed_commands=None):
             assert False, 'Unrecognized return value from {0}'.format(name)
     if not found:
         raise NoSuchCommandError('No command with name `{0}` found!'.format(name))
-    # now execute all tasks
+    return tasks_col
+
+
+def run_command_dependencies(name, executed_commands=[]):
+    succ = True
+    if executed_commands is None:
+        executed_commands = []
+    command_cache = ctx.cache.prefix('commands')
+    if name in executed_commands:
+        return
+    # run all dependencies
+    for command in ctx.commands:
+        if command.name != name:
+            continue
+        # run all dependencies automatically
+        # if they fail, this command fails as well
+        for dependency in command.depends:
+            if dependency not in command_cache:
+                # dependency never executed
+                succ = run_command(dependency, executed_commands=executed_commands)
+            elif not command_cache[dependency]['success']:
+                # dependency not executed successfully
+                succ = run_command(dependency, executed_commands=executed_commands)
+            if not succ:
+                return False
+    return True
+
+
+def execute_tasks(name, tasks):
     jobs = Argument('jobs', type=int).retrieve_all(default=1).value
     produce = ctx.options.group(name)['target'].value
     if produce is not None:
         produce = make_nodes(produce)
-    tasks = execute(tasks_col, jobs=jobs, produce=produce)
+    tasks = execute(tasks, ParallelExecutor(jobs=jobs), produce=produce)
     # check all tasks if successful
     for key, task in tasks.items():
         if not task.success:
@@ -208,6 +207,23 @@ def run_command(name, executed_commands=None):
     log.info(log.format_success() + 'Command: `{0}`'.format(name))
     ctx.cache.prefix('commands')[name] = {'success': True}
     return True
+
+
+def run_command(name, executed_commands=None):
+    """
+    Runs a command specified by name. All dependencies of the command are
+    executed, if they have not successfully executed before.
+    :param name: The name of the command in question.
+    :param executed_commands: List of commands that have already been executed.
+    :return: True if the executed is successful, False otherwise
+    """
+    # run all dependencies of this task
+    if not run_command_dependencies(name, executed_commands=executed_commands):
+        return False
+    # now run the commands
+    tasks_col = retrieve_command_tasks(name)
+    # now execute all tasks
+    return execute_tasks(name, tasks_col)
 
 
 def handle_commands(options):

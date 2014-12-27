@@ -170,11 +170,14 @@ class DAG(object):
 
 
 class Executor(object):
-    def __init__(self, dag):
-        self._dag = dag
+    def __init__(self):
+        self._dag = None
         self._consumed_nodes = []
         self._produced_nodes = []
         self._executed_tasks = TaskCollection()
+
+    def setup(self, dag):
+        self._dag = dag
 
     @property
     def executed_tasks(self):
@@ -195,6 +198,7 @@ class Executor(object):
             source.signature.invalidate()
 
     def task_success(self, task, start=True):
+        assert self._dag is not None, 'Call setup() first'
         self._dag.task_finished(task)
         spawned = task.task.spawn()
         if spawned is not None:
@@ -238,8 +242,8 @@ class Executor(object):
 
 class ParallelExecutor(Executor):
 
-    def __init__(self, dag, jobs=1):
-        super().__init__(dag)
+    def __init__(self, jobs=1):
+        super().__init__()
         self._current_jobs = 0
         self._loop = EventLoop()
         self._jobs = jobs
@@ -263,6 +267,7 @@ class ParallelExecutor(Executor):
             self._cancel = True
 
     def _start(self):
+        assert self._dag is not None, 'Call setup() first'
         while self._current_jobs < self._jobs:
             if not self._loop.running and self._loop.started:
                 break
@@ -319,13 +324,13 @@ def preprocess(tasks):
             real_task.always = True
 
 
-def execute(tasks, jobs=1, produce=None):
+def execute(tasks, executor, produce=None):
     tasks = flatten(tasks.values())
     if len(tasks) == 0:
         return TaskCollection()
     preprocess(tasks)
     dag = DAG(tasks, produce=produce)
-    executor = ParallelExecutor(dag, jobs=jobs)
+    executor.setup(dag)
     executor.run()
     return executor.executed_tasks
 
