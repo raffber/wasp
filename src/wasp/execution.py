@@ -2,12 +2,14 @@ from .task import Task, TaskGroup
 from .util import EventLoop, Event, is_iterable
 from . import log, old_signatures, extensions
 from .task_collection import TaskCollection
+from .node import SymbolicNode
 
 from threading import Thread
 
 
 # TODO: task timeouts -> kill hanging tasks
 # TODO: handle task exceptions
+
 
 class DependencyCycleError(Exception):
     pass

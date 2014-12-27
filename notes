@@ -1,7 +1,7 @@
 Next Task
 ==========
 
- * finish d tool with find task => see what can be imported into core
+ * properly handle interrupts during execution
  * test, test, test, test and write doc
  * port to windows
 
@@ -11,7 +11,6 @@ TODOs
  * think about background daemons (daemon autostart extension?!) Daemon('adsf').ensure_running().produce(':daemon')
  * think about: does use() implies depends? in the case of nodes and tasks
 
-
 Bugs
 =======
 
@@ -20,27 +19,22 @@ Bugs
  * md is run always?! <-- solved?
  * old_signatures must be kept per command! thus has_changed must take a SignatureStore as argument
     -> use produced_signatures[command]
- * properly handle exceptions occuring in a task
 
 Lower Priorieties/Questions
 ============================
 
  * invocation from recursive directory: how to deduce topdir?!
- * global installation: in wasp.fs: how to deduce topdir
  * simplify global bashcompletion activation
- * improve keyboard handling of interrupts during execution
  * verbosity per decorator (use command class, assign all tasks their logger just after calling a command)
  * argumentprovider => register, such that retireve(asdf) works automatically by dispatching. => singledispatch?
  * util.Namespace class for decorator => inherit metadata, decoratorstore from it
  * improve ctx.commands API
- * optimize execution, detect if task is a noop => check all lists empty, and look if _run overridden
  * make sure thread safety is ensured if symbolic nodes are written, i.e. write them upon completion, result is just argument collection
  * escape : in filename (.replace('\:', ':') at str[0:1])
  * proper subproject handling (implemented as plugin to the recursion algorithm)
  * some way to make commands run again if specified implict as a dependency for another command and the former has already
    completed successfully. Use case might be an updated git repo which gets pulled in by "./wasp fetch" and should be updated
    regularly. => ctx.commands['configure'].invalidate()
- * refactor signature identifier to key: generally, refactor all "identifier" to "key"
  * could we integrate pip, easy_install? just install extensions as eggs? => test for import pip
    - if sth. is missing (e.g. templates, make it automatically installable)
    - install it to wasp temporary directory
@@ -51,15 +45,15 @@ Lower Priorieties/Questions
 Global Installation and call from subdirectory
 ==============================================
 
-
-# TODO: note, that at the moment global installation of wasp is not possible
-        The implementation of this ``feature`` does not have particular priority, since
-        it is not the intended design of wasp. Though it might be useful for performance enhancement.
+note, that at the moment global installation of wasp is not possible
+The implementation of this ``feature`` does not have particular priority, since
+it is not the intended design of wasp. Though it might be useful for performance enhancement.
 
  * make sure local install has precedence over global install
  * subfiles must know the the topdir
  * with each command, save its origin with inspect.<whatever>()
  * if invoked in a subdir, only execute the commands in there
+ * in wasp.fs: how to deduce topdir?!
 
 
 subproject Extension

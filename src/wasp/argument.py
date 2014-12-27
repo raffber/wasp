@@ -64,9 +64,13 @@ class ArgumentCollection(Serializable):
             raise CannotSerializeError('Only objects of type ArgumentCollection without parents nor '
                                        'subcollection can be serialized. Consider using shallowcopy(),'
                                        'which returns a new object of only the items in this collection.')
-        d = self._d.to_json()
+        d = factory.to_json(self._d)
         d['arguments'] = [arg.to_json() for arg in self.items()]
-        d['subcollections'] = [x.to_json() for x in self._subs]
+        if self._subs is not None:
+            d_subs = [x.to_json() for x in self._subs]
+        else:
+            d_subs = []
+        d['subcollections'] = d_subs
         return d
 
     @classmethod
@@ -168,7 +172,7 @@ class ArgumentCollection(Serializable):
         return self._d.__contains__(item) or self.parent.__contains__(item)
 
     def __iter__(self):
-        return self.keys()
+        return iter(self.keys())
 
     # necessary?!
     # def __len__(self):

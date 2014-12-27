@@ -1,4 +1,4 @@
-from .node import make_nodes, is_symbolic_node_string, SymbolicNode, make_node
+from .node import make_nodes, is_symbolic_node_string, SymbolicNode, make_node, Node
 from uuid import uuid4 as uuid
 from .util import CallableList, is_iterable
 from .argument import Argument, ArgumentCollection
@@ -114,7 +114,9 @@ class Task(object):
         return self._success_list
 
     def _on_success(self):
-        pass
+        for node in self.targets:
+            if isinstance(node, SymbolicNode):
+                node.write(self.result)
 
     @property
     def on_fail(self):
@@ -239,10 +241,20 @@ class Task(object):
                 for x in a:
                     self.use_arg(x)
             elif isinstance(a, SymbolicNode):
-                self.use_node(a)
+                self._used_nodes.append(a)
+                self.sources.append(a)
+            elif isinstance(a, Node):
+                self.sources.append(a)
+            elif isinstance(a, Task):
+                node = SymbolicNode()
+                a.produce(node)
+                self._used_nodes.append(a)
+                self.sources.append(a)
             elif isinstance(a, str):
                 if is_symbolic_node_string(a):
-                    self.use_node(a)
+                    node = make_node(a)
+                    self._used_nodes.append(node)
+                    self.sources.append(node)
                 else:
                     arg = Argument(a).retrieve_all()
                     self.use_arg(arg)
@@ -251,11 +263,6 @@ class Task(object):
         for k, a in kw.items():
             self.use_arg(Argument(k).assign(a))
         return self
-
-    def use_node(self, node):
-        node = make_node(node)
-        assert isinstance(node, SymbolicNode), 'Only subclasses of SymbolicNode can be used by a task'
-        self._used_nodes.append(node)
 
     def use_arg(self, arg):
         for c in self.children:
@@ -279,6 +286,8 @@ class Task(object):
                 ext = [Argument(arg)]
             elif isinstance(arg, list):
                 ext = [Argument(x) if isinstance(x, str) else x for x in arg]
+            else:
+                assert False, 'Unrecognized type in Task.require() arguments. Accepted are str or list thereof.'
             self._required_arguments.extend(ext)
         return self
 
