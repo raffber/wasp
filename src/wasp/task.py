@@ -162,7 +162,6 @@ class Task(object):
         """
         Adds targets to the task.
         The function accepts the same positional arguments as :ref:make_nodes().
-        TODO: check documentation
         """
         nodes = make_nodes(args)
         self.targets.extend(nodes)
@@ -172,7 +171,6 @@ class Task(object):
         """
         Sets dependencies to the task.
         The function accepts the same positional arguments as :ref:make_nodes().
-        TODO: check documentation
         """
         nodes = make_nodes(args)
         self.sources.extend(nodes)
@@ -293,9 +291,6 @@ class Task(object):
 
 
 class TaskGroup(Task):
-    # TODO: make children immutable
-    # TODO: make sure run cannot be overridden
-
     def __init__(self, children):
         # this should all be O(n+m) assuming n is the total number of sources
         # and m is the total number of targets
@@ -345,20 +340,6 @@ class TaskGroup(Task):
 
     def __repr__(self):
         return '[' + ', '.join([repr(c) for c in self.children]) + ']'
-
-    def get_has_run(self):
-        if self._has_run:
-            return True
-        for task in self.children:
-            if not task.has_run:
-                return False
-        return True
-
-    has_run = property(get_has_run, Task.set_has_run)
-
-    @property
-    def success(self):
-        return all(map(lambda x: x.success, self.children))
 
 
 def _flatten(args):

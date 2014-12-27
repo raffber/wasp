@@ -284,7 +284,7 @@ class ParallelExecutor(Executor):
                 self._current_jobs += 1
                 self._executed_tasks.add(task.task)
                 run_task(task)
-                if task.success:
+                if task.task.success:
                     self.task_success(task, start=False)
                 else:
                     self.task_failed(task)
