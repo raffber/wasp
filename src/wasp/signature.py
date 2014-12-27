@@ -46,6 +46,9 @@ class SignatureStore(object):
             return Signature()
         return ret
 
+    def update(self, id_, signature):
+        self._signaturedb[id_] = signature
+
 
 class Signature(Serializable):
 

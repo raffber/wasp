@@ -1,6 +1,6 @@
 from .task import Task
 from .util import EventLoop, Event, is_iterable
-from . import log
+from . import log, old_signatures
 
 from threading import Thread
 
@@ -155,6 +155,16 @@ class Executor(object):
         self._cancel = False
         self._success_event = Event(self._loop).connect(self.task_success)
         self._failed_event = Event(self._loop).connect(self.task_failed)
+        self._consumed_nodes = []
+        self._produced_nodes = []
+
+    @property
+    def produced_nodes(self):
+        return self._produced_nodes
+
+    @property
+    def consumed_nodes(self):
+        return self._consumed_nodes
 
     def task_failed(self, task):
         self.cancel()
@@ -180,6 +190,8 @@ class Executor(object):
                 # no jobs running anymore, so quit the loop
                 self._loop.cancel()
             return
+        self._consumed_nodes.extend(task.task.sources)
+        self._produced_nodes.extend(task.task.targets)
         if start:
             self.start()
 
@@ -236,6 +248,13 @@ def execute(tasks, jobs=1, produce=None):
     executor.start()
     if not loop.run():
         executor.cancel()
+    # during execution, nodes have been consumed and produced. Thus, if new tasks should be processed
+    # which consume or produce the same nodes, these tasks need to see the updated signatures of these
+    # nodes to determine if they need to be run again.
+    for node in executor.consumed_nodes:
+        old_signatures.update(node.signature.identifier, node.signature)
+    for node in executor.produced_nodes:
+        old_signatures.update(node.signature.identifier, node.signature)
 
 
 def run_task(task, success_event=None, failed_event=None):

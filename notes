@@ -37,6 +37,7 @@ Bugs
 
  * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
  * md is run always?!
+ * old_signatures must be kept per command! thus has_changed must take a SignatureStore as argument
  * properly handle exceptions occuring in a task
 
 ----->8--------
