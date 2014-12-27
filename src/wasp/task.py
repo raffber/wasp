@@ -2,7 +2,6 @@ from .node import make_nodes, is_symbolic_node_string, SymbolicNode, make_node
 from uuid import uuid4 as uuid
 from .util import CallableList, is_iterable
 from .argument import Argument, ArgumentCollection
-from .logging import Logger
 from .decorators import decorators
 from .commands import Command
 from . import log
@@ -284,6 +283,9 @@ class Task(object):
 
 
 class TaskGroup(Task):
+    # TODO: make children immutable
+    # TODO: make sure run cannot be overridden
+
     def __init__(self, children):
         # this should all be O(n+m) assuming n is the total number of sources
         # and m is the total number of targets
@@ -299,7 +301,17 @@ class TaskGroup(Task):
                 del sources[t.identifier]
             else:
                 targets_new.append(t)
-        super().__init__(sources=list(sources.values()), targets=targets_new, children=children, always=True)
+        self._grouped_sources = list(sources.values())
+        self._grouped_targets = targets_new
+        super().__init__(sources=self._grouped_sources, targets=self._grouped_targets, children=children, always=True)
+
+    @property
+    def grouped_targets(self):
+        return self._grouped_targets
+
+    @property
+    def grouped_sources(self):
+        return self._grouped_sources
 
     def _flatten(self, tasks, fun):
         # base case if called with one task

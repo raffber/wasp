@@ -100,7 +100,7 @@ def make_nodes(arg):
             lst.extend(make_nodes(item))
         return lst
     elif isinstance(arg, Task):
-        return arg.targets
+        return list(arg.targets)
     return [make_node(arg)]
 
 

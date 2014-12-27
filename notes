@@ -2,7 +2,6 @@ Next Task
 ==========
 
  * extension api
- * execution: limit production to a list of nodes given by produce in DAG
  * finish d tool with find task => see what can be imported into core
  * test, test, test, test and write doc
  * port to windows

@@ -1,4 +1,4 @@
-from .task import Task
+from .task import Task, TaskGroup
 from .util import EventLoop, Event, is_iterable
 from . import log, old_signatures
 from .task_collection import TaskCollection
@@ -91,9 +91,12 @@ class DAG(object):
             limited_set = set()
             produce_ids = [p.identifier for p in produce]
             required = []
-            # TODO: somehow ongroup groups!!!!
             for task in tasks:
-                for t in task.task.targets:
+                if isinstance(task.task, TaskGroup):
+                    targets = set(task.task.targets) - set(task.task.grouped_targets)
+                else:
+                    targets = task.task.targets
+                for t in targets:
                     if t.identifier in produce_ids:
                         required.append(task)
             for req in required:
