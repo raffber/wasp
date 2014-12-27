@@ -21,7 +21,6 @@ FILE_NAMES = ['build.py', 'build.user.py', 'BUILD', 'BUILD.user']
 has_argcomplete = True
 try:
     import argcomplete
-    print('YAY')
 except ImportError:
     has_argcomplete = False
 
