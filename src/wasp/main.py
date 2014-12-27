@@ -5,7 +5,7 @@ from .config import Config
 from .task import Task, group
 from .task_collection import TaskCollection
 from .tools import proxies as tool_proxies, NoSuchToolError
-from .options import StringOption
+from .options import StringOption, OptionsCollection
 from .execution import execute, ParallelExecutor
 from .node import make_nodes
 from .argument import Argument
@@ -33,6 +33,8 @@ class OptionHandler(object):
         self._commands = []
         self._verbosity = 0
         self._argparse = argparse.ArgumentParser(description='Welcome to {0}'.format(ctx.meta.projectname))
+
+    def parse(self):
         # use description if it is not None
         descriptions = {}
         for com in ctx.commands:
@@ -276,6 +278,12 @@ def load_directory(dir_path):
     return file_found
 
 
+def load_files(fs):
+    for f in fs:
+        if os.path.exists(f):
+            load_module_by_path(f)
+
+
 def retrieve_verbosity():
     """
     Retrieves the verbosity level from the environment WASP_VERBOSITY="0" (up to 5)
@@ -326,8 +334,7 @@ def retrieve_pretty_printing():
 
 
 
-def load_extensions(config):
-    extensions.load_all('wasp.ext')
+def load_extensions_from_config(config):
     for ext_name in config.extensions:
         extensions.load('wasp.ext.' + ext_name, required=True)
 
@@ -368,6 +375,8 @@ def run(dir_path):
     try:
         # first and foremost, initialize logging
         log.configure(verbosity=retrieve_verbosity(), pretty=retrieve_pretty_printing())
+        # load frist part of extensions
+        extensions.load_all('wasp.ext')
         # load configuration from current directory
         config = Config.load_from_directory(dir_path)
         extensions.api.config_loaded(config)
@@ -376,20 +385,27 @@ def run(dir_path):
             # but NOT if verbosity was modified from default
             log.configure(verbosity=config.verbosity, pretty=config.pretty)
         # load all extensions
-        load_extensions(config)
+        load_extensions_from_config(config)
         # import all modules
+        extensions.api.before_load_scripts()
+        # load toplevel directory
         loaded_files = load_directory(dir_path)
-        if len(loaded_files) == 0:
+        files_to_load = extensions.api.find_scripts()
+        load_files(files_to_load)
+        if len(loaded_files) == 0 and len(files_to_load) == 0:
             log.fatal('No build file found. Exiting.')
             return True  # nothing was loaded, no point in continuing
+        extensions.api.top_scripts_loaded()
         # load recursive files
         loaded_files.extend(load_recursive())
+        extensions.api.all_scripts_loaded()
         # load/overwrite config from decorators
         config = load_decorator_config(config)
         # create the context using the files that were loaded.
         # the list is mainly required to determine if the build
         # files have changed.
         create_context(loaded_files, config=config)
+        extensions.api.context_created()
     except FatalError:
         return False
     try:
@@ -399,10 +415,14 @@ def run(dir_path):
         # run all init() hooks
         for hook in decorators.init:
             hook()
+        extensions.api.initialized()
         # autoload all tools that have not been loaded
         load_tools()
         # parse options
         options = OptionHandler()
+        extensions.api.retrieve_options(ctx.options)
+        options.parse()
+        extensions.api.options_parsed(ctx.options)
         log.configure(options.verbosity)
         successs = handle_commands(options)
     except FatalError:

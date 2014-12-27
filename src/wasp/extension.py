@@ -4,7 +4,6 @@ from . import FatalError
 
 from pkgutil import walk_packages
 from importlib import import_module
-from itertools import chain
 
 
 class ExtensionApi(object):
@@ -26,18 +25,29 @@ class ExtensionApi(object):
                 continue
             if is_iterable(handlers):
                 ret.extend(list(handlers))
+            else:
+                ret.append(handlers)
         return ret
 
     def context_created(self):
         return self._map(lambda x: x.context_created())
 
     def find_scripts(self):
-        return self._map(lambda x: x.find_scripts())
+        ret = []
+        for ext in self._collection.values():
+            scripts = ext.find_scripts()
+            if scripts == NotImplemented:
+                continue
+            if is_iterable(scripts):
+                ret.extend(list(scripts))
+            else:
+                ret.append(scripts)
+        return ret
 
     def before_load_scripts(self):
         return self._map(lambda x: x.before_load_scripts())
 
-    def top_script_loaded(self, module):
+    def top_scripts_loaded(self):
         return self._map(lambda x: x.top_script_loaded())
 
     def all_scripts_loaded(self):
@@ -51,6 +61,8 @@ class ExtensionApi(object):
 
     def options_parsed(self, options):
         return self._map(lambda x: x.options_parsed(options))
+
+    # TODO: <<=== implemented up to here
 
     def run_command(self, name):
         return self._map(lambda x: x.run_command(name))
