@@ -109,7 +109,6 @@ def paths(*args):
 
 
 class Directory(Path):
-    # TODO: implement serializable
 
     def __init__(self, path, make_absolute=False):
         """

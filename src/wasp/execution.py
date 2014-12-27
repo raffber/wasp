@@ -7,7 +7,7 @@ from threading import Thread
 
 
 # TODO: task timeouts -> kill hanging tasks
-
+# TODO: handle task exceptions
 
 class DependencyCycleError(Exception):
     pass

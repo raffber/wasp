@@ -131,7 +131,7 @@ class ArgumentCollection(Serializable):
 
     def copy(self):
         ret = ArgumentCollection(name=self.name, parent=self.parent)
-        ret.update(dict(self._d.items()))  # TODO: test
+        ret.update(dict(self._d.items()))
         ret._subs.update(self._subs)
         return ret
 

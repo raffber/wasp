@@ -17,7 +17,7 @@ class ShellTask(Task):
         return self._cmd
 
     def _finished(self, exit_code, out, err):
-        return exit_code == 0
+        self.success = exit_code == 0
 
     def _process_args(self):
         src_list = []
@@ -78,18 +78,7 @@ class ShellTask(Task):
         elif errout != '':
             warn_print = self.log.format_warn(LogStr(commandstring), errout.strip())
             self.log.warn(warn_print)
-        ret = self._finished(exit_code, stdout, errout)
-        if ret is not None:
-            if not isinstance(ret, list) or isinstance(ret, tuple):
-                ret = [ret]
-            first = True
-            for r in ret:
-                if first and isinstance(r, bool):
-                    self._success = r
-                elif isinstance(r, Argument):
-                    self._result.add(r)
-                # TODO: more...
-                first = False
+        self._finished(exit_code, stdout, errout)
 
     def __repr__(self):
         return '<class ShellTask: {0}>'.format(self.cmd)
