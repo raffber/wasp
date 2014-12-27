@@ -370,6 +370,7 @@ def run(dir_path):
         log.configure(verbosity=retrieve_verbosity(), pretty=retrieve_pretty_printing())
         # load configuration from current directory
         config = Config.load_from_directory(dir_path)
+        extensions.api.config_loaded(config)
         if config.verbosity is not None and log.verbosity == log.DEFAULT:
             # configuration overwrites default from command line/env
             # but NOT if verbosity was modified from default

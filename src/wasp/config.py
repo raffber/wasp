@@ -1,7 +1,7 @@
 from .fs import Directory
 from .argument import ArgumentCollection, Argument
 from .metadata import Metadata
-from . import log
+from . import log, extensions
 from .util import parse_assert, FunctionDecorator
 from .decorators import decorators
 import json
@@ -10,6 +10,7 @@ CONFIG_FILE_NAMES = ['wasprc.json', 'wasprc.user.json']
 
 
 class Config(object):
+    # TODO: possibly move create handlers into __new__
 
     class KeyHandler(object):
         def __init__(self, config, keyname, parser=None, merger=None):
@@ -24,6 +25,10 @@ class Config(object):
             def setter(s, item):
                  s._handlers[self._keyname]._value = item
             setattr(config.__class__, self._keyname, property(getter, setter))
+
+        @property
+        def name(self):
+            return self._keyname
 
         def parse(self, value):
             if self._parser is not None:
@@ -65,6 +70,8 @@ class Config(object):
             'default_command': make_handler('default_command'),
             'pretty': make_handler('pretty')
         }
+        handlers = extensions.api.create_config_handlers()
+        self._handlers.update({x.name: x for x in handlers})
 
     @classmethod
     def from_file(cls, fpath):

@@ -288,6 +288,7 @@ DEFAULT_PERMSSIONS = 0o644
 
 
 class CopyFileTask(Task):
+    # TODO: port to windows....
 
     def __init__(self, fs, destination, permissions=DEFAULT_PERMSSIONS, recursive=False):
         self._recursive = recursive

@@ -6,12 +6,6 @@ Next Task
  * test, test, test, test and write doc
  * port to windows
 
-Extensions
-===========
-=> think about what they should be able to do
-   - report state of DAG => implement wasp.ext.progress
-
-
 TODOs
 ========
 
@@ -26,11 +20,14 @@ Bugs
  * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
  * md is run always?! <-- solved?
  * old_signatures must be kept per command! thus has_changed must take a SignatureStore as argument
+    -> use produced_signatures[command]
  * properly handle exceptions occuring in a task
 
-Lower Priorieties
-===================
+Lower Priorieties/Questions
+============================
 
+ * invocation from recursive directory: how to deduce topdir?!
+ * global installation: in wasp.fs: how to deduce topdir
  * simplify global bashcompletion activation
  * improve keyboard handling of interrupts during execution
  * verbosity per decorator (use command class, assign all tasks their logger just after calling a command)

@@ -1,9 +1,10 @@
 from . import log
-from .util import load_module_by_name
+from .util import load_module_by_name, is_iterable
 from . import FatalError
 
 from pkgutil import walk_packages
 from importlib import import_module
+from itertools import chain
 
 
 class ExtensionApi(object):
@@ -11,74 +12,84 @@ class ExtensionApi(object):
     def __init__(self, collection):
         self._collection = collection
 
-    def map(self, fun):
+    def _map(self, fun):
         return {k.name: fun(v) for k, v in self._collection.items()}
 
     def config_loaded(self, config):
-        return self.map(lambda x: x.config_loaded())
+        return self._map(lambda x: x.config_loaded(config))
+
+    def create_config_handlers(self):
+        ret = []
+        for ext in self._collection.values():
+            handlers = ext.create_config_handlers()
+            if handlers == NotImplemented:
+                continue
+            if is_iterable(handlers):
+                ret.extend(list(handlers))
+        return ret
 
     def context_created(self):
-        return self.map(lambda x: x.context_created())
+        return self._map(lambda x: x.context_created())
 
     def find_scripts(self):
-        return self.map(lambda x: x.find_scripts())
+        return self._map(lambda x: x.find_scripts())
 
     def before_load_scripts(self):
-        return self.map(lambda x: x.before_load_scripts())
+        return self._map(lambda x: x.before_load_scripts())
 
     def top_script_loaded(self, module):
-        return self.map(lambda x: x.top_script_loaded())
+        return self._map(lambda x: x.top_script_loaded())
 
     def all_scripts_loaded(self):
-        return self.map(lambda x: x.all_scripts_loaded())
+        return self._map(lambda x: x.all_scripts_loaded())
 
     def initialized(self):
-        return self.map(lambda x: x.initialized())
+        return self._map(lambda x: x.initialized())
 
     def retrieve_options(self, options):
-        return self.map(lambda x: x.retrieve_options(options))
+        return self._map(lambda x: x.retrieve_options(options))
 
     def options_parsed(self, options):
-        return self.map(lambda x: x.options_parsed(options))
+        return self._map(lambda x: x.options_parsed(options))
 
     def run_command(self, name):
-        return self.map(lambda x: x.run_command(name))
+        return self._map(lambda x: x.run_command(name))
 
     def run_task(self, task_container):
-        return self.map(lambda x: x.run_task(task_container))
+        return self._map(lambda x: x.run_task(task_container))
 
     def run_task_collection(self, tasks):
-        return self.map(lambda x: x.run_task_collection(tasks))
+        return self._map(lambda x: x.run_task_collection(tasks))
 
     def create_executor(self, command_name):
-        return self.map(lambda x: x.create_executor(command_name))
+        return self._map(lambda x: x.create_executor(command_name))
 
     def tasks_collected(self, tasks):
-        return self.map(lambda x: x.tasks_collected(tasks))
+        return self._map(lambda x: x.tasks_collected(tasks))
 
     def tasks_execution_started(self, tasks, executor, dag):
-        return self.map(lambda x: x.tasks_execution_started(tasks, executor, dag))
+        return self._map(lambda x: x.tasks_execution_started(tasks, executor, dag))
 
     def tasks_execution_finished(self, tasks, executor, dag):
-        return self.map(lambda x: x.tasks_execution_finished(tasks, executor, dag))
+        return self._map(lambda x: x.tasks_execution_finished(tasks, executor, dag))
 
     def task_started(self, task, executor, dag):
-        return self.map(lambda x: x.task_started(task, executor, dag))
+        return self._map(lambda x: x.task_started(task, executor, dag))
 
     def task_finished(self, task, executor, dag):
-        return self.map(lambda x: x.task_finished(task, executor, dag))
+        return self._map(lambda x: x.task_finished(task, executor, dag))
 
     def command_started(self, name):
-        return self.map(lambda x: x.command_started(name))
+        return self._map(lambda x: x.command_started(name))
 
     def command_finished(self, name, success=False):
-        return self.map(lambda x: x.command_finished(name, success=success))
+        return self._map(lambda x: x.command_finished(name, success=success))
 
     def command_failed(self, name):
-        return self.map(lambda x: x.command_failed(name))
+        return self._map(lambda x: x.command_failed(name))
 
     def command_success(self, name):
-        return self.map(lambda x: x.command_success(name))
+        return self._map(lambda x: x.command_success(name))
 
 
 class ExtensionCollection(dict):
@@ -208,6 +219,9 @@ class ExtensionBase(object):
         return NotImplemented
 
     def command_success(self, name):
+        return NotImplemented
+
+    def create_config_handlers(self):
         return NotImplemented
 
     @property
