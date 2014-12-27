@@ -296,11 +296,14 @@ class ParallelExecutor(Executor):
             # TODO: use a thread-pool
 
             def _callable():
-                succ = run_task(task)
-                if not succ:
+                try:
+                    succ = run_task(task)
+                    if not succ:
+                        self._failed_event.fire(task)
+                        return
+                    self._success_event.fire(task)
+                except KeyboardInterrupt:
                     self._failed_event.fire(task)
-                    return
-                self._success_event.fire(task)
             thread = Thread(target=_callable)
             task.task.check()
             thread.start()
@@ -345,13 +348,17 @@ def run_task(task):
         return ret
     extensions.api.task_started(task)
     real_task = task.task
-    real_task.prepare()
-    real_task.run()
-    if real_task.success:
-        real_task.on_success()
-    else:
-        real_task.on_fail()
-    real_task.postprocess()
+    try:
+        real_task.prepare()
+        real_task.run()
+        if real_task.success:
+            real_task.on_success()
+        else:
+            real_task.on_fail()
+        real_task.postprocess()
+    except Exception as e:
+        msg = log.format_fail('Error while executing task:', str(e))
+        log.fatal(msg)
     for node in real_task.targets:
         node.signature.refresh()
     extensions.api.task_finished(task)

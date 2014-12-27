@@ -334,6 +334,7 @@ class TaskGroup(Task):
         return ret
 
     def use(self, *args, **kw):
+        super().use(*args, **kw)
         for child in self.children:
             child.use(*args, **kw)
         return self

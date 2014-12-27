@@ -134,11 +134,7 @@ def retrieve_command_tasks(name):
     for command in ctx.commands:
         if command.name != name:
             continue
-        try:
-            tasks = command.run()
-        except CommandFailedError as e:
-            log.fatal(log.format_fail() + 'Command `{0}` failed: {1}'.format(name, str(e)))
-            return False
+        tasks = command.run()
         if is_iterable(tasks):
             if command.produce is not None:
                 tasks = group(tasks).produce(command.produce)
@@ -153,11 +149,7 @@ def retrieve_command_tasks(name):
         found = True
     for generator in ctx.generators(name).values():
         found = True
-        try:
-            tasks = generator.run()
-        except CommandFailedError as e:
-            log.fatal(log.fail() + 'Command `{0}` failed: {1}'.format(name, str(e)))
-            return False
+        tasks = generator.run()
         if is_iterable(tasks):
             tasks_col.add(tasks)
         elif isinstance(tasks, Task):
@@ -233,11 +225,16 @@ def run_command(name, executed_commands=None):
     if not run_command_dependencies(name, executed_commands=executed_commands):
         return False
     # now run the commands
-    tasks_col = retrieve_command_tasks(name)
-    extensions.api.tasks_collected(tasks_col)
-    # now execute all tasks
-    ret = execute_tasks(name, tasks_col)
-    extensions.api.command_finished(name, ret)
+    ret = False
+    try:
+        tasks_col = retrieve_command_tasks(name)
+        extensions.api.tasks_collected(tasks_col)
+        # now execute all tasks
+        ret = execute_tasks(name, tasks_col)
+        extensions.api.command_finished(name, ret)
+    except CommandFailedError as e:
+        log.fatal(log.format_fail('Command `{0}` failed: {1}'.format(name, str(e))))
+        return False
     return ret
 
 

@@ -5,15 +5,12 @@ Next Task
  * test, test, test, test and write doc
  * port to windows
 
-TODOs
-========
-
- * think about background daemons (daemon autostart extension?!) Daemon('adsf').ensure_running().produce(':daemon')
- * think about: does use() implies depends? in the case of nodes and tasks
 
 Bugs
 =======
 
+ * format_multiline_message does not split strings properly
+ * with produce(':asdf') and use(':asdf') the tasks seems to execute too often
  * top group for build has shelltask source missing from group.sources group(shelltask, group(dc, dc, dc))
  * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
  * md is run always?! <-- solved?
@@ -74,6 +71,9 @@ Extensions
     - run commands
     - edit arguments => use a visitor for option types and support single dispatch to extend
     - display depenency tree?!
+ * think about background daemons (daemon autostart extension?!) Daemon('adsf').ensure_running().produce(':daemon')
+    --> openocd
+    --> gdb server
 
 
 Declarative
