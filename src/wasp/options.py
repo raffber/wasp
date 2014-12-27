@@ -77,11 +77,11 @@ class OptionsCollection(OrderedDict):
 
     def save(self):
         # ctx.cache.prefix('options')[groupname]
-        raise NotImplementedError
+        raise NotImplementedError  # TODO: NotImplementedError
 
     def load(self):
         # ctx.cache.prefix('options')[groupname]
-        raise NotImplementedError
+        raise NotImplementedError  # TODO: NotImplementedError
 
 
 def sanitize_name(name):

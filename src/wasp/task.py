@@ -373,7 +373,7 @@ def group(*args, collapse=True):
 
 
 def sequential(*args):
-    raise NotImplementedError
+    raise NotImplementedError  # TODO: NotImplementedError
 
 
 def fail():

@@ -157,7 +157,7 @@ class ExtensionCollection(dict):
         return self._search_packages
 
     def has(self, name):
-        raise NotImplementedError
+        raise NotImplementedError  # TODO: NotImplementedError
 
     @property
     def api(self):

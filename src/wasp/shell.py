@@ -42,7 +42,7 @@ class ShellTask(Task):
         return kw
 
     def require_all(self):
-        raise NotImplementedError
+        raise NotImplementedError  # TODO: NotImplementedError
         return self
 
     def check(self):
