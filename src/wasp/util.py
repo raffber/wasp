@@ -136,6 +136,7 @@ class EventLoop(object):
         self._interrupted = interrupted
         self._running = False
         self._started = False
+        self._start_id = None
 
     def fire_event(self, evt, args, kw):
         self._events.append((evt, args, kw))
@@ -154,6 +155,7 @@ class EventLoop(object):
         return self._started
 
     def run(self):
+        self._start_id = threading.current_thread().ident
         self._started = True
         self._running = True
         try:
@@ -173,6 +175,8 @@ class EventLoop(object):
             if self._interrupted is not None:
                 self._interrupted()
             return False
+        finally:
+            self._start_id = None
         self._running = False
         return True
 

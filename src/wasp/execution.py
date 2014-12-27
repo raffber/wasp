@@ -170,14 +170,8 @@ class DAG(object):
 
 
 class Executor(object):
-    def __init__(self, dag, loop, jobs=1):
-        self._current_jobs = 0
-        self._loop = loop
-        self._jobs = jobs
+    def __init__(self, dag):
         self._dag = dag
-        self._cancel = False
-        self._success_event = Event(self._loop).connect(self.task_success)
-        self._failed_event = Event(self._loop).connect(self.task_failed)
         self._consumed_nodes = []
         self._produced_nodes = []
         self._executed_tasks = TaskCollection()
@@ -195,17 +189,12 @@ class Executor(object):
         return self._consumed_nodes
 
     def task_failed(self, task):
-        self.cancel()
-        self._current_jobs -= 1
-        if self._current_jobs == 0:
-            # no jobs running anymore, so quit the loop
-            self._loop.cancel()
+        self._cancel()
         # invalidate the sources, such that this task is rerun
         for source in task.task.sources:
             source.signature.invalidate()
 
     def task_success(self, task, start=True):
-        self._current_jobs -= 1
         self._dag.task_finished(task)
         spawned = task.task.spawn()
         if spawned is not None:
@@ -213,17 +202,67 @@ class Executor(object):
                 self._dag.insert(list(spawned))
             else:
                 self._dag.insert([spawned])
-        if self._cancel:
-            if self._current_jobs == 0:
-                # no jobs running anymore, so quit the loop
-                self._loop.cancel()
-            return
         self._consumed_nodes.extend(task.task.sources)
         self._produced_nodes.extend(task.task.targets)
         if start:
-            self.start()
+            self._start()
 
-    def start(self):
+    def _cancel(self):
+        raise NotImplementedError
+
+    def _start(self):
+        raise NotImplementedError
+
+    def run(self):
+        self._pre_run()
+        self._execute_tasks()
+        self._post_run()
+
+    def _execute_tasks(self):
+        raise NotImplementedError
+
+    def _pre_run(self):
+        pass
+
+    def _post_run(self):
+        # during execution, nodes have been consumed and produced. Thus, if new tasks should be processed
+        # which consume or produce the same nodes, these tasks need to see the updated signatures of these
+        # nodes to determine if they need to be run again.
+        # TODO: improve this! signatures must be sorted by task
+        # also this should be called more like history or produced_signatures or something like that
+        for node in self.consumed_nodes:
+            old_signatures.update(node.signature.identifier, node.signature)
+        for node in self.produced_nodes:
+            old_signatures.update(node.signature.identifier, node.signature)
+
+
+class ParallelExecutor(Executor):
+
+    def __init__(self, dag, jobs=1):
+        super().__init__(dag)
+        self._current_jobs = 0
+        self._loop = EventLoop()
+        self._jobs = jobs
+        self._cancel_loop = False
+        self._success_event = Event(self._loop).connect(self.task_success)
+        self._failed_event = Event(self._loop).connect(self.task_failed)
+
+    def task_success(self, task, start=True):
+        self._current_jobs -= 1
+        if self._cancel_loop:
+            if self._current_jobs == 0:
+                # no jobs running anymore, so quit the loop
+                self._loop.cancel()
+            super().task_success(task, start=False)
+            return
+        super().task_success(task, start=start)
+
+    def _execute_tasks(self):
+        self._start()
+        if not self._loop.run():
+            self._cancel = True
+
+    def _start(self):
         while self._current_jobs < self._jobs:
             if not self._loop.running and self._loop.started:
                 break
@@ -236,7 +275,7 @@ class Executor(object):
             # due to overhead
             while task is not None and task.noop:
                 self._current_jobs += 1
-                self._executed_tasks.add(task)
+                self._executed_tasks.add(task.task)
                 run_task(task)
                 if task.success:
                     self.task_success(task, start=False)
@@ -246,16 +285,29 @@ class Executor(object):
             if task is None:
                 self._loop.cancel()
                 break
-            self._executed_tasks.add(task)
+            self._executed_tasks.add(task.task)
             # TODO: use a thread-pool
-            callable_ = lambda: run_task(task, self._success_event, self._failed_event)
-            thread = Thread(target=callable_)
+
+            def _callable():
+                succ = run_task(task)
+                if not succ:
+                    self._failed_event.fire(task)
+                    return
+                self._success_event.fire(task)
+            thread = Thread(target=_callable)
             task.task.check()
             thread.start()
             self._current_jobs += 1
 
-    def cancel(self):
-        self._cancel = True
+    def task_failed(self, task):
+        self._current_jobs -= 1
+        if self._current_jobs == 0:
+            # no jobs running anymore, so quit the loop
+            self._loop.cancel()
+        super().task_failed(task)
+
+    def _cancel(self):
+        self._cancel_loop = True
 
 
 def preprocess(tasks):
@@ -273,23 +325,12 @@ def execute(tasks, jobs=1, produce=None):
         return TaskCollection()
     preprocess(tasks)
     dag = DAG(tasks, produce=produce)
-    loop = EventLoop()
-    executor = Executor(dag, loop, jobs=jobs)
-    executor.start()
-    if not loop.run():
-        executor.cancel()
-    # during execution, nodes have been consumed and produced. Thus, if new tasks should be processed
-    # which consume or produce the same nodes, these tasks need to see the updated signatures of these
-    # nodes to determine if they need to be run again.
-    # TODO: refactor this into executor
-    for node in executor.consumed_nodes:
-        old_signatures.update(node.signature.identifier, node.signature)
-    for node in executor.produced_nodes:
-        old_signatures.update(node.signature.identifier, node.signature)
+    executor = ParallelExecutor(dag, jobs=jobs)
+    executor.run()
     return executor.executed_tasks
 
 
-def run_task(task, success_event=None, failed_event=None):
+def run_task(task):
     real_task = task.task
     real_task.prepare()
     real_task.run()
@@ -300,10 +341,7 @@ def run_task(task, success_event=None, failed_event=None):
     real_task.postprocess()
     for node in real_task.targets:
         node.signature.refresh()
-    if not real_task.success and failed_event is not None:
-        failed_event.fire(task)
-    elif success_event is not None:
-        success_event.fire(task)
+    return task.task.success
 
 
 def flatten(tasks):

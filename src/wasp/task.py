@@ -194,10 +194,10 @@ class Task(object):
         # point this function returned True, since other tasks may
         # change the sources of this task and thus its signatures may
         # change.
-        if self.always:
-            return False
         if self._has_run:
             return True
+        if self.always:
+            return False
         # check if all children have run
         for task in self.children:
             if not task.has_run:
