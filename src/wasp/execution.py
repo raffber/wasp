@@ -1,6 +1,6 @@
 from .task import Task, TaskGroup
 from .util import EventLoop, Event, is_iterable
-from . import log, old_signatures
+from . import log, old_signatures, extensions
 from .task_collection import TaskCollection
 
 from threading import Thread
@@ -331,11 +331,17 @@ def execute(tasks, executor, produce=None):
     preprocess(tasks)
     dag = DAG(tasks, produce=produce)
     executor.setup(dag)
+    extensions.api.tasks_execution_started(tasks, executor, dag)
     executor.run()
+    extensions.api.tasks_execution_finished(tasks, executor, dag)
     return executor.executed_tasks
 
 
 def run_task(task):
+    ret = extensions.api.run_task(task)
+    if ret != NotImplemented:
+        return ret
+    extensions.api.task_started(task)
     real_task = task.task
     real_task.prepare()
     real_task.run()
@@ -346,6 +352,7 @@ def run_task(task):
     real_task.postprocess()
     for node in real_task.targets:
         node.signature.refresh()
+    extensions.api.task_finished(task)
     return task.task.success
 
 

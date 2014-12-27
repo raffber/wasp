@@ -195,11 +195,17 @@ def run_command_dependencies(name, executed_commands=[]):
 
 
 def execute_tasks(name, tasks):
+    ret = extensions.api.run_task_collection(tasks)
+    if ret != NotImplemented:
+        return ret
     jobs = Argument('jobs', type=int).retrieve_all(default=1).value
     produce = ctx.options.group(name)['target'].value
     if produce is not None:
         produce = make_nodes(produce)
-    tasks = execute(tasks, ParallelExecutor(jobs=jobs), produce=produce)
+    executor = extensions.api.create_executor(name)
+    if executor == NotImplemented:
+        executor = ParallelExecutor(jobs=jobs)
+    tasks = execute(tasks, executor, produce=produce)
     # check all tasks if successful
     for key, task in tasks.items():
         if not task.success:
@@ -219,13 +225,20 @@ def run_command(name, executed_commands=None):
     :param executed_commands: List of commands that have already been executed.
     :return: True if the executed is successful, False otherwise
     """
+    ret = extensions.api.run_command(name)
+    if ret != NotImplemented:
+        return ret
+    extensions.api.command_started(name)
     # run all dependencies of this task
     if not run_command_dependencies(name, executed_commands=executed_commands):
         return False
     # now run the commands
     tasks_col = retrieve_command_tasks(name)
+    extensions.api.tasks_collected(tasks_col)
     # now execute all tasks
-    return execute_tasks(name, tasks_col)
+    ret = execute_tasks(name, tasks_col)
+    extensions.api.command_finished(name, ret)
+    return ret
 
 
 def handle_commands(options):

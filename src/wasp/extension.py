@@ -62,19 +62,33 @@ class ExtensionApi(object):
     def options_parsed(self, options):
         return self._map(lambda x: x.options_parsed(options))
 
-    # TODO: <<=== implemented up to here
-
     def run_command(self, name):
-        return self._map(lambda x: x.run_command(name))
+        for x in self._collection:
+            ret = x.run_command(name)
+            if ret != NotImplemented:
+                return ret
+        return NotImplemented
 
     def run_task(self, task_container):
-        return self._map(lambda x: x.run_task(task_container))
+        for x in self._collection:
+            ret = x.run_task(task_container)
+            if ret != NotImplemented:
+                return ret
+        return NotImplemented
 
     def run_task_collection(self, tasks):
-        return self._map(lambda x: x.run_task_collection(tasks))
+        for x in self._collection:
+            ret = x.run_task_collection(tasks)
+            if ret != NotImplemented:
+                return ret
+        return NotImplemented
 
     def create_executor(self, command_name):
-        return self._map(lambda x: x.create_executor(command_name))
+        for x in self._collection:
+            ret = x.create_executor(command_name)
+            if ret != NotImplemented:
+                return ret
+        return NotImplemented
 
     def tasks_collected(self, tasks):
         return self._map(lambda x: x.tasks_collected(tasks))
@@ -85,23 +99,17 @@ class ExtensionApi(object):
     def tasks_execution_finished(self, tasks, executor, dag):
         return self._map(lambda x: x.tasks_execution_finished(tasks, executor, dag))
 
-    def task_started(self, task, executor, dag):
-        return self._map(lambda x: x.task_started(task, executor, dag))
+    def task_started(self, task):
+        return self._map(lambda x: x.task_started(task))
 
-    def task_finished(self, task, executor, dag):
-        return self._map(lambda x: x.task_finished(task, executor, dag))
+    def task_finished(self, task):
+        return self._map(lambda x: x.task_finished(task))
 
     def command_started(self, name):
         return self._map(lambda x: x.command_started(name))
 
     def command_finished(self, name, success=False):
         return self._map(lambda x: x.command_finished(name, success=success))
-
-    def command_failed(self, name):
-        return self._map(lambda x: x.command_failed(name))
-
-    def command_success(self, name):
-        return self._map(lambda x: x.command_success(name))
 
 
 class ExtensionCollection(dict):
@@ -215,22 +223,16 @@ class ExtensionBase(object):
     def tasks_execution_finished(self, tasks, executor, dag):
         return NotImplemented
 
-    def task_started(self, task, executor, dag):
+    def task_started(self, task):
         return NotImplemented
 
-    def task_finished(self, task, executor, dag):
+    def task_finished(self, task):
         return NotImplemented
 
     def command_started(self, name):
         return NotImplemented
 
     def command_finished(self, name, success=False):
-        return NotImplemented
-
-    def command_failed(self, name):
-        return NotImplemented
-
-    def command_success(self, name):
         return NotImplemented
 
     def create_config_handlers(self):
