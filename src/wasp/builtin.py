@@ -69,10 +69,11 @@ def _handle_builtin_options(option_handler):
 
 
 class build(FunctionDecorator):
-    # TODO: implement produce=
     def __init__(self, f):
         super().__init__(f)
-        decorators.commands.append(Command('build', f, description='Builds the project', depends='configure'))
+        produce = ':' + f.__name__
+        decorators.commands.append(Command('build', f, description='Builds the project'
+                                           , depends='configure', produce=produce))
         found_rebuild = False
         found_configure = False
         for com in decorators.commands:
@@ -99,10 +100,10 @@ class build(FunctionDecorator):
 
 
 class install(FunctionDecorator):
-    # TODO: implement produce=
     def __init__(self, f):
         super().__init__(f)
-        decorators.commands.append(Command('install', f, description='Installs the project', depends='build'))
+        produce = ':' + f.__name__
+        decorators.commands.append(Command('install', f, description='Installs the project', depends='build', produce=produce))
         found_build = False
         for com in decorators.commands:
             if com.name == 'build':
@@ -115,17 +116,17 @@ class install(FunctionDecorator):
 
 
 class configure(FunctionDecorator):
-    # TODO: implement produce=
     def __init__(self, f):
         super().__init__(f)
-        decorators.commands.append(Command('configure', f, description='Configures the project'))
+        produce = ':' + f.__name__
+        decorators.commands.append(Command('configure', f, description='Configures the project', produce=produce))
 
 
 class clean(FunctionDecorator):
-    # TODO: implement produce=
     def __init__(self, f):
         super().__init__(f)
-        decorators.commands.append(Command('clean', f, description='Clean generated files.'))
+        produce = ':' + f.__name__
+        decorators.commands.append(Command('clean', f, description='Clean generated files.', produce=produce))
 
 
 @command('clear-cache', description='Clears the cache, deleting all recorded information.')

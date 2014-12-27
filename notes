@@ -3,7 +3,6 @@ Next Task
 
  * extension api
  * execution: limit production to a list of nodes given by produce in DAG
- * execution: optimize
  * finish d tool with find task => see what can be imported into core
  * test, test, test, test and write doc
  * port to windows
@@ -35,6 +34,7 @@ TODOs
 Bugs
 =======
 
+ * top group for build has shelltask source missing from group.sources group(shelltask, group(dc, dc, dc))
  * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
  * md is run always?!
  * old_signatures must be kept per command! thus has_changed must take a SignatureStore as argument

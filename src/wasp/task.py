@@ -302,12 +302,18 @@ class TaskGroup(Task):
         super().__init__(sources=list(sources.values()), targets=targets_new, children=children, always=True)
 
     def _flatten(self, tasks, fun):
+        # base case if called with one task
+        if isinstance(tasks, Task):
+            return {x.identifier: x for x in fun(tasks)}
         # get all task items
         lst = chain(*[fun(task) for task in tasks])
         # create a dict from them
         ret = dict(zip([x.identifier for x in lst], lst))
+        for task in tasks:
+            for c in task.children:
+                ret.update(self._flatten(c, fun))
         # recursively flatten all children... haskell style :P
-        ret.update(dict(chain([self._flatten(c, fun).items() for task in tasks for c in task.children])))
+        # ret.update(dict(chain([self._flatten(c, fun).items() for task in tasks for c in task.children])))
         return ret
 
     def use(self, *args, **kw):

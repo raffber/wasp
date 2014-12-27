@@ -198,9 +198,9 @@ def run_command(name, executed_commands=None):
     produce = ctx.options.group(name)['target'].value
     if produce is not None:
         produce = make_nodes(produce)
-    execute(tasks_col, jobs=jobs, produce=produce)
+    tasks = execute(tasks_col, jobs=jobs, produce=produce)
     # check all tasks if successful
-    for key, task in tasks_col.items():
+    for key, task in tasks.items():
         if not task.success:
             log.fatal(log.format_fail() + 'Command `{0}` failed.'.format(name))
             ctx.cache.prefix('commands')[name] = {'success': False}

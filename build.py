@@ -8,7 +8,7 @@ current_dir = Directory(__file__)
 
 
 @wasp.build
-def build():
+def main():
     f = File('notes')
     cp = shell('cp {CPFLAGS} {SRC} {TGT}',
                sources=f, targets=f.to_builddir()

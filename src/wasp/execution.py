@@ -1,6 +1,7 @@
 from .task import Task
 from .util import EventLoop, Event, is_iterable
 from . import log, old_signatures
+from .task_collection import TaskCollection
 
 from threading import Thread
 
@@ -85,12 +86,31 @@ class DAG(object):
         self._target_map = {}
         self.insert(tasks)
         self._runnable_tasks = []
-        self._waiting_tasks = tasks
         self._executing_tasks = []
-        self._produce = produce
-        # TODO: implement produce
-        # => remove all tasks not required for producing the nodes i.e. look for all nodes
-        # producing `produce`, then recursively add all dependencies
+        if produce is not None:
+            limited_set = set()
+            produce_ids = [p.identifier for p in produce]
+            required = []
+            # TODO: somehow ongroup groups!!!!
+            for task in tasks:
+                for t in task.task.targets:
+                    if t.identifier in produce_ids:
+                        required.append(task)
+            for req in required:
+                limited = self._limit_selection(req)
+                limited_set.add(req)
+                for x in limited:
+                    limited_set.add(x)
+            self._waiting_tasks = [x for x in limited_set]
+        else:
+            self._waiting_tasks = tasks
+
+    def _limit_selection(self, required_task):
+        required = []
+        for dep in required_task.dependencies:
+            required.append(dep)
+            required.extend(self._limit_selection(dep))
+        return required
 
     def update_runnable(self):
         for task in self._waiting_tasks:
@@ -157,6 +177,11 @@ class Executor(object):
         self._failed_event = Event(self._loop).connect(self.task_failed)
         self._consumed_nodes = []
         self._produced_nodes = []
+        self._executed_tasks = TaskCollection()
+
+    @property
+    def executed_tasks(self):
+        return self._executed_tasks
 
     @property
     def produced_nodes(self):
@@ -208,6 +233,7 @@ class Executor(object):
             # due to overhead
             while task is not None and task.noop:
                 self._current_jobs += 1
+                self._executed_tasks.add(task)
                 run_task(task)
                 if task.success:
                     self.task_success(task, start=False)
@@ -217,6 +243,7 @@ class Executor(object):
             if task is None:
                 self._loop.cancel()
                 break
+            self._executed_tasks.add(task)
             # TODO: use a thread-pool
             callable_ = lambda: run_task(task, self._success_event, self._failed_event)
             thread = Thread(target=callable_)
@@ -240,7 +267,7 @@ def preprocess(tasks):
 def execute(tasks, jobs=1, produce=None):
     tasks = flatten(tasks.values())
     if len(tasks) == 0:
-        return
+        return TaskCollection()
     preprocess(tasks)
     dag = DAG(tasks, produce=produce)
     loop = EventLoop()
@@ -251,10 +278,12 @@ def execute(tasks, jobs=1, produce=None):
     # during execution, nodes have been consumed and produced. Thus, if new tasks should be processed
     # which consume or produce the same nodes, these tasks need to see the updated signatures of these
     # nodes to determine if they need to be run again.
+    # TODO: refactor this into executor
     for node in executor.consumed_nodes:
         old_signatures.update(node.signature.identifier, node.signature)
     for node in executor.produced_nodes:
         old_signatures.update(node.signature.identifier, node.signature)
+    return executor.executed_tasks
 
 
 def run_task(task, success_event=None, failed_event=None):
