@@ -6,6 +6,12 @@ from pkgutil import walk_packages
 from importlib import import_module
 
 
+class ExtensionApi(object):
+
+    def __init__(self, collection):
+        self._collection = collection
+
+
 class ExtensionCollection(dict):
 
     def __init__(self, search_packages=None):
@@ -17,6 +23,7 @@ class ExtensionCollection(dict):
             , 'Argument search_packages: expected str or list thereof.'
         self._search_packages = search_packages if isinstance(search_packages, list) else [search_packages]
         self._meta = {}
+        self._api = ExtensionApi(self)
 
     def register(self, extension=None, meta=None):
         assert extension is not None or meta is not None, 'Either an extension or ' \
@@ -49,43 +56,89 @@ class ExtensionCollection(dict):
     def search_packages(self):
         return self._search_packages
 
+    def has(self, name):
+        raise NotImplementedError
+
+    @property
+    def api(self):
+        return self._api
+
 
 class ExtensionMetadata(object):
-    name = ''
+    name = 'my-extension'
     description = 'Unknown Extension'
     author = 'anonymous'
     website = None
     documentation = None
 
-    @classmethod
-    def from_json(cls, d):
-        assert isinstance(d, dict), 'Invalid json for extension metadata. Expected dict.'
-        assert 'name' in d, 'Extension metadata must contain the extension name.'
-        self = cls()
-        self.description = d.get('description', self.description)
-        self.author = d.get('author', self.author)
-        self.website = d.get('website', self.website)
-        self.documentation = d.get('documentation', self.documentation)
-        self.name = d.get('name', self.name)
-        return self
-
 
 class ExtensionBase(object):
 
-    def init(self):
-        pass
+    def config_loaded(self, config):
+        return NotImplemented
 
-    def monkeypatch(self):
-        pass
+    def context_created(self):
+        return NotImplemented
 
-    def context_loaded(self, context):
-        pass
+    def find_scripts(self):
+        return NotImplemented
 
-    def task_started(self, task):
-        pass
+    def before_load_scripts(self):
+        return NotImplemented
 
-    def task_finished(self, task):
-        pass
+    def top_script_loaded(self, module):
+        return NotImplemented
+
+    def all_scripts_loaded(self):
+        return NotImplemented
+
+    def initialized(self):
+        return NotImplemented
+
+    def retrieve_options(self, options):
+        return NotImplemented
+
+    def options_parsed(self, options):
+        return NotImplemented
+
+    def run_command(self, name):
+        return NotImplemented
+
+    def run_task(self, task_container):
+        return NotImplemented
+
+    def run_task_collection(self, tasks):
+        return NotImplemented
+
+    def create_executor(self, command_name):
+        return NotImplemented
+
+    def tasks_collected(self, tasks):
+        return NotImplemented
+
+    def tasks_execution_started(self, tasks, executor, dag):
+        return NotImplemented
+
+    def tasks_execution_finished(self, tasks, executor, dag):
+        return NotImplemented
+
+    def task_started(self, task, executor, dag):
+        return NotImplemented
+
+    def task_finished(self, task, executor, dag):
+        return NotImplemented
+
+    def command_started(self, name):
+        return NotImplemented
+
+    def command_finished(self, name, success=False):
+        return NotImplemented
+
+    def command_failed(self, name):
+        return NotImplemented
+
+    def command_success(self, name):
+        return NotImplemented
 
     @property
     def name(self):

@@ -10,18 +10,7 @@ Extensions
 ===========
 => think about what they should be able to do
    - report state of DAG => implement wasp.ext.progress
-   - make sure DAG can be inherited s.t. it can be used without executing tasks (simulate their execution) => wasp.ext.ninja
-   - execution_started(tasks)
-   - task_started(task)
-   - task_finished(task)
-   - preprocess_tasks(tasks)
-   - execution_finished(tasks)
-   - context_created()
-   - initialized()
-   - options_parsed()
-   - command_execution_started()
-   - command_execution_finished()
-   - tasks_loaded(tasks)
+
 
 TODOs
 ========
@@ -35,26 +24,9 @@ Bugs
 
  * top group for build has shelltask source missing from group.sources group(shelltask, group(dc, dc, dc))
  * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
- * md is run always?!
+ * md is run always?! <-- solved?
  * old_signatures must be kept per command! thus has_changed must take a SignatureStore as argument
  * properly handle exceptions occuring in a task
-
------>8--------
-
-./wasp --vdebug rebuild build
-Config file at ./wasprc.user.json does not exist.
-[SUCC]  Command: `clean`
-[SUCC]  /usr/bin/dmd  -c /home/raff/raffbuild/two.d -of/home/raff/raffbuild/build/two.d.o
-[SUCC]  /usr/bin/dmd  -c /home/raff/raffbuild/one.d -of/home/raff/raffbuild/build/one.d.o
-[SUCC]  cp -r /home/raff/raffbuild/notes /home/raff/raffbuild/build/notes
-[SUCC]  /usr/bin/dmd  /home/raff/raffbuild/build/one.d.o /home/raff/raffbuild/build/two.d.o -of/home/raff/raffbuild/build/main
-[SUCC]  Command: `build`
-[SUCC]  Command: `rebuild`
-[SUCC]  /usr/bin/dmd  -c /home/raff/raffbuild/one.d -of/home/raff/raffbuild/build/one.d.o
-[SUCC]  /usr/bin/dmd  /home/raff/raffbuild/build/one.d.o /home/raff/raffbuild/build/two.d.o -of/home/raff/raffbuild/build/main
-[SUCC]  Command: `build`
-
-----------8<---------
 
 Lower Priorieties
 ===================
