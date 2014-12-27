@@ -82,10 +82,10 @@ from .options import options, handle_options, FlagOption, EnableOption, StringOp
 from .argument import Argument, value, arg, format_string, find_argumentkeys_in_string, ArgumentCollection
 from .commands import command, Command, CommandFailedError
 from .hooks import init, create_context
-from .fs import Directory, File
+from .fs import Directory, File, copy, remove, files, defer_install
 from .task import Task, group, sequential, task
 from .task_collection import TaskCollection
-from .shell import shell
+from .shell import shell, ShellTask
 from .fs import Directory, TOP_DIR, files
 from .tools import tool
 from .builtin import build, configure, install, alias

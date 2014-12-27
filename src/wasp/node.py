@@ -6,25 +6,25 @@ from .argument import ArgumentCollection
 
 
 class Node(object):
-    def __init__(self, identifier=None):
-        if identifier is None:
-            identifier = generate_uuid()
+    def __init__(self, key=None):
+        if key is None:
+            key = generate_uuid()
         else:
-            assert isinstance(identifier, str), 'Identifier for Node must be a string'
-        self._id = identifier
+            assert isinstance(key, str), 'Identifier for Node must be a string'
+        self._key = key
 
     @property
-    def identifier(self):
-        return self._id
+    def key(self):
+        return self._key
 
     @property
     def signature(self):
-        signature = signatures.get(self.identifier)
+        signature = signatures.get(self.key)
         assert signature is not None
         return signature
 
     def has_changed(self):
-        sig = old_signatures.get(self.identifier)
+        sig = old_signatures.get(self.key)
         if sig is None:
             return True
         if sig != self.signature:
@@ -60,12 +60,12 @@ class FileNode(Node):
 
 
 class SymbolicNode(Node):
-    def __init__(self, identifier):
-        super().__init__(identifier=identifier)
-        signature = signatures.get(self.identifier)
+    def __init__(self, key):
+        super().__init__(key=key)
+        signature = signatures.get(self.key)
         if signature is None:
             # signature was either not initialized or it was invalidated
-            signature = CacheSignature(identifier, prefix='symblic-nodes', key=identifier)
+            signature = CacheSignature(key, prefix='symblic-nodes', cache_key=key)
             signatures.add(signature)
 
     def read(self):
@@ -73,7 +73,7 @@ class SymbolicNode(Node):
         Returns the content of the node in form of an ArgumentCollection.
         :return: An ArgumentCollection with the contents of the node.
         """
-        arg_col = ctx.cache.prefix('symblic-nodes').get(self.identifier, None)
+        arg_col = ctx.cache.prefix('symblic-nodes').get(self.key, None)
         assert isinstance(arg_col, ArgumentCollection), 'Cache: Invalid datastructure for symblic node storage.'
         return arg_col
 
@@ -83,7 +83,7 @@ class SymbolicNode(Node):
         :param args: The ArgumentCollection to store
         :return: None
         """
-        ctx.cache.prefix('symblic-nodes')[self.identifier] = args
+        ctx.cache.prefix('symblic-nodes')[self.key] = args
 
 
 def is_symbolic_node_string(arg):
@@ -126,9 +126,9 @@ def remove_duplicates(nodes):
     d = {}
     ret = []
     for node in nodes:
-        existing = d.get(node.identifier, None)
+        existing = d.get(node.key, None)
         if existing is None:
-            d[node.identifier] = node
+            d[node.key] = node
     for key, value in d.items():
         ret.append(value)
     return ret

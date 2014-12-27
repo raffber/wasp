@@ -1,7 +1,7 @@
 from .task import Task
 from .node import FileNode
 from .argument import Argument
-from .util import UnusedArgFormatter
+from .util import UnusedArgFormatter, is_iterable
 from .logging import LogStr
 from io import StringIO
 from subprocess import Popen, PIPE
@@ -44,6 +44,21 @@ class ShellTask(Task):
     def require_all(self):
         raise NotImplementedError  # TODO: NotImplementedError
         return self
+
+    def use_catenate(self, arg):
+        name = arg.name
+        if name not in self.arguments:
+            item = Argument(name, value=[])
+            self.arguments.add(item)
+        else:
+            item = self.arguments[name]
+        if is_iterable(arg.value):
+            item.value.extend(list(arg.value))
+        else:
+            assert arg.type == str
+            item.value.append(arg)
+        for c in self.children:
+            c.use_arg(arg)
 
     def check(self):
         super().check()

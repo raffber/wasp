@@ -94,13 +94,13 @@ class Task(object):
                 arg = Argument(arg.key).retrieve_all()
                 if arg.is_empty:
                     raise MissingArgumentError('Missing argument for task "{0}":'
-                                               ' Required argument "{1}" is empty.'.format(self.identifier, arg.key))
+                                               ' Required argument "{1}" is empty.'.format(self.key, arg.key))
                 self.arguments.add(arg)
             elif self.arguments[arg.key].is_empty:
                 self.arguments[arg.key].retrieve_all()
                 if self.arguments[arg.key].is_empty():
                     raise MissingArgumentError('Missing argument for task "{0}":'
-                                               ' Required argument "{1}" is empty.'.format(self.identifier, arg.key))
+                                               ' Required argument "{1}" is empty.'.format(self.key, arg.key))
 
     @property
     def prepare(self):
@@ -216,7 +216,7 @@ class Task(object):
     has_run = property(get_has_run, set_has_run)
 
     @property
-    def identifier(self):
+    def key(self):
         return self._id
 
     def set_success(self, suc):
@@ -236,7 +236,8 @@ class Task(object):
             if isinstance(a, Argument):
                 self.use_arg(a)
             elif isinstance(a, ArgumentCollection):
-                self.arguments.update(a)
+                for x in a:
+                    self.use_arg(x)
             elif isinstance(a, SymbolicNode):
                 self.use_node(a)
             elif isinstance(a, str):
@@ -297,8 +298,8 @@ class TaskGroup(Task):
             # remove source node if it is also a target
             # otherwise, the target node in question is external
             # and the source node is external as well.
-            if t.identifier in sources:
-                del sources[t.identifier]
+            if t.key in sources:
+                del sources[t.key]
             else:
                 targets_new.append(t)
         self._grouped_sources = list(sources.values())
@@ -316,11 +317,11 @@ class TaskGroup(Task):
     def _flatten(self, tasks, fun):
         # base case if called with one task
         if isinstance(tasks, Task):
-            return {x.identifier: x for x in fun(tasks)}
+            return {x.key: x for x in fun(tasks)}
         # get all task items
         lst = chain(*[fun(task) for task in tasks])
         # create a dict from them
-        ret = dict(zip([x.identifier for x in lst], lst))
+        ret = dict(zip([x.key for x in lst], lst))
         for task in tasks:
             for c in task.children:
                 ret.update(self._flatten(c, fun))

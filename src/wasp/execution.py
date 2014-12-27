@@ -89,7 +89,7 @@ class DAG(object):
         self._executing_tasks = []
         if produce is not None:
             limited_set = set()
-            produce_ids = [p.identifier for p in produce]
+            produce_ids = [p.key for p in produce]
             required = []
             for task in tasks:
                 if isinstance(task.task, TaskGroup):
@@ -97,7 +97,7 @@ class DAG(object):
                 else:
                     targets = task.task.targets
                 for t in targets:
-                    if t.identifier in produce_ids:
+                    if t.key in produce_ids:
                         required.append(task)
             for req in required:
                 limited = self._limit_selection(req)
@@ -155,14 +155,14 @@ class DAG(object):
         # create map from target => task --> O(m*n)
         for task in tasks:
             for target in task.task.targets:
-                if target.identifier not in self._target_map:
-                    self._target_map[target.identifier] = []
-                self._target_map[target.identifier].append(task)
+                if target.key not in self._target_map:
+                    self._target_map[target.key] = []
+                self._target_map[target.key].append(task)
         # add dependencies to every task, i.e. add all tasks producing each target --> O(m*n*p)
         for task in tasks:
             for source in task.task.sources:
-                if source.identifier in self._target_map.keys():
-                    additional_deps = self._target_map[source.identifier]
+                if source.key in self._target_map.keys():
+                    additional_deps = self._target_map[source.key]
                     task.dependencies.extend(additional_deps)
 
     def has_finished(self):
@@ -235,9 +235,9 @@ class Executor(object):
         # TODO: improve this! signatures must be sorted by task
         # also this should be called more like history or produced_signatures or something like that
         for node in self.consumed_nodes:
-            old_signatures.update(node.signature.identifier, node.signature)
+            old_signatures.update(node.signature.key, node.signature)
         for node in self.produced_nodes:
-            old_signatures.update(node.signature.identifier, node.signature)
+            old_signatures.update(node.signature.key, node.signature)
 
 
 class ParallelExecutor(Executor):

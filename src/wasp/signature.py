@@ -8,7 +8,7 @@ import os
 class SignatureProvider(dict):
 
     def add(self, signature):
-        self[signature.identifier] = signature
+        self[signature.key] = signature
 
     def get(self, signature_identifier, *default):
         if len(default) > 1:
@@ -19,12 +19,12 @@ class SignatureProvider(dict):
         ret = {}
         for id_, signature in self.items():
             if signature.valid:
-                ret[signature.identifier] = signature.to_json()
+                ret[signature.key] = signature.to_json()
         cache.prefix('signaturedb').update(ret)
 
     def invalidate_signature(self, identifier):
         if isinstance(identifier, Signature):
-            identifier = identifier.identifier
+            identifier = identifier.key
         assert isinstance(identifier, str), 'The identifier must be given as either a subclass of signature or str'
         signature = self.get(identifier)
         if signature is None:
@@ -52,17 +52,17 @@ class SignatureStore(object):
 
 class Signature(Serializable):
 
-    def __init__(self, value=None, valid=False, identifier=None):
+    def __init__(self, value=None, valid=False, key=None):
         self._value = value
         self._valid = valid
-        if identifier is not None:
-            self._id = identifier
+        if key is not None:
+            self._key = key
         else:
-            self._id = generate_uuid()
+            self._key = generate_uuid()
 
     @property
-    def identifier(self):
-        return self._id
+    def key(self):
+        return self._key
 
     @property
     def value(self):
@@ -83,7 +83,7 @@ class Signature(Serializable):
 
     def to_json(self):
         d = super().to_json()
-        d.update({'value': self._value, 'valid': self.valid, 'identifier': self.identifier})
+        d.update({'value': self._value, 'valid': self.valid, 'identifier': self.key})
         return d
 
     @classmethod
@@ -104,7 +104,7 @@ class FileSignature(Signature):
         self.path = path
         if value is None and valid:
             value = self.refresh()
-        super().__init__(value, valid=valid, identifier=path)
+        super().__init__(value, valid=valid, key=path)
 
     def to_json(self):
         d = super().to_json()
@@ -142,17 +142,17 @@ factory.register(FileSignature)
 
 
 class CacheSignature(Signature):
-    def __init__(self, identifier, prefix=None, key=None, value=None, valid=True):
-        super().__init__(value, valid=valid, identifier=identifier)
+    def __init__(self, key, prefix=None, cache_key=None, value=None, valid=True):
+        super().__init__(value, valid=valid, key=key)
         self._cache = ctx.cache.prefix(prefix)
         self._prefix = prefix
-        self._key = key
+        self._cache_key = cache_key
         self.refresh(value)
 
     def to_json(self):
         d = super().to_json()
         d['prefix'] = self._prefix
-        d['key'] = self._key
+        d['key'] = self._cache_key
         return d
 
     @classmethod
@@ -163,7 +163,7 @@ class CacheSignature(Signature):
         if value is not None:
             self._value = value
             return value
-        data = self._cache.get(self._key, None)
+        data = self._cache.get(self._cache_key, None)
         if data is None:
             self._valid = False
             self._value = None

@@ -19,5 +19,5 @@ class TaskCollection(dict):
             for t in task:
                 self.add(t)
         else:
-            self[task.identifier] = task
+            self[task.key] = task
 

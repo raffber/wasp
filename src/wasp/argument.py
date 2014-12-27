@@ -51,8 +51,10 @@ class ArgumentCollection(Serializable):
         self._subs[arg.name] = arg
 
     def __setitem__(self, key, value):
-        assert isinstance(value, Argument), 'Can only set Argument in ArgumentCollection.__setitem__.'
         assert isinstance(key, str), 'Key must be of type string.'
+        if isinstance(value, str):
+            value = Argument(key, value=value)
+        assert isinstance(value, Argument), 'Can only set Argument in ArgumentCollection.__setitem__.'
         self._d.__setitem__(key, value)
 
     def to_json(self):
