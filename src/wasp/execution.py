@@ -12,10 +12,36 @@ class DependencyCycleError(Exception):
     pass
 
 
-class RunnableTaskContainer(object):
+class TaskContainer(object):
     def __init__(self, task):
         self._dependencies = []
         self._task = task
+        self._frozen = False
+        self._noop = None
+        self._runnable = None
+        self._has_run = None
+        self._finished = False
+
+    def freeze(self):
+        self._frozen = True
+
+    def thaw(self):
+        self._noop = None
+        self._has_run = None
+        self._runnable = None
+        self._frozen = False
+
+    @property
+    def noop(self):
+        if self._frozen and self._noop is not None:
+            return self._noop
+        elif self._frozen:
+            self._noop = self._test_noop()
+            return self._noop
+        return self._test_noop()
+
+    def _test_noop(self):
+        return len(self._task.run) == 1 and type(self._task)._run == Task._run
 
     @property
     def dependencies(self):
@@ -25,14 +51,29 @@ class RunnableTaskContainer(object):
     def task(self):
         return self._task
 
+    @property
+    def has_run(self):
+        if self._frozen and self._has_run is not None:
+            return self._has_run
+        elif self._frozen:
+            self._has_run = self._task.has_run
+            return self._has_run
+        return self._task.has_run
+
+    @property
     def runnable(self):
+        if self._frozen and self._runnable is not None:
+            return self._runnable
+        elif self._frozen:
+            self._runnable = self._test_runnable()
+            return self._runnable
+        return self._test_runnable()
+
+    def _test_runnable(self):
         for dep in self._dependencies:
-            if not dep.task.has_run:
+            if not dep.has_run:
                 return False
         return True
-
-    def finished(self):
-        return self._task.has_run
 
     def __repr__(self):
         return repr(self.task)
@@ -52,10 +93,20 @@ class DAG(object):
         # producing `produce`, then recursively add all dependencies
 
     def update_runnable(self):
-        # TODO: short and easy... BUT very inefficient
-        # TODO: move tasks that are not required to execute to another list for logging
-        self._runnable_tasks = list(filter(lambda task: task.runnable() and not task.finished(), self._waiting_tasks))
-        self._waiting_tasks = list(filter(lambda task: not task.runnable(), self._waiting_tasks))
+        for task in self._waiting_tasks:
+            task.freeze()
+        self._runnable_tasks = []
+        new_waiting_tasks = []
+        for task in self._waiting_tasks:
+            if task.runnable and not task.has_run:
+                self._runnable_tasks.append(task)
+            elif not task.runnable:
+                new_waiting_tasks.append(task)
+        self._waiting_tasks = new_waiting_tasks
+        for task in self._waiting_tasks:
+            task.thaw()
+        for task in self._runnable_tasks:
+            task.thaw()
 
     def pop_runnable_task(self):
         if len(self._runnable_tasks) == 0 and len(self._waiting_tasks) == 0:
@@ -115,7 +166,7 @@ class Executor(object):
         for source in task.task.sources:
             source.signature.invalidate()
 
-    def task_success(self, task):
+    def task_success(self, task, start=True):
         self._current_jobs -= 1
         self._dag.task_finished(task)
         spawned = task.task.spawn()
@@ -129,7 +180,8 @@ class Executor(object):
                 # no jobs running anymore, so quit the loop
                 self._loop.cancel()
             return
-        self.start()
+        if start:
+            self.start()
 
     def start(self):
         while self._current_jobs < self._jobs:
@@ -140,6 +192,16 @@ class Executor(object):
                 break
             # attempt to start new task
             task = self._dag.pop_runnable_task()
+            # run them without a separate thread
+            # due to overhead
+            while task is not None and task.noop:
+                self._current_jobs += 1
+                run_task(task)
+                if task.success:
+                    self.task_success(task, start=False)
+                else:
+                    self.task_failed(task)
+                task = self._dag.pop_runnable_task()
             if task is None:
                 self._loop.cancel()
                 break
@@ -197,7 +259,7 @@ def flatten(tasks):
     ret = []
     for task in tasks:
         if isinstance(task, Task):
-            task = RunnableTaskContainer(task)
+            task = TaskContainer(task)
         ret.append(task)
         dependencies = flatten(task.task.children)
         task.dependencies.extend(dependencies)
