@@ -18,6 +18,12 @@ import sys
 
 FILE_NAMES = ['build.py', 'build.user.py', 'BUILD', 'BUILD.user']
 
+has_argcomplete = True
+try:
+    import argcomplete
+    print('YAY')
+except ImportError:
+    has_argcomplete = False
 
 class NoSuchCommandError(Exception):
     pass
@@ -58,6 +64,8 @@ class OptionHandler(object):
             option_decorator(ctx.options)
         # setup argument parser
         ctx.options.add_to_argparse(self._argparse)
+        if has_argcomplete:
+            argcomplete.autocomplete(self._argparse)
         parsed = self._argparse.parse_args()
         extra = parsed.other_commands
         parsed = vars(parsed)

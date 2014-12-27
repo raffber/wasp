@@ -1,16 +1,11 @@
 Next Task
 ==========
 
- * option parsing
  * extension api
- * finish d tool with find task => see what can be imported into core
  * execution: limit production to a list of nodes given by produce in DAG
+ * finish d tool with find task => see what can be imported into core
+ * execution: optimize
  * test, test, test, test and write doc
-
-Option Parsing
-===============
-
- * bashcompletion (test if argcomplete is installed, if yes, use it)
 
 Extensions
 ===========
@@ -63,6 +58,7 @@ Config file at ./wasprc.user.json does not exist.
 Lower Priorieties
 ===================
 
+ * simplify global bashcompletion activation
  * improve keyboard handling of interrupts during execution
  * verbosity per decorator (use command class, assign all tasks their logger just after calling a command)
  * argumentprovider => register, such that retireve(asdf) works automatically by dispatching. => singledispatch?

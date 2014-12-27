@@ -7,6 +7,8 @@ This script unpacks the wasp build tool and should be checked into vcs
 repositories.
 """
 
+# PYTHON_ARGCOMPLETE_OK
+
 import sys
 import os
 import zlib
