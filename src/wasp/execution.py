@@ -86,6 +86,8 @@ class TaskContainer(object):
         # change.
         if self._task.has_run:
             return True
+        if self._task.always:
+            return False
         # check if all children have run
         for task in self.children:
             if not task.has_run:

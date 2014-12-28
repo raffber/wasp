@@ -4,10 +4,31 @@ Next Task
  * test, test, test, test and write doc
  * port to windows
 
+ * cleanup watch
+    -> don't run another command, just run the stuff returned by
+        watch()
+ * find task
+    -> allow finding files (filename, directories)
+    -> inherited task for finding libraries (*.dll, lib*.so)
+    -> inherited task for finding executables
+ * improve deployment
+    => minify, compress, pyz?!
+    => improve generation script, move to dist/
+    => provide pre-built files in pre-built/
+ * allow merged stdout, stdin output
+    => default if no pretty printing activated
+    => allow shell task printing customization -> inject default printer
 
 Bugs
 =======
 
+ * watch: second execution fails => File "/home/raff/raffbuild/src/wasp/node.py", line 34, in has_changed
+            if sig != self.signature(ns=ns):
+          File "/home/raff/raffbuild/src/wasp/signature.py", line 108, in __eq__
+            return not self.__ne__(other)
+          File "/home/raff/raffbuild/src/wasp/signature.py", line 111, in __ne__
+            return not other.valid or not self._valid or self._value != other.value
+        AttributeError: 'SymbolicNode' object has no attribute 'valid'
  * format_multiline_message does not split strings properly
  * sync on log => no ugly race conditions in output
  * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
@@ -16,7 +37,7 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
- * Popen(cwd='asdf') fuckup!?? -> this might need a rewrite of run() may do sth like sh -c 'cd .... ; $CMD'
+ * what is --verror used for?
  * binary json?! maybe implmented by myself?
  * yaml subset which can be translated to json
  * invocation from recursive directory: how to deduce topdir?!

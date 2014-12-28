@@ -32,7 +32,11 @@ import os
 extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
+    'sphinx.ext.autodoc',
 ]
+
+# make wasp module importable s.t. we can build API documentation:
+sys.path.append('../src')
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

@@ -1,6 +1,6 @@
 from wasp import Command, extensions, ExtensionMetadata, Task, Argument, TaskCollection
 from wasp.util import Event
-from wasp.main import run_command
+from wasp.main import run_command, execute_tasks
 from wasp.decorators import decorators
 from wasp import osinfo, log
 from wasp.execution import execute
@@ -22,7 +22,7 @@ try:
             def process_default(self, event):
                 if self._callback is None:
                     return
-                if event.pathname in self._files or self._regexp.match(event.pathname):
+                if event.pathname in self._files or self._regexp.match(event.name):
                     self._callback()
 
             def my_init(self, callback=None, files=None, regexp=None):
@@ -50,8 +50,7 @@ try:
                 # open, such as a log file => no CLOSE_WRITE event is triggered
                 # what about IN_CREATE?!
                 self._watchmanager.add_watch(d, mask=pyinotify.IN_MODIFY | pyinotify.IN_MOVED_TO)
-            callback = lambda *args, **kw: self.files_changed_event.fire()
-            handler = MonitorDaemon.Handler(callback=callback, files=self._files, regexp=self._regexp)
+            handler = MonitorDaemon.Handler(callback=self._files_changed, files=self._files, regexp=self._regexp)
             notifier = pyinotify.Notifier(self._watchmanager, handler)
             try:
                 notifier.loop()
@@ -78,9 +77,7 @@ try:
         def command_fun(self):
             assert self._f is not None
             tasks = TaskCollection(self._f())
-            if len(tasks) != 0:
-                jobs = Argument('jobs', type=int).retrieve_all(default=1).value
-                execute(tasks, jobs=jobs)
+            execute_tasks('watch', tasks)
             self._monitor.run()
 
 
@@ -98,7 +95,7 @@ except ImportError as e:
             pass
 
     class watch(object):
-        def __init__(self, *files, command='build'):
+        def __init__(self, *files, command='build', directory=None, regexp=None):
             pass
 
         def __call__(self, f):

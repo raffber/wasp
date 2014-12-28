@@ -13,7 +13,10 @@ class ShellTask(Task):
     def __init__(self, sources=[], targets=[], children=[], cmd='', always=False, cwd=None):
         super().__init__(sources=sources, targets=targets, children=children, always=always)
         self._cmd = cmd
-        self._cwd = Directory(cwd, make_absolute=True).path
+        if cwd is None:
+            self._cwd = None
+        else:
+            self._cwd = Directory(cwd, make_absolute=True).path
 
     @property
     def cwd(self):

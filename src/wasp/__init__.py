@@ -1,3 +1,8 @@
+"""
+YAY OMG ASDF
+"""
+
+
 from .util import Proxy
 ctx = Proxy('The wasp context wasp.ctx can only be accessed after initialization.', lock_thread=False)
 

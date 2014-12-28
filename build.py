@@ -1,4 +1,5 @@
 from wasp import File, group, shell, tool, Directory
+from wasp.ext.watch import watch
 import wasp
 
 d = tool('d')
@@ -12,6 +13,11 @@ def doc():
     else:
         make_task = shell('make.bat html', cwd='doc', always=True)
     return make_task
+
+
+@watch(directory='doc', command='doc', regexp='^[a-z-_]*\.rst$')
+def _autorebuild_documentation():
+    return doc()
 
 
 @wasp.build

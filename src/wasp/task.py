@@ -185,11 +185,7 @@ class Task(object):
         self._has_run = has_run
 
     def get_has_run(self):
-        if self._has_run:
-            return True
-        if self.always:
-            return False
-        return False
+        return self._has_run
 
     has_run = property(get_has_run, set_has_run)
 
