@@ -53,9 +53,9 @@ from .util import Factory, Serializable
 factory = Factory()
 
 
-from .signature import SignatureProvider, SignatureStore
+from .signature import SignatureProvider, ProducedSignatures
 signatures = SignatureProvider()
-old_signatures = SignatureStore()
+produced_signatures = ProducedSignatures()
 
 
 from .extension import ExtensionCollection, ExtensionMetadata

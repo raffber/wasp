@@ -1,7 +1,7 @@
 from uuid import uuid4 as generate_uuid
 import os
-from . import ctx, signatures, old_signatures
-from .signature import FileSignature, Signature, CacheSignature
+from . import ctx, signatures, produced_signatures
+from .signature import FileSignature, CacheSignature
 from .argument import ArgumentCollection
 
 
@@ -23,8 +23,8 @@ class Node(object):
         assert signature is not None
         return signature
 
-    def has_changed(self):
-        sig = old_signatures.get(self.key)
+    def has_changed(self, ns=None):
+        sig = produced_signatures.get(self.key, ns=ns)
         if sig is None:
             return True
         if sig != self.signature:

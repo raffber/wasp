@@ -10,7 +10,7 @@ from .fs import TOP_DIR, Directory
 from .config import Config
 from .generator import GeneratorCollection
 from .metadata import Metadata
-from . import old_signatures, signatures, log
+from . import produced_signatures, signatures, log
 import os
 
 
@@ -155,7 +155,7 @@ class Context(object):
 
     def load(self):
         self._cache.load()
-        old_signatures.load(self._cache)
+        produced_signatures.load(self._cache)
         for key, generator_collection in self._cache.prefix('generators').items():
             self._generators[key] = generator_collection
         signatures = self._cache.prefix('script-signatures')

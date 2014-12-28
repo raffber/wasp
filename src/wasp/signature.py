@@ -1,38 +1,51 @@
 from .util import Serializable, checksum, json_checksum
 from uuid import uuid4 as generate_uuid
 from . import factory, ctx
-from json import dumps
 import os
 
 
-class SignatureProvider(dict):
+class SignatureProvider(object):
 
-    def add(self, signature):
-        self[signature.key] = signature
+    def __init__(self):
+        self._d = {}
 
-    def get(self, key, *default):
+    def add(self, signature, ns=None):
+        if ns is None:
+            ns = 'default'
+        if ns not in self._d:
+            self._d[ns] = {}
+        self._d[ns][signature.key] = signature
+
+    def get(self, key, *default, ns=None):
+        if ns is None:
+            ns = 'default'
         if len(default) > 1:
             raise TypeError('get expected at most 2 arguments, got {0}'.format(len(default)))
-        return super().get(key, *default)
+        if ns not in self._d:
+            self._d[ns] = {}
+        return self._d[ns].get(key, *default)
 
     def save(self, cache):
-        ret = {}
-        for id_, signature in self.items():
-            if signature.valid:
-                ret[signature.key] = signature.to_json()
-        cache.prefix('signaturedb').update(ret)
+        cache.prefix('signaturedb').update(self._d)
 
-    def invalidate_signature(self, key):
+    def invalidate_signature(self, key, ns=None):
+        if ns is None:
+            ns = 'default'
         if isinstance(key, Signature):
             key = key.key
         assert isinstance(key, str), 'The key must be given as either a subclass of signature or str'
-        signature = self.get(key)
+        signature = self.get(key, ns=ns)
         if signature is None:
             raise ValueError('Invalid key for signature')
         signature.refresh()
 
+    def invalidate_all(self):
+        for nsv in self._d.values():
+            for sig in nsv.values():
+                sig.invalidate()
 
-class SignatureStore(object):
+
+class ProducedSignatures(object):
     def __init__(self):
         # copy the dict, so that the cache can be written to
         self._signaturedb = {}
@@ -40,14 +53,22 @@ class SignatureStore(object):
     def load(self, cache):
         self._signaturedb = dict(cache.prefix('signaturedb'))
 
-    def get(self, id_):
-        ret = self._signaturedb.get(id_)
+    def get(self, key, ns=None):
+        if ns is None:
+            ns = 'default'
+        if ns not in self._signaturedb:
+            self._signaturedb[ns] = {}
+        ret = self._signaturedb[ns].get(key)
         if ret is None:
             return Signature()
         return ret
 
-    def update(self, id_, signature):
-        self._signaturedb[id_] = signature
+    def update(self, signature, ns=None):
+        if ns is None:
+            ns = 'default'
+        if ns not in self._signaturedb:
+            self._signaturedb[ns] = {}
+        self._signaturedb[ns][signature.key] = signature
 
 
 class Signature(Serializable):

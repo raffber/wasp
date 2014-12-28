@@ -201,8 +201,8 @@ def execute_tasks(name, tasks):
         produce = make_nodes(produce)
     executor = extensions.api.create_executor(name)
     if executor == NotImplemented:
-        executor = ParallelExecutor(jobs=jobs)
-    tasks = execute(tasks, executor, produce=produce)
+        executor = ParallelExecutor(jobs=jobs, ns=name)
+    tasks = execute(tasks, executor, produce=produce, ns=name)
     # check all tasks if successful
     for key, task in tasks.items():
         if not task.success:

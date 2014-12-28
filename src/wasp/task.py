@@ -185,33 +185,11 @@ class Task(object):
         self._has_run = has_run
 
     def get_has_run(self):
-        # returns true if all source and target file signatures were unchanged
-        # from the last run and all child-tasks have successfully
-        # run.
-        # note that each task may change the file signatures
-        # of its targets, as such, it cannot be assumed
-        # that a task may still need to run even though at some
-        # point this function returned True, since other tasks may
-        # change the sources of this task and thus its signatures may
-        # change.
         if self._has_run:
             return True
         if self.always:
             return False
-        # check if all children have run
-        for task in self.children:
-            if not task.has_run:
-                return False
-        for t in self.targets:
-            if t.has_changed():
-                return False
-        # check if all sources have changed since last build
-        for s in self.sources:
-            if s.has_changed():
-                return False
-        # Task was successfully run
-        self.success = True
-        return True
+        return False
 
     has_run = property(get_has_run, set_has_run)
 

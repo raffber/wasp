@@ -139,8 +139,7 @@ def _clean():
     ret = []
     for f in ctx.builddir.glob('*', exclude='c4che'):
         ret.append(remove(f))
-    for signature in signatures.values():
-        signature.invalidate()
+    signatures.invalidate_all()
     return ret
 
 

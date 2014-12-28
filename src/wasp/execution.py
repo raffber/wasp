@@ -1,8 +1,7 @@
 from .task import Task, TaskGroup
 from .util import EventLoop, Event, is_iterable
-from . import log, old_signatures, extensions
+from . import log, produced_signatures, extensions
 from .task_collection import TaskCollection
-from .node import SymbolicNode
 
 from threading import Thread
 
@@ -16,14 +15,28 @@ class DependencyCycleError(Exception):
 
 
 class TaskContainer(object):
-    def __init__(self, task):
+    def __init__(self, task, children, ns=None):
         self._dependencies = []
+        self._ns = ns
         self._task = task
         self._frozen = False
         self._noop = None
         self._runnable = None
         self._has_run = None
         self._finished = False
+        self._children = children
+
+    @property
+    def targets(self):
+        return self._task.targets
+
+    @property
+    def sources(self):
+        return self._task.sources
+
+    @property
+    def children(self):
+        return self._children
 
     def freeze(self):
         self._frozen = True
@@ -59,9 +72,36 @@ class TaskContainer(object):
         if self._frozen and self._has_run is not None:
             return self._has_run
         elif self._frozen:
-            self._has_run = self._task.has_run
+            self._has_run = self._test_has_run()
             return self._has_run
-        return self._task.has_run
+        return self._test_has_run()
+
+    def _test_has_run(self):
+        # returns true if all source and target file signatures were unchanged
+        # from the last run and all child-tasks have successfully
+        # run.
+        # note that each task may change the file signatures
+        # of its targets, as such, it cannot be assumed
+        # that a task may still need to run even though at some
+        # point this function returned True, since other tasks may
+        # change the sources of this task and thus its signatures may
+        # change.
+        if self._task.has_run:
+            return True
+        # check if all children have run
+        for task in self.children:
+            if not task.has_run:
+                return False
+        for t in self.targets:
+            if t.has_changed(ns=self._ns):
+                return False
+        # check if all sources have changed since last build
+        for s in self.sources:
+            if s.has_changed(ns=self._ns):
+                return False
+        # Task was successfully run
+        self.task.success = True
+        return True
 
     @property
     def runnable(self):
@@ -172,7 +212,8 @@ class DAG(object):
 
 
 class Executor(object):
-    def __init__(self):
+    def __init__(self, ns=None):
+        self._ns = ns
         self._dag = None
         self._consumed_nodes = []
         self._produced_nodes = []
@@ -237,15 +278,15 @@ class Executor(object):
         # TODO: improve this! signatures must be sorted by task
         # also this should be called more like history or produced_signatures or something like that
         for node in self.consumed_nodes:
-            old_signatures.update(node.signature.key, node.signature)
+            produced_signatures.update(node, ns=self._ns)
         for node in self.produced_nodes:
-            old_signatures.update(node.signature.key, node.signature)
+            produced_signatures.update(node, ns=self._ns)
 
 
 class ParallelExecutor(Executor):
 
-    def __init__(self, jobs=1):
-        super().__init__()
+    def __init__(self, jobs=1, ns=None):
+        super().__init__(ns=ns)
         self._current_jobs = 0
         self._loop = EventLoop()
         self._jobs = jobs
@@ -331,8 +372,8 @@ def preprocess(tasks):
             real_task.always = True
 
 
-def execute(tasks, executor, produce=None):
-    tasks = flatten(tasks.values())
+def execute(tasks, executor, produce=None, ns=None):
+    tasks = make_containers(tasks.values(), ns=ns)
     if len(tasks) == 0:
         return TaskCollection()
     preprocess(tasks)
@@ -367,13 +408,20 @@ def run_task(task):
     return task.task.success
 
 
-def flatten(tasks):
-    ret = []
+def _flatten(tasks, ns=None):
+    ret_flatten = []
+    ret_containers = []
     for task in tasks:
+        dependencies, containers = _flatten(task.children)
         if isinstance(task, Task):
-            task = TaskContainer(task)
-        ret.append(task)
-        dependencies = flatten(task.task.children)
+            task = TaskContainer(task, children=containers, ns=ns)
+        ret_containers.append(task)
         task.dependencies.extend(dependencies)
-        ret.extend(dependencies)
-    return ret
+        ret_flatten.extend(dependencies)
+        ret_flatten.append(task)
+    return ret_flatten, ret_containers
+
+
+def make_containers(tasks, ns=None):
+    flattened, _ = _flatten(tasks, ns=ns)
+    return flattened
