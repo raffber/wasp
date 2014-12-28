@@ -1,7 +1,12 @@
 Next Task
 ==========
 
- * properly handle interrupts during execution
+ * make sure thread safety is ensured if symbolic nodes are written, i.e. write them upon completion, result is just argument collection
+    --> lock on cache?
+    --> isn't the operation atomic anyways?!
+    --> check cache signature for race conditions
+ * old_signatures must be kept per command! thus has_changed must take a SignatureStore as argument
+    -> use produced_signatures[command]
  * test, test, test, test and write doc
  * port to windows
 
@@ -12,26 +17,22 @@ Bugs
  * format_multiline_message does not split strings properly
  * sync on log => no ugly race conditions in output
  * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
- * md is run always?! <-- solved?
- * old_signatures must be kept per command! thus has_changed must take a SignatureStore as argument
-    -> use produced_signatures[command]
+
 
 Lower Priorieties/Questions
 ============================
 
- * check cache signature for race conditions
  * invocation from recursive directory: how to deduce topdir?!
  * simplify global bashcompletion activation
  * verbosity per decorator (use command class, assign all tasks their logger just after calling a command)
  * argumentprovider => register, such that retireve(asdf) works automatically by dispatching. => singledispatch?
- * util.Namespace class for decorator => inherit metadata, decoratorstore from it
+ * util.Namespace class => inherit metadata, decoratorstore from it
  * improve ctx.commands API
- * make sure thread safety is ensured if symbolic nodes are written, i.e. write them upon completion, result is just argument collection
  * escape : in filename (.replace('\:', ':') at str[0:1])
  * proper subproject handling (implemented as plugin to the recursion algorithm)
  * some way to make commands run again if specified implict as a dependency for another command and the former has already
    completed successfully. Use case might be an updated git repo which gets pulled in by "./wasp fetch" and should be updated
-   regularly. => ctx.commands['configure'].invalidate()
+   regularly. => ctx.commands['configure'].invalidate(): REQUIRES: improved command api
  * could we integrate pip, easy_install? just install extensions as eggs? => test for import pip
    - if sth. is missing (e.g. templates, make it automatically installable)
    - install it to wasp temporary directory
