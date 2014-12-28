@@ -240,7 +240,7 @@ class Executor(object):
         self._cancel()
         # invalidate the sources, such that this task is rerun
         for source in task.task.sources:
-            source.signature.invalidate()
+            source.signature(ns=self._ns).invalidate()
 
     def task_success(self, task, start=True):
         assert self._dag is not None, 'Call setup() first'

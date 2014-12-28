@@ -1,10 +1,6 @@
 Next Task
 ==========
 
- * make sure thread safety is ensured if symbolic nodes are written, i.e. write them upon completion, result is just argument collection
-    --> lock on cache?
-    --> isn't the operation atomic anyways?!
-    --> check cache signature for race conditions
  * test, test, test, test and write doc
  * port to windows
 

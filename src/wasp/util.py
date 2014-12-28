@@ -200,6 +200,26 @@ class EventLoop(object):
         return True
 
 
+def lock(f):
+    class LockWrapper(object):
+        def __init__(self, f):
+            self._f = f
+
+        def __get__(self, instance, owner):
+            if instance is None:
+                raise TypeError('Function `{0}` cannot be used as class '
+                                'method with an @lock decorator.'.format(self._f.__name__))
+            if not hasattr(instance, '__lock__'):
+                object.__setattr__(instance, '__lock__', threading.Lock())
+
+            @functools.wraps(self._f)
+            def wrapper(*args, **kw):
+                with instance.__lock__:
+                    return f(instance, *args, **kw)
+            return wrapper
+    return LockWrapper(f)
+
+
 # XXX: this can still be improved a lot
 # possibly use transparent object proxies to implement this.
 class FunctionDecorator(object):

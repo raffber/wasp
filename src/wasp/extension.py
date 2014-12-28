@@ -135,8 +135,10 @@ class ExtensionCollection(dict):
         if name in self:
             log.warn('Extension `{0}` loaded twice. Ignoring.'.format(name))
             return
-        self[name] = extension
-        self._meta[name] = meta
+        if extension is not None:
+            self[name] = extension
+        if meta is not None:
+            self._meta[name] = meta
 
     def load_all(self, package_name):
         module = import_module(package_name)

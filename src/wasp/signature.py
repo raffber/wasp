@@ -1,4 +1,4 @@
-from .util import Serializable, checksum, json_checksum
+from .util import Serializable, checksum, json_checksum, lock
 from uuid import uuid4 as generate_uuid
 from . import factory, ctx
 import os
@@ -9,6 +9,7 @@ class SignatureProvider(object):
     def __init__(self):
         self._d = {}
 
+    @lock
     def add(self, signature, ns=None):
         if ns is None:
             ns = 'default'
@@ -16,6 +17,7 @@ class SignatureProvider(object):
             self._d[ns] = {}
         self._d[ns][signature.key] = signature
 
+    @lock
     def get(self, key, *default, ns=None):
         if ns is None:
             ns = 'default'
@@ -28,17 +30,21 @@ class SignatureProvider(object):
     def save(self, cache):
         cache.prefix('signaturedb').update(self._d)
 
+    @lock
     def invalidate_signature(self, key, ns=None):
         if ns is None:
             ns = 'default'
         if isinstance(key, Signature):
             key = key.key
         assert isinstance(key, str), 'The key must be given as either a subclass of signature or str'
-        signature = self.get(key, ns=ns)
+        if ns not in self._d:
+            self._d[ns] = {}
+        signature = self._d[ns].get(key)
         if signature is None:
             raise ValueError('Invalid key for signature')
-        signature.refresh()
+        signature.invalidate()
 
+    @lock
     def invalidate_all(self):
         for nsv in self._d.values():
             for sig in nsv.values():
@@ -53,6 +59,7 @@ class ProducedSignatures(object):
     def load(self, cache):
         self._signaturedb = dict(cache.prefix('signaturedb'))
 
+    @lock
     def get(self, key, ns=None):
         if ns is None:
             ns = 'default'
@@ -63,6 +70,7 @@ class ProducedSignatures(object):
             return Signature()
         return ret
 
+    @lock
     def update(self, signature, ns=None):
         if ns is None:
             ns = 'default'
@@ -136,6 +144,7 @@ class FileSignature(Signature):
     def from_json(cls, d):
         return cls(d['path'], value=d['value'], valid=d['valid'])
 
+    @lock
     def refresh(self, value=None):
         if value is not None:
             self._value = value
@@ -180,6 +189,7 @@ class CacheSignature(Signature):
     def from_json(cls, d):
         return cls(d['key'], cache_key=d['key'], prefix=d['prefix'], value=d['value'], valid=d['valid'])
 
+    @lock
     def refresh(self, value=None):
         if value is not None:
             self._value = value

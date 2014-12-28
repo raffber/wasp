@@ -35,6 +35,9 @@ class Node(object):
             return True
         return False
 
+    def invalidate(self, ns=None):
+        signatures.invalidate_signature(self.key, ns=ns)
+
 
 class FileNode(Node):
     def __init__(self, path):
