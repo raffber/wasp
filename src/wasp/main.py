@@ -24,6 +24,7 @@ try:
 except ImportError:
     has_argcomplete = False
 
+
 class NoSuchCommandError(Exception):
     pass
 
@@ -68,7 +69,10 @@ class OptionHandler(object):
         if has_argcomplete:
             argcomplete.autocomplete(self._argparse)
         parsed = self._argparse.parse_args()
-        extra = parsed.other_commands
+        if parsed.command is None:
+            extra = None
+        else:
+            extra = parsed.other_commands
         parsed = vars(parsed)
         ctx.options.retrieve_from_dict(parsed)
         com = parsed['command']
@@ -433,7 +437,8 @@ def run(dir_path):
         extensions.api.retrieve_options(ctx.options)
         options.parse()
         extensions.api.options_parsed(ctx.options)
-        log.configure(options.verbosity)
+        if options.verbosity != log.DEFAULT:
+            log.configure(options.verbosity)
         successs = handle_commands(options)
     except FatalError:
         successs = False
