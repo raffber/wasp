@@ -1,7 +1,5 @@
-from wasp import File, group, shell, tool, Directory, Argument, EnableOption, value, arg
+from wasp import File, group, shell, tool, Directory
 import wasp
-from wasp import ArgumentCollection
-from wasp.ext.templating import template
 
 d = tool('d')
 current_dir = Directory(__file__)
@@ -10,9 +8,10 @@ current_dir = Directory(__file__)
 @wasp.command('doc', description='Build project documentation')
 def doc():
     if wasp.osinfo.posix:
-        return shell('make html', cwd='doc')
+        make_task = shell('make html', cwd='doc', always=True)
     else:
-        return shell('make.bat html', cwd='doc')
+        make_task = shell('make.bat html', cwd='doc', always=True)
+    return make_task
 
 
 @wasp.build
@@ -25,30 +24,3 @@ def main():
     two = d.compile('two.d').use(':one')
     link = d.link(one, two)
     return cp, group(one, two, link).use(dc='/usr/bin/dmd')
-
-
-@wasp.options
-def test_options(col):
-    col.group('test').add(EnableOption('asdf', 'Enable or disable asdf', value=True))
-
-
-@wasp.task('test')
-def _task_injection():
-    print('asdf')
-
-
-@wasp.command('template')
-def _template():
-    return template('stuff.md.in', 'stuff.md').use(
-        ArgumentCollection.load('test.json'))
-
-
-@wasp.command('md')
-def md():
-    mds = current_dir.glob('*.md')
-    return [wasp.shell('markdown {SRC} > {TGT}', sources=md,
-                       targets=md.to_builddir().replace_extension('html'))
-            for md in wasp.files(mds)]
-
-
-wasp.alias('asdf', 'build')
