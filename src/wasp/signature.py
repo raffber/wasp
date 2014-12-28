@@ -1,4 +1,4 @@
-from .util import Serializable, checksum
+from .util import Serializable, checksum, json_checksum
 from uuid import uuid4 as generate_uuid
 from . import factory, ctx
 from json import dumps
@@ -170,10 +170,8 @@ class CacheSignature(Signature):
             self._valid = False
             self._value = None
             return None
-        # XXX: not very efficient, benchmark to see if optimization required
         jsonarr = factory.to_json(data)
-        binary_data = dumps(jsonarr).encode('UTF-8')
-        value = checksum(binary_data)
+        value = json_checksum(jsonarr)
         self._value = value
         return value
 

@@ -49,10 +49,6 @@ class Context(object):
             self._scripts_signatures[fpath] = FileSignature(fpath)
         # create the cache
         self._cache = Cache(self._cachedir)
-        # make sure to do this early on
-        # such that everything that depends on the cache
-        # has valid data and does not accidently read old stuff
-        self.load()
 
     def get_tooldir(self):
         return self._tooldir

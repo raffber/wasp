@@ -13,8 +13,8 @@ def main():
     cp = shell('cp {CPFLAGS} {SRC} {TGT}',
                sources=f, targets=f.to_builddir()
                ).use(cpflags='-r')
-    one = d.compile('one.d')#.produce(':one') # <-- uncomment to reproduce bug
-    two = d.compile('two.d')#.use(':one')
+    one = d.compile('one.d').produce(':one')
+    two = d.compile('two.d').use(':one')
     link = d.link(one, two)
     return cp, group(one, two, link).use(dc='/usr/bin/dmd')
 

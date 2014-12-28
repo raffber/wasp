@@ -10,8 +10,7 @@ Bugs
 =======
 
  * format_multiline_message does not split strings properly
- * with produce(':asdf') and use(':asdf') the tasks seems to execute too often
- * top group for build has shelltask source missing from group.sources group(shelltask, group(dc, dc, dc))
+ * sync on log => no ugly race conditions in output
  * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
  * md is run always?! <-- solved?
  * old_signatures must be kept per command! thus has_changed must take a SignatureStore as argument
@@ -20,6 +19,7 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * check cache signature for race conditions
  * invocation from recursive directory: how to deduce topdir?!
  * simplify global bashcompletion activation
  * verbosity per decorator (use command class, assign all tasks their logger just after calling a command)

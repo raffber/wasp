@@ -125,6 +125,7 @@ def create_context(loaded_files, config=None):
     import wasp
     # assign context to proxy
     wasp.ctx.__assign_object(context)
+    context.load()
     return context
 
 
@@ -341,7 +342,6 @@ def retrieve_pretty_printing():
     if '-u' in argv or '--no-pretty' in argv or '--ugly' in argv:
         return False
     return True
-
 
 
 def load_extensions_from_config(config):

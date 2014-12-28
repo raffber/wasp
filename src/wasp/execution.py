@@ -267,6 +267,7 @@ class ParallelExecutor(Executor):
         self._start()
         if not self._loop.run():
             self._cancel = True
+            log.fatal(log.format_fail('Execution Interrupted!!'))
 
     def _start(self):
         assert self._dag is not None, 'Call setup() first'
@@ -303,6 +304,7 @@ class ParallelExecutor(Executor):
                         return
                     self._success_event.fire(task)
                 except KeyboardInterrupt:
+                    log.fatal(log.format_fail('Execution Interrupted!!'))
                     self._failed_event.fire(task)
             thread = Thread(target=_callable)
             task.task.check()

@@ -236,7 +236,7 @@ class Task(object):
             if isinstance(a, Argument):
                 self.use_arg(a)
             elif isinstance(a, ArgumentCollection):
-                for x in a:
+                for x in a.values():
                     self.use_arg(x)
             elif isinstance(a, SymbolicNode):
                 self._used_nodes.append(a)
@@ -323,7 +323,7 @@ class TaskGroup(Task):
         if isinstance(tasks, Task):
             return {x.key: x for x in fun(tasks)}
         # get all task items
-        lst = chain(*[fun(task) for task in tasks])
+        lst = list(chain(*[fun(task) for task in tasks]))
         # create a dict from them
         ret = dict(zip([x.key for x in lst], lst))
         for task in tasks:

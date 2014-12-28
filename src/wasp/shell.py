@@ -88,7 +88,11 @@ class ShellTask(Task):
             self.log.info(out)
         if not self.success:
             return_value_format = self.log.color('  --> ' + str(exit_code), fg='red', style='bright')
-            fatal_print = self.log.format_fail(LogStr(commandstring) + return_value_format, errout.strip())
+            out = errout.strip()
+            if out != '':
+                fatal_print = self.log.format_fail(LogStr(commandstring) + return_value_format, out)
+            else:
+                fatal_print = self.log.format_fail(LogStr(commandstring) + return_value_format)
             self.log.fatal(fatal_print)
         elif errout != '':
             warn_print = self.log.format_warn(LogStr(commandstring), errout.strip())

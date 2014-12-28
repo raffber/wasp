@@ -43,8 +43,8 @@ class ArgumentCollection(Serializable):
             self[arg.key] = arg
             return
         # if arg == self, we get a serious f****up and undebuggable crash, so check this
-        assert isinstance(arg, ArgumentCollection) and arg != self, 'Can only add() Argument or ' \
-                                                                    'ArgumentCollection to ArgumentCollection'
+        assert (isinstance(arg, ArgumentCollection) or isinstance(arg, Argument)) and arg != self, \
+                'Can only add() Argument or ArgumentCollection to ArgumentCollection'
         assert arg.name is not None, 'ArgumentCollection() must have a key, otherwise ' \
                                      'it cannot be added to ArgumentCollection'
         arg.parent = self
