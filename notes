@@ -5,8 +5,6 @@ Next Task
     --> lock on cache?
     --> isn't the operation atomic anyways?!
     --> check cache signature for race conditions
- * old_signatures must be kept per command! thus has_changed must take a SignatureStore as argument
-    -> use produced_signatures[command]
  * test, test, test, test and write doc
  * port to windows
 
