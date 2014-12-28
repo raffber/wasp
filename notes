@@ -16,6 +16,7 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * Popen(cwd='asdf') fuckup!?? -> this might need a rewrite of run() may do sth like sh -c 'cd .... ; $CMD'
  * binary json?! maybe implmented by myself?
  * yaml subset which can be translated to json
  * invocation from recursive directory: how to deduce topdir?!

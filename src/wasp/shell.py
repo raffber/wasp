@@ -3,14 +3,21 @@ from .node import FileNode
 from .argument import Argument
 from .util import UnusedArgFormatter, is_iterable
 from .logging import LogStr
+from .fs import Directory
+
 from io import StringIO
 from subprocess import Popen, PIPE
 
 
 class ShellTask(Task):
-    def __init__(self, sources=[], targets=[], children=[], cmd='', always=False):
+    def __init__(self, sources=[], targets=[], children=[], cmd='', always=False, cwd=None):
         super().__init__(sources=sources, targets=targets, children=children, always=always)
         self._cmd = cmd
+        self._cwd = Directory(cwd, make_absolute=True).path
+
+    @property
+    def cwd(self):
+        return self._cwd
 
     @property
     def cmd(self):
@@ -76,7 +83,7 @@ class ShellTask(Task):
         commandstring = self._format_cmd(**kw)
         out = StringIO()
         err = StringIO()
-        exit_code = run(commandstring, stdout=out, stderr=err)
+        exit_code = run(commandstring, stdout=out, stderr=err, cwd=self._cwd)
         self.success = exit_code == 0
         if self.success:
             self.log.info(self.log.format_success() + commandstring)
@@ -103,13 +110,14 @@ class ShellTask(Task):
         return '<class ShellTask: {0}>'.format(self.cmd)
 
 
-def shell(cmd, sources=[], targets=[], always=False):
-    return ShellTask(sources=sources, targets=targets, cmd=cmd, always=always)
+def shell(cmd, sources=[], targets=[], always=False, cwd=None):
+    return ShellTask(sources=sources, targets=targets, cmd=cmd, always=always, cwd=cwd)
 
 
-def run(cmd, stdout=None, stderr=None, timeout=100):
+def run(cmd, stdout=None, stderr=None, timeout=100, cwd=None):
     # cmd = shlex.split(cmd) # no splitting required if shell = True
-    process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
+    # security issue valid in our case?!
+    process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, cwd=cwd)
     output, err = process.communicate()
     exit_code = process.wait(timeout=timeout)
     if stdout is not None:

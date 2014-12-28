@@ -7,6 +7,14 @@ d = tool('d')
 current_dir = Directory(__file__)
 
 
+@wasp.command('doc', description='Build project documentation')
+def doc():
+    if wasp.osinfo.posix:
+        return shell('make html', cwd='doc')
+    else:
+        return shell('make.bat html', cwd='doc')
+
+
 @wasp.build
 def main():
     f = File('notes')
