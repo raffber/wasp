@@ -121,6 +121,10 @@ class TaskContainer(object):
     def __repr__(self):
         return repr(self.task)
 
+    @property
+    def ns(self):
+        return self._ns
+
 
 class DAG(object):
     def __init__(self, tasks, produce=None):
@@ -403,7 +407,7 @@ def run_task(task):
         msg = log.format_fail('Error while executing task:', str(e))
         log.fatal(msg)
     for node in real_task.targets:
-        node.signature.refresh()
+        node.signature(task.ns).refresh()
     extensions.api.task_finished(task)
     return task.task.success
 
@@ -412,7 +416,7 @@ def _flatten(tasks, ns=None):
     ret_flatten = []
     ret_containers = []
     for task in tasks:
-        dependencies, containers = _flatten(task.children)
+        dependencies, containers = _flatten(task.children, ns=ns)
         if isinstance(task, Task):
             task = TaskContainer(task, children=containers, ns=ns)
         ret_containers.append(task)

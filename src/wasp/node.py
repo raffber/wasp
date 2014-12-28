@@ -13,21 +13,25 @@ class Node(object):
             assert isinstance(key, str), 'Identifier for Node must be a string'
         self._key = key
 
+    def _make_signature(self):
+        raise NotImplementedError
+
     @property
     def key(self):
         return self._key
 
-    @property
-    def signature(self):
-        signature = signatures.get(self.key)
-        assert signature is not None
+    def signature(self, ns=None):
+        signature = signatures.get(self.key, ns=ns)
+        if signature is None:
+            signature = self._make_signature()
+            signatures.add(signature, ns=ns)
         return signature
 
     def has_changed(self, ns=None):
         sig = produced_signatures.get(self.key, ns=ns)
         if sig is None:
             return True
-        if sig != self.signature:
+        if sig != self.signature(ns=ns):
             return True
         return False
 
@@ -39,12 +43,10 @@ class FileNode(Node):
             path = os.path.realpath(path)
         self._path = path
         self._extension = os.path.splitext(path)[1]
-        signature = signatures.get(self._path)
-        if signature is None:
-            # signature was either not initialized or it was invalidated
-            signature = FileSignature(path=self._path)
-            signatures.add(signature)
         super().__init__(path)
+
+    def _make_signature(self):
+        return FileSignature(path=self._path)
 
     @property
     def path(self):
@@ -62,13 +64,11 @@ class FileNode(Node):
 class SymbolicNode(Node):
     def __init__(self, key=None):
         if key is None:
-            self.key = ':' + generate_uuid()
+            key = ':' + generate_uuid()
         super().__init__(key=key)
-        signature = signatures.get(self.key)
-        if signature is None:
-            # signature was either not initialized or it was invalidated
-            signature = CacheSignature(key, prefix='symblic-nodes', cache_key=key)
-            signatures.add(signature)
+
+    def _make_signature(self):
+        return CacheSignature(self.key, prefix='symblic-nodes', cache_key=self.key)
 
     def read(self):
         """
