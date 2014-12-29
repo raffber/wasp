@@ -34,13 +34,14 @@ Features and Non-Features
    that are already simple. As your project grows more complex, so does your build process.
    wasp tries to keep up with the increased complexity by providing few, but powerful
    tools to simplify your build process.
-   Since wasp is not limited to a specific set of technologies, it scales with your project.
+   Since wasp is not limited to a specific set of technologies, it scales with
+   your project and the number of technologies you use.
 
  * No magic happens: Everything is explicit. What you write happens,
    nothing more and nothing less! For example, this means that no automatic
    scanning of file system access is performed to determine task dependencies and
    that task sources and targets must be defined. Of course, there are abstractions
-   which make default choices for you.
+   and conventions which make default choices for you.
 
 
 wasp is for you if....
@@ -48,13 +49,16 @@ wasp is for you if....
 
  * ... you want
 
+ * ... you want to be able to create a build system that *just works* and can
+    easily be installed on all platforms.
+
 
 wasp is *not* for you if...
--------------------------------------------
+----------------------------
 
  * ... you only have simple tasks to perform. You're probably better of with one
- of the lesser general purpose tools. (e.g. ant for building java stuff
- or QMAKE for building qt apps)
+ of the not so general purpose tools. (e.g. gradle for building java stuff,
+ QMAKE for building qt apps or grunt.js for doing web related things)
 
  * ... you have never seen python before and are not willing to
     learn (a very awesome) new programming language.
