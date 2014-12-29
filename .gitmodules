@@ -1,0 +1,3 @@
+[submodule "submodules/sphinx_rtd_theme"]
+	path = submodules/sphinx_rtd_theme
+	url = https://github.com/snide/sphinx_rtd_theme.git
