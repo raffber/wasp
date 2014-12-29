@@ -1,4 +1,4 @@
-from .decorators import decorators
+from . import decorators
 
 
 class init(object):

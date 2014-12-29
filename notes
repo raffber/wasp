@@ -95,44 +95,20 @@ Extensions
     --> gdb server
 
 
-Declarative
-============
+Removal of global variables
+===========================
 
- * declarative tag handlers => register with factory
- * use yaml or json as markup - yaml has dependency ;(
- * run in init handler wasp.run_declarative('build.yml', format=None) infers format with 'json' => json, 'yml' => yaml
-
-
-'options' : {
-    'optimization' : ['debug', 'release']
-}
-
-'argument' : {
-    'CFLAGS' : {
-        ....
-    }
-}
-
-'commands' : {
-    'build' : {
-        'files' : '*.c',
-        'tool' : 'cpp',
-        'command' : 'compile',
-        'clean' : false,
-        'use' : {
-            'CFLAGS' : [
-                    {
-                        'argument' : 'CFLAGS'
-                    },
-                    {
-                        'switch' : 'optimization',
-                        'results' : {
-                            'debug' : '-g -O0',
-                            'release' : '-g -O0'
-                    },
-                    '--shared'
-                ],
-            }
-        }
-    }
-}
+ * see if this is an issue -> if yes, implement this in a separate branch
+    -> probably not going to happen, since most likely, this is a non-issue
+ * possibly use some dependency injection algorithm
+    -> default argument could be   def whatever(ctx=inject('ctx')): ....
+ * inject a context into the loaded modules?
+ * provide a set of clever macros which allows capturing context
+ * make a default context global?! retrieve ctx automatically if not provided
+ * pass the context everywhere
+ * port signature stuff into context again
+ * allow passing ctx to the fs components
+ * how to handle decorators?!
+    --> couple the decorator to a context with module imports
+    --> this can be accomplished by locking on a global object
+    --> create_context() may create a new context based on an old one.

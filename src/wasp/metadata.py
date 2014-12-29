@@ -1,5 +1,5 @@
 from .util import FunctionDecorator, Serializable
-from .decorators import decorators
+from . import decorators
 
 
 class Metadata(Serializable):

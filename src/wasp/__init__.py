@@ -1,5 +1,23 @@
 """
-YAY OMG ASDF
+This is the main module of wasp. It imports commonly used symbols
+into its namespace and defines all global variables. At the momemnt, these are:
+
+ * decorators: Acts as a central storage for storing functions registered
+    using decorators
+ * context: Captures the state of the build system, such as the top directory
+ * osinfo: Allows retrieving information about the operating system
+    the application is running on.
+ * version: Defines the version of the application.
+ * log: The logger for the application.
+ * factory: A factory for producing types which inherits from Serializable.
+    During module import, they must be registered.
+ * signatures: A database of all signatures known to the system.
+ * produces_signatures: A database of all signatures which
+    have been successfully produced. Comparing current signatures with the
+    signatures in this database allows determining if a node (e.g. a file) has
+    changed between now and the time when the node was produced (e.g. by a task).
+ * extensions: A collection of registered extensions.
+ * recurse_files: A list of files which have been registered by :func:`recurse`
 """
 
 
@@ -28,13 +46,13 @@ class WaspVersion(object):
             return False
 
 
-VERSION = WaspVersion(0, 1, 0)
+version = WaspVersion(0, 1, 0)
 
 
 def require_version(*args):
     major = minor = point = -1
     if len(args) >= 1:
-        major = args[0] 
+        major = args[0]
     if len(args) >= 2:
         minor = args[1]
     if len(args) >= 3:
@@ -44,6 +62,10 @@ def require_version(*args):
 
 class FatalError(Exception):
     pass
+
+
+from .decorator_store import DecoratorStore
+decorators = DecoratorStore()
 
 
 from .platform import OSInfo
@@ -68,6 +90,12 @@ extensions = ExtensionCollection()
 
 
 def recurse(*fpaths):
+    """
+    Tell wasp to recurse into the given paths. The paths
+    are relative to top-directory. Recursion will not take place immediately
+    but after the module loading has finished.
+    :param fpaths: A tuple containing strings or lists thereof.
+    """
     import os
     for f in fpaths:
         if isinstance(f, list):

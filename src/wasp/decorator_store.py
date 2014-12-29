@@ -17,5 +17,3 @@ class DecoratorStore(object):
         if key not in self._other:
             self._other[key] = []
         return self._other[key]
-
-decorators = DecoratorStore()

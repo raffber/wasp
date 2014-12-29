@@ -1,9 +1,8 @@
 from .fs import Directory
 from .argument import ArgumentCollection, Argument
 from .metadata import Metadata
-from . import log, extensions
+from . import log, extensions, decorators
 from .util import parse_assert, FunctionDecorator
-from .decorators import decorators
 import json
 
 CONFIG_FILE_NAMES = ['wasprc.json', 'wasprc.user.json']

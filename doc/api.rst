@@ -5,3 +5,4 @@ The wasp module
 ----------------
 
 .. automodule:: wasp
+    :members:

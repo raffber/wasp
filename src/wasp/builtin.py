@@ -1,5 +1,4 @@
-from . import options, signatures, ctx, CommandFailedError
-from .decorators import decorators
+from . import options, signatures, ctx, CommandFailedError, decorators
 from .main import run_command
 from .util import FunctionDecorator
 from .commands import Command, command

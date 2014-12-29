@@ -1,5 +1,4 @@
 from .util import load_module_by_path
-from .decorators import decorators
 from .context import Context
 from .config import Config
 from .task import Task, group
@@ -9,7 +8,7 @@ from .options import StringOption, OptionsCollection
 from .execution import execute, ParallelExecutor
 from .node import make_nodes
 from .argument import Argument
-from . import recurse_files, ctx, log, extensions, FatalError, CommandFailedError
+from . import recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators
 from .util import is_iterable
 
 import argparse

@@ -2,9 +2,8 @@ from .node import make_nodes, is_symbolic_node_string, SymbolicNode, make_node, 
 from uuid import uuid4 as uuid
 from .util import CallableList, is_iterable
 from .argument import Argument, ArgumentCollection
-from .decorators import decorators
 from .commands import Command
-from . import log
+from . import log, decorators
 
 from functools import reduce
 from itertools import chain
