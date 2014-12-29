@@ -4,7 +4,7 @@ into its namespace and defines all global variables. At the momemnt, these are:
 
  * decorators: Acts as a central storage for storing functions registered
     using decorators
- * context: Captures the state of the build system, such as the top directory
+ * ctx: Captures the state of the application, such as the top-directory
  * osinfo: Allows retrieving information about the operating system
     the application is running on.
  * version: Defines the version of the application.
@@ -17,21 +17,43 @@ into its namespace and defines all global variables. At the momemnt, these are:
     signatures in this database allows determining if a node (e.g. a file) has
     changed between now and the time when the node was produced (e.g. by a task).
  * extensions: A collection of registered extensions.
- * recurse_files: A list of files which have been registered by :func:`recurse`
+ * _recurse_files: A list of files which have been registered by :func:`recurse`
 """
 
 
 from .util import Proxy
+
 ctx = Proxy('The wasp context wasp.ctx can only be accessed after initialization.', lock_thread=False)
+# Context object. Acts as an access point for the state of the application.
+# It is first initialized as a Proxy of type :class:`util.Proxy`
+# NOTE: cannot be documented with docstrings as sphinx fails in __getattribute___
+# TODO: fix this such that this is possible
 
 
 class WaspVersion(object):
-    def __init__(self, major, minor, point):
+    """
+    Object representing the version of wasp.
+    """
+    def __init__(self, major, minor=-1, point=-1):
+        """
+        Initialize the object. Versions with the same major version number
+        are downwards compatible. The API usually stays constant between
+        point releases (i.e. no new features are added).
+        :param major: (int) Major version number.
+        :param minor: (int) Minor version number.
+        :param point: (int) Point release number.
+        """
         self.major = major
         self.minor = minor
         self.point = point
 
     def is_compatible(self, major, minor, point):
+        """
+        Check if another version is compatible with this version.
+        :param major: (int) Major version number. Use -1 for "don't care"
+        :param minor: (int) Minor version number. Use -1 for "don't care"
+        :param point: (int) Point release number. Use -1 for "don't care"
+        """
         if major == -1:
             return True
         if major != self.major:
@@ -47,9 +69,18 @@ class WaspVersion(object):
 
 
 version = WaspVersion(0, 1, 0)
+"""
+Represents the version of this module.
+"""
 
 
 def require_version(*args):
+    """
+    Throws an AssertionError if the version specified in args is not
+    compatible with the version of this module.
+    :param args: a tuple of version numbers with (major, minor, point).
+    Omitted numbers are treated as "don't care".
+    """
     major = minor = point = -1
     if len(args) >= 1:
         major = args[0]
@@ -61,32 +92,67 @@ def require_version(*args):
 
 
 class FatalError(Exception):
+    """
+    Exception which is thrown if a fatal error occurs during the execution
+    of the application.
+    """
     pass
 
 
 from .decorator_store import DecoratorStore
 decorators = DecoratorStore()
+"""
+Acts as a central storage for storing functions registered using decorators.
+decorators.<attribute-name> automatically returns a list, to which new items can be
+appended. These lists are intended to be populated during the execution of decorators, i.e.
+during the module load time. The lists can be read at a later stage of the application execution.
+For example the @command decorator adds instances of the Command() class to decorators.commands.
+After the modules have been loaded, the application reads decorators.commands and populates the command
+list with it.
+"""
 
 
 from .platform import OSInfo
 osinfo = OSInfo()
+"""
+Provides information about the operating system. For example, it can be determined, on which
+platform the application is executed.
+"""
 
 
 from .logging import Logger
 log = Logger(pretty=False)
+"""
+Logger object for the application. It provides the default logger for the application and
+can be cloned (and modified) if a part of the application should log differently.
+"""
 
 
 from .util import Factory, Serializable
 factory = Factory()
+"""
+Factory object for registering Serializable types. Call :func:`factory.register` for registering
+a type and :func:`factory.from_json` and `factory.to_json` to (de-)serialize objects.
+"""
 
 
 from .signature import SignatureProvider, ProducedSignatures
 signatures = SignatureProvider()
+"""
+A database of all signatures known to the system.
+"""
 produced_signatures = ProducedSignatures()
+"""
+A database of all signatures which
+have been successfully produced. Comparing current signatures with the
+signatures in this database allows determining if a node (e.g. a file) has
+changed between now and the time when the node was produced (e.g. by a task).
+"""
 
 
 from .extension import ExtensionCollection, ExtensionMetadata
 extensions = ExtensionCollection()
+"""A collection of registered extensions"""
 
 
 def recurse(*fpaths):
@@ -105,9 +171,12 @@ def recurse(*fpaths):
                                    'lists thereof. Found {0}'.format(type(f).__name__)
         if not os.path.isdir(f):
             f = os.path.dirname(f)
-        recurse_files.append(f)
+        _recurse_files.append(f)
 
-recurse_files = []
+_recurse_files = []
+"""
+A list of files which have been registered by :func:`recurse`
+"""
 
 from .context import Context
 from .config import config, Config

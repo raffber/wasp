@@ -8,7 +8,7 @@ from .options import StringOption, OptionsCollection
 from .execution import execute, ParallelExecutor
 from .node import make_nodes
 from .argument import Argument
-from . import recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators
+from . import _recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators
 from .util import is_iterable
 
 import argparse
@@ -268,7 +268,7 @@ def load_recursive():
     ret = []
     while loaded:
         loaded = False
-        for path in recurse_files:
+        for path in _recurse_files:
             if path in loaded_paths:
                 continue
             ret.extend(load_directory(path))
