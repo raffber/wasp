@@ -37,6 +37,7 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * documentation: find out how to properly link to member function in different modules and simliar
  * what is --verror used for?
  * binary json?! maybe implmented by myself?
  * yaml subset which can be translated to json
@@ -112,3 +113,16 @@ Removal of global variables
     --> couple the decorator to a context with module imports
     --> this can be accomplished by locking on a global object
     --> create_context() may create a new context based on an old one.
+
+Ideas for more features
+=======================
+
+ * create an internal package manager similiar to pip, npm or maven
+ * create a declarative interface, reducing build.py to sth like wasp.from_json('build.json')
+ * create an extension api and allow fetching extensions with the package manager
+ * integrate the build system with vcs-tools such as git (providing hooks)
+ * create an extension for code checkers
+ * allow outputting projects for IDEs
+ * create a flask web app for managing unittests and more
+ * create a curses-gui for project configuration (sth like kconfig of linux kernel??)
+ * create an extension for deployment tasks (e.g. directly deploy a web app to the server)
