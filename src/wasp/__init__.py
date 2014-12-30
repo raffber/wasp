@@ -184,7 +184,7 @@ from .options import options, handle_options, FlagOption, EnableOption, StringOp
 from .argument import Argument, value, arg, format_string, find_argumentkeys_in_string, ArgumentCollection
 from .commands import command, Command, CommandFailedError
 from .hooks import init, create_context
-from .fs import Directory, File, copy, remove, files, defer_install
+from .fs import Directory, File, copy, remove, files, defer_install, find, find_exe, find_lib
 from .task import Task, group, sequential, task
 from .task_collection import TaskCollection
 from .shell import shell, ShellTask

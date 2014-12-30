@@ -30,6 +30,7 @@ Next Task
     --> using symbolic nodes is possible as well
  * make shell paths nicer by referencing relative paths to cwd
  * print stack trace if exception happens in task
+ * do not autogenerate symbolic node for dependencies between tasks in task.use_arg()
 
 
 Bugs

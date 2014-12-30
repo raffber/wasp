@@ -317,7 +317,7 @@ class FindTask(Task):
 
 
 def find(*names, dirs=None, argprefix=None, required=True):
-    FindTask(names, dirs=dirs, argprefix=argprefix, required=required)
+    FindTask(*names, dirs=dirs, argprefix=argprefix, required=required)
 
 
 class FindExecutable(FindTask):
@@ -333,7 +333,7 @@ class FindExecutable(FindTask):
 
 
 def find_exe(*names, dirs=None, argprefix=None, required=True):
-    return FindExecutable(names, dirs=dirs, argprefix=argprefix, required=required)
+    return FindExecutable(*names, dirs=dirs, argprefix=argprefix, required=required)
 
 
 class FindLibrary(FindTask):

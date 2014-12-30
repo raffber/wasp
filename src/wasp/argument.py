@@ -283,7 +283,7 @@ class Argument(Serializable):
         self.set_value(value)
         m = ARGUMENT_KEY_RE.match(key)
         if not m:
-            raise ValueError('Invalid argument key, expected `{0}`'.format(ARGUMENT_KEY_RE_STR))
+            raise ValueError('Invalid argument key, expected `{0}`, found: `{1}`'.format(ARGUMENT_KEY_RE_STR, key))
 
     def to_json(self):
         d = super().to_json()

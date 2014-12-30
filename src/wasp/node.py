@@ -79,6 +79,8 @@ class SymbolicNode(Node):
         :return: An ArgumentCollection with the contents of the node.
         """
         arg_col = ctx.cache.prefix('symblic-nodes').get(self.key, None)
+        if arg_col is None:
+            return ArgumentCollection()
         assert isinstance(arg_col, ArgumentCollection), 'Cache: Invalid datastructure for symblic node storage.'
         return arg_col
 
