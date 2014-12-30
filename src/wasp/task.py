@@ -229,6 +229,8 @@ class Task(object):
             elif isinstance(a, list):
                 self.use(*a)
         for k, a in kw.items():
+            if not isinstance(a, str):
+                a = str(a)
             self.use_arg(Argument(k).assign(a))
         return self
 

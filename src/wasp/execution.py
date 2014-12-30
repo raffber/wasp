@@ -1,3 +1,4 @@
+import traceback
 from .task import Task, TaskGroup
 from .util import EventLoop, Event, is_iterable
 from . import log, produced_signatures, extensions
@@ -404,7 +405,8 @@ def run_task(task):
             real_task.on_fail()
         real_task.postprocess()
     except Exception as e:
-        msg = log.format_fail('Error while executing task:', str(e))
+        msg = log.format_fail('Error while executing task ({0}): `{1}`'.format(type(e).__name__,  str(e)),
+                              ''.join(traceback.format_tb(e.__traceback__)))
         log.fatal(msg)
     for node in real_task.targets:
         node.signature(task.ns).refresh()

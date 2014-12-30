@@ -28,6 +28,8 @@ Next Task
  * a datastorage object (like flask.g) to share data between build scripts.
     --> just use ctx.arguments?!
     --> using symbolic nodes is possible as well
+ * make shell paths nicer by referencing relative paths to cwd
+ * print stack trace if exception happens in task
 
 
 Bugs

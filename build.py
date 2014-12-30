@@ -3,16 +3,20 @@ from wasp.ext.watch import watch
 import wasp
 
 d = tool('d')
+sphinx = tool('sphinx')
 current_dir = Directory(__file__)
 
 
 @wasp.command('doc', description='Build project documentation.')
 def doc():
-    if wasp.osinfo.posix:
-        make_task = shell('make html', cwd='doc', always=True)
-    else:
-        make_task = shell('make.bat html', cwd='doc', always=True)
-    return make_task
+    compiler = sphinx.find()
+    html = sphinx.html('doc').use(compiler)
+    return html, compiler
+    # if wasp.osinfo.posix:
+    #     make_task = shell('make html', cwd='doc', always=True)
+    # else:
+    #     make_task = shell('make.bat html', cwd='doc', always=True)
+    # return make_task
 
 
 @watch(directory='doc', regexp='^[a-z-_]*\.rst$')

@@ -93,6 +93,8 @@ class Path(Serializable):
             else:
                 Path(total).remove()
 
+    def to_builddir(self):
+        return Path(ctx.builddir.join(self._path))
 
 def paths(*args):
     ret = []
@@ -163,6 +165,9 @@ class Directory(Path):
             os.makedirs(self._path)
         except FileExistsError:
             pass
+
+    def to_builddir(self):
+        return Directory(ctx.builddir.join(self._path))
 
 
 factory.register(Directory)
@@ -299,7 +304,7 @@ class FindTask(Task):
         if ap is None:
             ap = ''
         else:
-            ap += '-'
+            ap += '_'
         self._store_result(ap, result_file, result_dir)
 
     def _store_result(self, prefix, file, dir):
@@ -316,6 +321,10 @@ def find(*names, dirs=None, argprefix=None, required=True):
 
 
 class FindExecutable(FindTask):
+    def __init__(self, *args, dirs=None, **kw):
+        if dirs is None:
+            dirs = os.getenv('PATH').split(':')
+        super().__init__(*args, dirs=dirs, **kw)
 
     def _store_result(self, prefix, file, dir):
         self.result[prefix+'exe'] = file
@@ -328,6 +337,10 @@ def find_exe(*names, dirs=None, argprefix=None, required=True):
 
 
 class FindLibrary(FindTask):
+    def __init__(self, *args, dirs=None, **kw):
+        if dirs is None:
+            dirs = os.getenv('LD_LIBRARY_PATH').split(':')
+        super().__init__(*args, dirs=dirs, **kw)
 
     def _store_result(self, prefix, file, dir):
         self.result[prefix+'lib'] = file

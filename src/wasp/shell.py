@@ -49,7 +49,16 @@ class ShellTask(Task):
             if isinstance(val, list):
                 val = ' '.join([str(i) for i in list])
             kw[arg.upperkey] = str(val)
-        return kw
+        # assign upper and lower keys, s.t. it is up to the preference of
+        # users how to format command strings.
+        # typically, one uses upper case variable names, however, people
+        # who have not grown up with make, will probably use the less shouty version
+        # and use lower-case strings.
+        kw_new = {}
+        for k, v in kw.items():
+            kw_new[k] = v
+            kw_new[k.lower()] = v
+        return kw_new
 
     def require_all(self):
         raise NotImplementedError  # TODO: NotImplementedError
@@ -70,16 +79,12 @@ class ShellTask(Task):
         for c in self.children:
             c.use_arg(arg)
 
-    def _prepare_args(self, kw):
-        return kw
-
     def _format_cmd(self, **kw):
         s = UnusedArgFormatter().format(self.cmd, **kw)
         return s
 
     def _run(self):
         kw = self._process_args()
-        kw = self._prepare_args(kw)
         commandstring = self._format_cmd(**kw)
         out = StringIO()
         err = StringIO()
