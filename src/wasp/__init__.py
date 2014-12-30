@@ -3,19 +3,19 @@ This is the main module of wasp. It imports commonly used symbols
 into its namespace and defines all global variables. At the momemnt, these are:
 
  * decorators: Acts as a central storage for storing functions registered
-    using decorators
+   using decorators
  * ctx: Captures the state of the application, such as the top-directory
  * osinfo: Allows retrieving information about the operating system
-    the application is running on.
+   the application is running on.
  * version: Defines the version of the application.
  * log: The logger for the application.
  * factory: A factory for producing types which inherits from Serializable.
-    During module import, they must be registered.
+   During module import, they must be registered.
  * signatures: A database of all signatures known to the system.
  * produces_signatures: A database of all signatures which
-    have been successfully produced. Comparing current signatures with the
-    signatures in this database allows determining if a node (e.g. a file) has
-    changed between now and the time when the node was produced (e.g. by a task).
+   have been successfully produced. Comparing current signatures with the
+   signatures in this database allows determining if a node (e.g. a file) has
+   changed between now and the time when the node was produced (e.g. by a task).
  * extensions: A collection of registered extensions.
  * _recurse_files: A list of files which have been registered by :func:`recurse`
 """

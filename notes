@@ -25,6 +25,7 @@ Next Task
     -> a .wasptop is found
     -> create .wasptop file automatically
     -> either gitignore or check-in
+ * a datastorage object (like flask.g) to share data between build scripts.
 
 
 Bugs

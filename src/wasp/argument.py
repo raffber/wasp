@@ -1,3 +1,8 @@
+"""
+Arguments represent the primary tool for passing data between tasks.
+They main class :class:`Argument` is a serializable key-value pair.
+"""
+
 from . import ctx, factory
 import re
 import json
@@ -7,15 +12,46 @@ from itertools import chain
 
 
 ARGUMENT_KEY_RE_STR = '[\w\d]+[\w\d_-]*'
+"""A key of an argument must match this string"""
 ARGUMENT_KEY_RE = re.compile('^' + ARGUMENT_KEY_RE_STR + '$')
+"""Compiled version of :data:`wasp.argument.ARGUMENT_KEY_RE`"""
 
 
 class MissingArgumentError(Exception):
+    """
+    Raised when an argument is expected to be present, but is missing.
+    """
     pass
 
 
 class ArgumentCollection(Serializable):
+    """
+    Provides a dict-like interface for collecting multiple :class:`Argument`
+    objects. It also allows to define nested collections, such that a scope-like
+    interface can be created. Scopes can be accessed either using the
+    :meth:`__call__` method or using :meth:`subcollection` For example::
+
+        col = ArgumentCollection()
+        col.add(Argument('foo').assign('bar')   # creates a new argument with key
+                                                # "foo" and value "bar"
+        print(col['foo'].value)                 # prints "bar"
+        print(col('group')['foo'].value)        # prints "bar"
+        col('group')['foo'] = 'something-else'
+        print(col('group')['foo'].value)        # prints "something-else"
+        print(col['foo'].value)                 # prints "bar"
+
+    ``col('group')`` returns an :class:`ArgumentCollection` object with parent
+    set to ``col``. If an argument is looked up in ``col('group')`` and it is
+    missing therein, the argument is retrieved from the parent collection.
+    """
     def __init__(self, *args, name=None, parent=None):
+        """
+        Creates an :class:`ArgumentCollection` object.
+        :param args: A tuple of (key, argument) tuples.
+        :param name: Allows this object to be named.
+        :param parent: Sets the parent of this object. Required if
+        collections should be nested.
+        """
         self._d = dict(args)
         self._subs = None
         self._parent = None
@@ -25,12 +61,27 @@ class ArgumentCollection(Serializable):
 
     @classmethod
     def from_dict(cls, d):
+        """
+        Creates a new :class:`ArgumentCollection` from a dict.
+        Keys are expected to be strings.
+        Value can be either :class:`Argument`, in which case they are
+        used as such, or any other serializable type which is then
+        wrappend within an :class:`Argument`.
+        """
         if d is None:
             return cls()
-        return cls((k, v) for k, v in d.items())
+        ret = cls()
+        for k, v in d.items():
+            assert isinstance(k, str), 'Expected a dict with string keys.'
+            if not isinstance(v, Argument):
+                assert isinstance(v, Serializable), ''
+                ret.add(Argument(k).assign(v))
+            else:
+                ret.add(v)
+        return ret
 
     def dict(self):
-        return {arg.key: arg.value for arg in self.values()}
+        return {x.key: x.value for x in self.values()}
 
     def add(self, *args, **kw):
         for arg in args:
@@ -213,6 +264,11 @@ factory.register(ArgumentCollection)
 
 
 class Argument(Serializable):
+    """
+    Serializable object which represents a key-value pair.
+    It can be created from various sources, such as environment-variables, command line options
+    or manually, see the :meth:`Argument.retrieve` method for more details.
+    """
 
     def __init__(self, key, value=None, type=None):
         self.key = key
