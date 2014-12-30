@@ -1,6 +1,0 @@
-
-@wasp.build
-def build():
-    binary = cc.compile('src1.c', 'src2.c')
-    binary.targets.add(':my-binary-label')
-

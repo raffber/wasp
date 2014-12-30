@@ -18,6 +18,10 @@ Next Task
  * allow merged stdout, stdin output
     => default if no pretty printing activated
     => allow shell task printing customization -> inject default printer
+        -> log_formatter, ShellLogFormatter
+ * allow setting logger per task
+ * set default verbosity to info
+
 
 Bugs
 =======
@@ -57,6 +61,12 @@ Lower Priorieties/Questions
    - install it to wasp temporary directory
    - if globally installed create wasp temporary directory
    - pip install --install-option="--prefix=$PREFIX_PATH" package_name
+ * allow keyword arguments in use with nodes:
+    .use(pytest=':pytest')
+ * find a way to name arguments using the symbolic node name
+    -> namespace the arguments
+ * allow setting a default arugment in argument collection
+    => assign default argument to symbolic node name
 
 
 Global Installation and call from subdirectory

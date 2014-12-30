@@ -6,7 +6,7 @@ d = tool('d')
 current_dir = Directory(__file__)
 
 
-@wasp.command('doc', description='Build project documentation')
+@wasp.command('doc', description='Build project documentation.')
 def doc():
     if wasp.osinfo.posix:
         make_task = shell('make html', cwd='doc', always=True)
@@ -16,8 +16,16 @@ def doc():
 
 
 @watch(directory='doc', command='doc', regexp='^[a-z-_]*\.rst$')
-def _autorebuild_documentation():
+def autorebuild_doc():
     return doc()
+
+
+@wasp.command('test', description='Run unit and integration tests.')
+def test():
+    # pytest = find_exe('py.test', arg='exe')
+    # sh = shell('{exe} tests').use(pytest)
+    # return pytest, sh
+    return shell('py.test tests')
 
 
 @wasp.build
