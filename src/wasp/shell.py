@@ -13,6 +13,7 @@ class ShellTask(Task):
     def __init__(self, sources=[], targets=[], children=[], cmd='', always=False, cwd=None):
         super().__init__(sources=sources, targets=targets, children=children, always=always)
         self._cmd = cmd
+        self._printer = None
         if cwd is None:
             self._cwd = None
         else:
@@ -94,25 +95,46 @@ class ShellTask(Task):
             self.log.info(self.log.format_success() + commandstring)
         self.has_run = True
         stdout = out.getvalue()
-        errout = err.getvalue()
-        if stdout != '':
-            out = self.log.format_info(stdout.strip())
-            self.log.info(out)
-        if not self.success:
-            return_value_format = self.log.color('  --> ' + str(exit_code), fg='red', style='bright')
-            out = errout.strip()
-            if out != '':
-                fatal_print = self.log.format_fail(LogStr(commandstring) + return_value_format, out)
-            else:
-                fatal_print = self.log.format_fail(LogStr(commandstring) + return_value_format)
-            self.log.fatal(fatal_print)
-        elif errout != '':
-            warn_print = self.log.format_warn(LogStr(commandstring), errout.strip())
-            self.log.warn(warn_print)
-        self._finished(exit_code, stdout, errout)
+        stderr = err.getvalue()
+        self.printer.print(self.success, stdout=stdout, stderr=stderr,
+                           exit_code=exit_code, commandstring=commandstring)
+        self._finished(exit_code, stdout, stderr)
 
     def __repr__(self):
         return '<class ShellTask: {0}>'.format(self.cmd)
+
+    def get_printer(self):
+        if self._printer is None:
+            self._printer = ShellTaskPrinter(self)
+        return self._printer
+
+    def set_printer(self, printer):
+        self._printer = printer
+
+    printer = property(get_printer, set_printer)
+
+
+class ShellTaskPrinter(object):
+
+    def __init__(self, task):
+        self._task = task
+
+    def print(self, success, stdout='', stderr='', exit_code=0, commandstring=''):
+        log = self._task.log
+        if stdout != '':
+            out = log.format_info(stdout.strip())
+            log.info(out)
+        if not success:
+            return_value_format = log.color('  --> ' + str(exit_code), fg='red', style='bright')
+            out = stderr.strip()
+            if out != '':
+                fatal_print = log.format_fail(LogStr(commandstring) + return_value_format, out)
+            else:
+                fatal_print = log.format_fail(LogStr(commandstring) + return_value_format)
+            log.fatal(fatal_print)
+        elif stderr != '':
+            warn_print = log.format_warn(LogStr(commandstring), stderr.strip())
+            log.warn(warn_print)
 
 
 def shell(cmd, sources=[], targets=[], always=False, cwd=None):

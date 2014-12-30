@@ -36,7 +36,7 @@ extensions = [
 ]
 
 # make wasp module importable s.t. we can build API documentation:
-sys.path.append('../src')
+sys.path.insert(0, os.path.abspath('../src'))
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
