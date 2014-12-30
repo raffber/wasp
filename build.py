@@ -30,7 +30,7 @@ def main():
     dc = d.find_dc()
     f = File('notes')
     cp = shell('cp {CPFLAGS} {SRC} {TGT}',
-               sources=f, targets=f.to_builddir()
+               sources=f, targets=f.to_builddir(), cwd='doc'
                ).use(cpflags='-r')
     one = d.compile('one.d').produce(':one')
     two = d.compile('two.d').use(':one')

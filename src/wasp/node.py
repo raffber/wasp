@@ -1,5 +1,4 @@
 from uuid import uuid4 as generate_uuid
-import os
 from . import ctx, signatures, produced_signatures
 from .signature import FileSignature, CacheSignature
 from .argument import ArgumentCollection
@@ -41,27 +40,19 @@ class Node(object):
 
 class FileNode(Node):
     def __init__(self, path):
-        # TODO: optimize for performance => profile/benchmark
-        if not os.path.isabs(path):
-            path = os.path.realpath(path)
-        self._path = path
-        self._extension = os.path.splitext(path)[1]
+        from .fs import File
+        self._path = File(path)
         super().__init__(path)
 
     def _make_signature(self):
-        return FileSignature(path=self._path)
+        return FileSignature(path=self.path)
 
     @property
     def path(self):
-        return self._path
+        return str(self._path)
 
     def to_file(self):
-        from .fs import File
-        return File(self._path)
-
-    @property
-    def extension(self):
-        return self._extension
+        return self._path
 
 
 class SymbolicNode(Node):
@@ -90,6 +81,8 @@ class SymbolicNode(Node):
         :param args: The ArgumentCollection to store
         :return: None
         """
+        if args.isempty():
+            return
         ctx.cache.prefix('symblic-nodes')[self.key] = args
 
 

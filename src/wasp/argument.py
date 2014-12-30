@@ -235,7 +235,8 @@ class ArgumentCollection(Serializable):
 
     def isempty(self):
         parent_empty = self._parent is None or self._parent.isempty()
-        return (self._subs is not None and len(self._subs) == 0) or parent_empty or len(self._d) == 0
+        subs_empty = self._subs is None or len(self._subs) == 0
+        return parent_empty and subs_empty and len(self._d) == 0
 
     def overwrite_merge(self, higher_priority):
         if higher_priority is None:

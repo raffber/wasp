@@ -38,16 +38,37 @@ class DirectoryNotEmptyError(Exception):
 
 class Path(Serializable):
 
-    def __init__(self, path, make_absolute=False):
+    def __init__(self, path, make_absolute=False, relto=None):
         if isinstance(path, Path) or isinstance(path, FileNode):
             path = path.path
         if make_absolute:
             path = os.path.realpath(path)
-        else:
+        elif relto is None:
             path = sanitize_path(path)
+        if relto is not None and not os.path.isabs(relto):
+            relto = os.path.abspath(relto)
         self._path = path
+        if not self.isabs and relto is None:
+            self._relto = os.getcwd()
         self._absolute = make_absolute
 
+    def relative(self, relto, skip_if_abs=False):
+        if isinstance(relto, Path):
+            relto = relto.path
+        if skip_if_abs and self.isabs:
+            return Path(self, make_absolute=True)
+        abspath = os.path.realpath(self._path)
+        return Path(os.path.relpath(abspath, start=relto), relto=relto)
+
+    def absolute(self):
+        return Path(self._path, make_absolute=True)
+
+    def relative_to(self):
+        return self._relto
+
+    @property
+    def isabs(self):
+        return os.path.isabs(self._path)
 
     @property
     def path(self):
@@ -63,11 +84,11 @@ class Path(Serializable):
 
     @classmethod
     def from_json(cls, d):
-        return cls(d['path'], make_absolute=d['absolute'])
+        return cls(d['path'], make_absolute=d['absolute'], relto=d['relto'])
 
     def to_json(self):
         d = super().to_json()
-        d.update({'path': self.path, 'absolute': self._absolute})
+        d.update({'path': self.path, 'absolute': self._absolute, 'relto': self._relto})
         return d
 
     def isdir(self):
@@ -112,7 +133,7 @@ def paths(*args):
 
 class Directory(Path):
 
-    def __init__(self, path, make_absolute=False):
+    def __init__(self, path, make_absolute=False, relto=None):
         """
         Creates a directory object of the given path.
         If a path to a file is given, the directory name of the file is used.
@@ -123,7 +144,7 @@ class Directory(Path):
             path = path.path
         if os.path.isfile(path):
             path = os.path.dirname(path)
-        super().__init__(path, make_absolute=make_absolute)
+        super().__init__(path, make_absolute=make_absolute, relto=relto)
 
     def join(self, *args, append=''):
         """Joins the positional arguments as path and appends a string to them"""

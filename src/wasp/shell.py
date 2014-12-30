@@ -34,11 +34,13 @@ class ShellTask(Task):
         src_list = []
         for s in self.sources:
             if isinstance(s, FileNode):
-                src_list.append(s.path)
+                src_path = s.to_file().relative(self._cwd, skip_if_abs=True).path
+                src_list.append(src_path)
         tgt_list = []
         for t in self.targets:
             if isinstance(t, FileNode):
-                tgt_list.append(t.path)
+                tgt_path = t.to_file().relative(self._cwd, skip_if_abs=True).path
+                tgt_list.append(tgt_path)
         src_str = ' '.join(src_list)
         tgt_str = ' '.join(tgt_list)
         kw = {'SRC': src_str,
