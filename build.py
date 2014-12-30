@@ -30,7 +30,7 @@ def test():
 
 @wasp.build
 def main():
-    dc = d.find()
+    dc = d.find_dc()
     f = File('notes')
     cp = shell('cp {CPFLAGS} {SRC} {TGT}',
                sources=f, targets=f.to_builddir()
