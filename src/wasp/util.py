@@ -253,6 +253,8 @@ def load_module_by_path(fpath, module_name=None):
     if module_name is None:
         module_name = str(uuid())
     fpath = os.path.realpath(fpath)
+    if os.path.isdir(fpath):
+        fpath = os.path.join(fpath, '__init__.py')
     loader = SourceFileLoader(module_name, fpath)
     m = loader.load_module()
     return m

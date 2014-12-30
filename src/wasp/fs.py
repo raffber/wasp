@@ -48,6 +48,7 @@ class Path(Serializable):
         if relto is not None and not os.path.isabs(relto):
             relto = os.path.abspath(relto)
         self._path = path
+        self._relto = relto
         if not self.isabs and relto is None:
             self._relto = os.getcwd()
         self._absolute = make_absolute

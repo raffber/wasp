@@ -356,7 +356,7 @@ def load_extensions_from_config(config):
 def load_tools():
     try:
         for proxy_name in tool_proxies:
-            ctx.load_tool(proxy_name)
+            ctx.tools.load(proxy_name)
     except NoSuchToolError as e:
         log.fatal('Not all tools were loaded during init. Autoloading failed:')
         log.fatal(str(e))

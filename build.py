@@ -5,6 +5,7 @@ from wasp.fs import find_exe
 
 d = tool('d')
 sphinx = tool('sphinx')
+latex = tool('latex')
 
 
 @wasp.command('doc', description='Build project documentation.')
