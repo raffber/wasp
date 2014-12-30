@@ -37,7 +37,7 @@ class WaspVersion(object):
     def __init__(self, major, minor=-1, point=-1):
         """
         Initialize the object. Versions with the same major version number
-        are downwards compatible. The API usually stays constant between
+        are downwards compatible. The API stays constant between
         point releases (i.e. no new features are added).
         :param major: (int) Major version number.
         :param minor: (int) Minor version number.
@@ -60,11 +60,11 @@ class WaspVersion(object):
             return False
         if minor == -1:
             return True
-        if minor != self.minor:
+        if minor >= self.minor:
             return False
         if point == -1:
             return True
-        if point != self.point:
+        if point >= self.point:
             return False
 
 
@@ -88,7 +88,7 @@ def require_version(*args):
         minor = args[1]
     if len(args) >= 3:
         point = args[2]
-    assert VERSION.is_compatible(major, minor, point), 'Incompatible wasp version used.'
+    assert version.is_compatible(major, minor, point), 'Incompatible wasp version used.'
 
 
 class FatalError(Exception):
