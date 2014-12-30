@@ -10,10 +10,10 @@ from .generator import Generator
 from .argument import format_string, find_argumentkeys_in_string
 from glob import glob
 
-MODULE_DIR = os.path.realpath(os.path.dirname(__file__))
+# MODULE_DIR = os.path.realpath(os.path.dirname(__file__))
 # TODO: this might cause problems if the extraction path of wasp is changed.
 # but how to fix it? Is a fix relevant?!
-TOP_DIR = os.path.realpath(os.path.join(MODULE_DIR, '../..'))
+# TOP_DIR = os.path.realpath(os.path.join(MODULE_DIR, '../..'))
 
 
 def sanitize_path(fpath):
@@ -25,11 +25,16 @@ def sanitize_path(fpath):
     """
     assert isinstance(fpath, str), 'Path must be given as string.'
     fpath = os.path.realpath(fpath)
-    is_subpath = os.path.commonprefix([fpath, TOP_DIR]) == TOP_DIR
+    top_dir = os.getcwd()
+    is_subpath = os.path.commonprefix([fpath, top_dir]) == top_dir
     if is_subpath:
-        fpath = os.path.relpath(fpath, start=TOP_DIR)
+        fpath = os.path.relpath(fpath, start=top_dir)
     # else, leave it absolute
     return fpath
+
+
+def top_dir():
+    return os.getcwd()
 
 
 class DirectoryNotEmptyError(Exception):

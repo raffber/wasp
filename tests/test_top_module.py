@@ -37,3 +37,7 @@ def test_version():
     assert compatible, 'Version should be compatible'
 
     wasp.version = old_version
+
+
+def test_recurse():
+    pass

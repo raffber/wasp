@@ -6,7 +6,7 @@ from .environment import Environment
 from .util import load_module_by_path
 from .tools import ToolError, NoSuchToolError
 from .tools import proxies
-from .fs import TOP_DIR, Directory
+from .fs import Directory
 from .config import Config
 from .generator import GeneratorCollection
 from .metadata import Metadata
@@ -32,7 +32,7 @@ class Context(object):
             meta = Metadata()
         self._meta = meta
         # create the directories
-        self._topdir = Directory(TOP_DIR,  make_absolute=True)
+        self._topdir = Directory('.',  make_absolute=True)
         assert self._topdir.exists, 'The given topdir must exist!!'
         self._builddir = Directory(builddir)
         self._builddir.ensure_exists()

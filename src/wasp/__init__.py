@@ -188,7 +188,7 @@ from .fs import Directory, File, copy, remove, files, defer_install
 from .task import Task, group, sequential, task
 from .task_collection import TaskCollection
 from .shell import shell, ShellTask
-from .fs import Directory, TOP_DIR, files
+from .fs import Directory, files
 from .tools import tool
 from .builtin import build, configure, install, alias
 from .metadata import metadata, Metadata
