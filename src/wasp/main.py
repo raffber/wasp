@@ -272,6 +272,7 @@ def load_recursive():
             if path in loaded_paths:
                 continue
             ret.extend(load_directory(path))
+            loaded_paths.add(path)
             loaded = True
     return ret
 
@@ -388,7 +389,7 @@ def run(dir_path):
     try:
         # first and foremost, initialize logging
         log.configure(verbosity=retrieve_verbosity(), pretty=retrieve_pretty_printing())
-        # load frist part of extensions
+        # load first part of extensions
         extensions.load_all('wasp.ext')
         # load configuration from current directory
         config = Config.load_from_directory(dir_path)

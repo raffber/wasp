@@ -21,6 +21,10 @@ Next Task
         -> log_formatter, ShellLogFormatter
  * allow setting logger per task
  * set default verbosity to info
+ * determining topdir: travel up in the path until:
+    -> a .wasptop is found
+    -> create .wasptop file automatically
+    -> either gitignore or check-in
 
 
 Bugs
