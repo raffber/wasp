@@ -37,14 +37,14 @@ class OptionHandler(object):
     def parse(self):
         # use description if it is not None
         descriptions = {}
-        for com in ctx.commands:
-            if com.name not in descriptions:
-                descriptions[com.name] = com.description
-            elif com.description is not None:
-                descriptions[com.name] = com.description
-        # create a set of command names that can be called
-        command_names = set(map(lambda x: x.name, ctx.commands))
-        alias = {com.name: com.option_alias for com in ctx.commands}
+        command_names = set(ctx.commands.keys())
+        for comname in ctx.commands:
+            for com in ctx.commands[comname]:
+                if com.name not in descriptions:
+                    descriptions[com.name] = com.description
+                elif com.description is not None:
+                    descriptions[com.name] = com.description
+        alias = {com.name: com.option_alias for coms in ctx.commands.values() for com in coms}
         # don't add commands with an alias to another command
         # setup OptionCollection with defined alias
         for name in command_names:
@@ -135,9 +135,9 @@ def create_context(loaded_files, config=None):
 def retrieve_command_tasks(name):
     found = False
     tasks_col = TaskCollection()
-    for command in ctx.commands:
-        if command.name != name:
-            continue
+    if name not in ctx.commands:
+        raise NoSuchCommandError('No command with name `{0}` found!'.format(name))
+    for command in ctx.commands[name]:
         tasks = command.run()
         if is_iterable(tasks):
             if command.produce is not None:
@@ -173,9 +173,9 @@ def run_command_dependencies(name, executed_commands=[]):
     if name in executed_commands:
         return
     # run all dependencies
-    for command in ctx.commands:
-        if command.name != name:
-            continue
+    if name not in ctx.commands:
+        raise NoSuchCommandError('No such command: `{0}`'.format(name))
+    for command in ctx.commands[name]:
         # run all dependencies automatically
         # if they fail, this command fails as well
         for dependency in command.depends:
@@ -425,7 +425,7 @@ def run(dir_path):
     try:
         # load all command decorators into the context
         for com in decorators.commands:
-            ctx.commands.append(com)
+            ctx.commands.add(com)
         # run all init() hooks
         for hook in decorators.init:
             hook()

@@ -14,7 +14,7 @@ def doc():
     return html, compiler
 
 
-@watch(directory='doc', regexp='^[a-z-_]*\.rst$')
+@watch(directory='doc', regexp='^[a-z-_]*\.rst$', command='watch-doc')
 def autorebuild_doc():
     return doc()
 

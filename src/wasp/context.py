@@ -11,6 +11,8 @@ from .config import Config
 from .generator import GeneratorCollection
 from .metadata import Metadata
 from . import produced_signatures, signatures, log
+from .commands import CommandCollection
+
 import os
 
 
@@ -23,7 +25,7 @@ class Context(object):
         # initialize options
         self._options = OptionsCollection()
         self._env = Environment()
-        self._commands = []
+        self._commands = CommandCollection()
         self._tooldir = Directory('wasp-tools')
         # we need to get the initialization order right.
         # the simplest way to do this is to initialize things first

@@ -5,6 +5,13 @@ class CommandFailedError(Exception):
     pass
 
 
+class CommandCollection(dict):
+    def add(self, com):
+        if com.name not in self:
+            self[com.name] = []
+        self[com.name].append(com)
+
+
 class Command(object):
     def __init__(self, name, fun, description=None, depends=None, produce=None, option_alias=None):
         self._depends = [] if depends is None else depends

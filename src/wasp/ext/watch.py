@@ -56,13 +56,14 @@ try:
                 notifier.stop()
 
     class watch(object):
-        def __init__(self, *files, directory=None, regexp=None):
+        def __init__(self, *files, directory=None, regexp=None, command='watch'):
             self._monitor = MonitorDaemon(files, regexp=regexp, directory=directory, callback=self._callback)
             self._f = None
+            self._command = command
 
         def __call__(self, f):
             self._f = f
-            decorators.commands.append(Command('watch', self.command_fun, description='Launches a background daemon'
+            decorators.commands.append(Command(self._command, self.command_fun, description='Launches a background daemon'
                                                                         ' which monitors the file system for changes and'
                                                                         'runs appropriate commands.'))
             return f
@@ -70,7 +71,7 @@ try:
         def _callback(self):
             assert self._f is not None
             tasks = TaskCollection(self._f())
-            execute_tasks('watch', tasks)
+            execute_tasks(self._command, tasks)
 
         def command_fun(self):
             self._monitor.run()
