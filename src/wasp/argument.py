@@ -81,6 +81,9 @@ class ArgumentCollection(Serializable):
         return ret
 
     def dict(self):
+        """
+        :return: A dict with ``{argument.key: argument.value}``
+        """
         return {x.key: x.value for x in self.values()}
 
     def add(self, *args, **kw):
@@ -116,7 +119,7 @@ class ArgumentCollection(Serializable):
                                        'subcollection can be serialized. Consider using shallowcopy(),'
                                        'which returns a new object of only the items in this collection.')
         d = factory.to_json(self._d)
-        d['arguments'] = [arg.to_json() for arg in self.items()]
+        d['arguments'] = [arg.to_json() for arg in self.values()]
         if self._subs is not None:
             d_subs = [x.to_json() for x in self._subs]
         else:

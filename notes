@@ -26,6 +26,8 @@ Next Task
     -> create .wasptop file automatically
     -> either gitignore or check-in
  * a datastorage object (like flask.g) to share data between build scripts.
+    --> just use ctx.arguments?!
+    --> using symbolic nodes is possible as well
 
 
 Bugs

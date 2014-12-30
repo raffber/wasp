@@ -70,9 +70,6 @@ class ShellTask(Task):
         for c in self.children:
             c.use_arg(arg)
 
-    def check(self):
-        super().check()
-
     def _prepare_args(self, kw):
         return kw
 

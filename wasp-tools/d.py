@@ -1,5 +1,5 @@
 import wasp
-from wasp.fs import defer_install, BINARY_PERMISSIONS, Directory, File
+from wasp.fs import defer_install, BINARY_PERMISSIONS, Directory, File, FindTask
 from wasp.node import make_nodes, FileNode
 from wasp import ShellTask, Task, osinfo
 
@@ -38,24 +38,15 @@ if osinfo.linux:
     COMPILER_DIRS = ['/usr/bin']
 
 
-class FindCompiler(Task):
-    def __init__(self, names=COMPILER_NAMES, dirs=COMPILER_DIRS):
-        super().__init__(always=True)
-        if isinstance(names, str):
-            names = [names]
-        if isinstance(dirs, str):
-            dirs = [dirs]
-        self._names = names
-        self._dirs = dirs
+class FindCompiler(FindTask):
 
-    def _run(self):
-        for dd in self._dirs:
-            d = Directory(dd)
-            for name in self._names:
-                f = File(d.join(name))
-                if f.exists:
-                    self.result['dc'] = f.path
-                    self.success = True
+    def _print_fail(self):
+        self.log.fatal(self.log.format_fail('Cannot find d-compiler! Looking for: [{0}]'
+                                            .format(', '.join(self._names))))
+
+    def _store_result(self, prefix, file, dir):
+        super()._store_result(prefix, file, dir)
+        self.result[prefix+'dc'] = file
 
 
 def compile(*sources):
@@ -75,5 +66,5 @@ def link(*sources, target='main', install=True):
     return Link(sources=make_nodes(sources), targets=f.to_builddir())
 
 
-def find(names=COMPILER_NAMES, dirs=COMPILER_DIRS):
-    return FindCompiler(names=names, dirs=dirs)
+def find_dc(names=COMPILER_NAMES, dirs=COMPILER_DIRS):
+    return FindCompiler(*names, dirs=dirs)

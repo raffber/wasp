@@ -46,6 +46,8 @@ class Factory(object):
         self.d = {}
 
     def register(self, cls):
+        if not issubclass(cls, Serializable):
+            raise ValueError('Expected a subclass of Serializable.')
         self.d[cls.__name__] = cls
 
     def getclass(self, typename):

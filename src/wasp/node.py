@@ -67,7 +67,7 @@ class FileNode(Node):
 class SymbolicNode(Node):
     def __init__(self, key=None):
         if key is None:
-            key = ':' + generate_uuid()
+            key = ':' + str(generate_uuid())
         super().__init__(key=key)
 
     def _make_signature(self):

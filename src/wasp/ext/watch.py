@@ -1,6 +1,5 @@
 from wasp import Command, extensions, ExtensionMetadata, TaskCollection
-from wasp.util import Event
-from wasp.main import run_command, execute_tasks
+from wasp.main import execute_tasks
 from wasp import decorators
 from wasp import osinfo, log
 
@@ -32,7 +31,7 @@ try:
                 assert files is not None
                 self._files = files
 
-        def __init__(self, files, command='build', regexp=None, directory=None):
+        def __init__(self, files, regexp=None, directory=None, callback=None):
             self._regexp = regexp
             self._watchmanager = pyinotify.WatchManager()
             self._dir = directory
@@ -40,8 +39,8 @@ try:
             self._dirs = set([os.path.dirname(f) for f in self._files])
             if self._dir is not None:
                 self._dirs.add(self._dir)
-            self._command = command
-            self.files_changed_event = Event()
+            self._callback = callback
+            assert self._callback is not None
 
         def run(self):
             for d in self._dirs:
@@ -49,34 +48,31 @@ try:
                 # open, such as a log file => no CLOSE_WRITE event is triggered
                 # what about IN_CREATE?!
                 self._watchmanager.add_watch(d, mask=pyinotify.IN_MODIFY | pyinotify.IN_MOVED_TO)
-            handler = MonitorDaemon.Handler(callback=self._files_changed, files=self._files, regexp=self._regexp)
+            handler = MonitorDaemon.Handler(callback=self._callback, files=self._files, regexp=self._regexp)
             notifier = pyinotify.Notifier(self._watchmanager, handler)
             try:
                 notifier.loop()
             except KeyboardInterrupt:
                 notifier.stop()
 
-        def _files_changed(self):
-            self.files_changed_event.fire()
-            run_command(self._command)
-
     class watch(object):
-        def __init__(self, *files, command='build', directory=None, regexp=None):
-            self._monitor = MonitorDaemon(files, command=command, regexp=regexp, directory=directory)
+        def __init__(self, *files, directory=None, regexp=None):
+            self._monitor = MonitorDaemon(files, regexp=regexp, directory=directory, callback=self._callback)
             self._f = None
 
         def __call__(self, f):
-            self._monitor.files_changed_event.connect(f)
             self._f = f
             decorators.commands.append(Command('watch', self.command_fun, description='Launches a background daemon'
                                                                         ' which monitors the file system for changes and'
                                                                         'runs appropriate commands.'))
             return f
 
-        def command_fun(self):
+        def _callback(self):
             assert self._f is not None
             tasks = TaskCollection(self._f())
             execute_tasks('watch', tasks)
+
+        def command_fun(self):
             self._monitor.run()
 
 
@@ -87,14 +83,14 @@ except ImportError as e:
         log.warn('`daemon` extension is not available on your platform')
 
     class MonitorDaemon(object):
-        def __init__(self, files, command='build'):
+        def __init__(self, files, regexp=None, directory=None, callback=None):
             pass
 
         def run(self):
             pass
 
     class watch(object):
-        def __init__(self, *files, command='build', directory=None, regexp=None):
+        def __init__(self, *files, directory=None, regexp=None):
             pass
 
         def __call__(self, f):

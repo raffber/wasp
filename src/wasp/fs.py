@@ -10,11 +10,6 @@ from .generator import Generator
 from .argument import format_string, find_argumentkeys_in_string
 from glob import glob
 
-# MODULE_DIR = os.path.realpath(os.path.dirname(__file__))
-# TODO: this might cause problems if the extraction path of wasp is changed.
-# but how to fix it? Is a fix relevant?!
-# TOP_DIR = os.path.realpath(os.path.join(MODULE_DIR, '../..'))
-
 
 def sanitize_path(fpath):
     """
@@ -149,6 +144,7 @@ class Directory(Path):
         :param exclude: Regular expression pattern for exculding files.
         """
         ret = []
+        exculde_pattern = None
         if exclude is not None:
             exculde_pattern = re.compile(exclude)
         globs = glob(os.path.join(self.path, pattern))
@@ -267,6 +263,82 @@ def files(*args, ignore=False):
     return ret
 
 
+class FindTask(Task):
+    def __init__(self, *names, dirs=None, argprefix=None, required=True):
+        super().__init__(always=True)
+        if isinstance(dirs, str):
+            dirs = [dirs]
+        self._argprefix = argprefix
+        self._dirs = dirs
+        self._names = list(names)
+        self._required = required
+
+    def _run(self):
+        found = False
+        result_file = ''
+        result_dir = ''
+        for dd in self._dirs:
+            if found:
+                break
+            d = Directory(dd)
+            for name in self._names:
+                f = File(d.join(name))
+                if f.exists:
+                    result_file = f.path
+                    result_dir = dd
+                    found = True
+                    break
+        if self._required and not found:
+            self._success = False
+            self._print_fail()
+        else:
+            self._success = True
+        ap = self._argprefix
+        if ap is not None:
+            self.result[ap] = result_file
+        if ap is None:
+            ap = ''
+        else:
+            ap += '-'
+        self._store_result(ap, result_file, result_dir)
+
+    def _store_result(self, prefix, file, dir):
+        self.result[prefix+'file'] = file
+        self.result[prefix+'dir'] = dir
+
+    def _print_fail(self):
+        self.log.fatal(self.log.format_fail('Cannot find required file! Looking for: [{0}]'
+                        .format(', '.join(self._names))))
+
+
+def find(*names, dirs=None, argprefix=None, required=True):
+    FindTask(names, dirs=dirs, argprefix=argprefix, required=required)
+
+
+class FindExecutable(FindTask):
+
+    def _store_result(self, prefix, file, dir):
+        self.result[prefix+'exe'] = file
+        self.result[prefix+'file'] = file
+        self.result[prefix+'dir'] = dir
+
+
+def find_exe(*names, dirs=None, argprefix=None, required=True):
+    return FindExecutable(names, dirs=dirs, argprefix=argprefix, required=required)
+
+
+class FindLibrary(FindTask):
+
+    def _store_result(self, prefix, file, dir):
+        self.result[prefix+'lib'] = file
+        self.result[prefix+'file'] = file
+        self.result[prefix+'dir'] = dir
+
+
+def find_lib(*names, dirs=None, argprefix=None, required=True):
+    return FindLibrary(names, dirs=dirs, argprefix=argprefix, required=required)
+
+
 class RemoveFileTask(Task):
 
     def __init__(self, fs, recursive=False):
@@ -278,9 +350,6 @@ class RemoveFileTask(Task):
         for f in self._files:
             f.remove()
         self.success = True
-
-
-factory.register(RemoveFileTask)
 
 
 def remove(*args, recursive=False):
@@ -320,9 +389,6 @@ class CopyFileTask(Task):
 
 def copy(source, destination, permissions=None, recursive=False):
     return CopyFileTask(source, destination, permissions=permissions, recursive=recursive)
-
-
-factory.register(CopyFileTask)
 
 
 class FileInstallGenerator(Generator):

@@ -15,7 +15,7 @@ class MissingArgumentError(Exception):
 
 
 class Task(object):
-    def __init__(self, sources=None, targets=None, children=None, always=False, identifier=None, fun=None):
+    def __init__(self, sources=None, targets=None, children=None, always=False, fun=None):
         self._sources = make_nodes(sources)
         self._targets = make_nodes(targets)
         if len(self._sources) == 0 and len(self._targets) == 0:
@@ -28,10 +28,7 @@ class Task(object):
         self._always = always
         self._success = False
         self._arguments = ArgumentCollection()
-        if identifier is None:
-            self._id = self._make_id()
-        else:
-            self._id = identifier
+        self._key = self._make_id()
         self._run_list = CallableList()
         self._run_list.append(self._run)
         if fun is not None:
@@ -71,10 +68,10 @@ class Task(object):
         return self._sources
 
     def __eq__(self, other):
-        return other.identfier == self._id
+        return other.identfier == self._key
 
     def __ne__(self, other):
-        return not (other.identfier == self._id)
+        return not (other.identfier == self._key)
 
     def check(self):
         """
@@ -190,7 +187,7 @@ class Task(object):
 
     @property
     def key(self):
-        return self._id
+        return self._key
 
     def set_success(self, suc):
         self._success = suc
@@ -219,8 +216,8 @@ class Task(object):
             elif isinstance(a, Task):
                 node = SymbolicNode()
                 a.produce(node)
-                self._used_nodes.append(a)
-                self.sources.append(a)
+                self._used_nodes.append(node)
+                self.sources.append(node)
             elif isinstance(a, str):
                 if is_symbolic_node_string(a):
                     node = make_node(a)

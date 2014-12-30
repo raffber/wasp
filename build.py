@@ -15,7 +15,7 @@ def doc():
     return make_task
 
 
-@watch(directory='doc', command='doc', regexp='^[a-z-_]*\.rst$')
+@watch(directory='doc', regexp='^[a-z-_]*\.rst$')
 def autorebuild_doc():
     return doc()
 
@@ -30,6 +30,7 @@ def test():
 
 @wasp.build
 def main():
+    dc = d.find()
     f = File('notes')
     cp = shell('cp {CPFLAGS} {SRC} {TGT}',
                sources=f, targets=f.to_builddir()
@@ -37,4 +38,4 @@ def main():
     one = d.compile('one.d').produce(':one')
     two = d.compile('two.d').use(':one')
     link = d.link(one, two)
-    return cp, group(one, two, link).use(dc='/usr/bin/dmd')
+    return cp, group(one, two, link).use(dc), dc
