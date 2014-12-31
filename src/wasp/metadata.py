@@ -3,13 +3,13 @@ from . import decorators
 
 
 class Metadata(Serializable):
-    projectname = None
+    projectname = 'myproject'
+    projectid = None
     _other = {}
-    projectid = 'myproject'
 
     def __init__(self):
-        if self.projectname is None:
-            self.projectname = self.projectid
+        if self.projectid is None:
+            self.projectid = self.projectname
         self._other = {}
 
     def __setattr__(self, key, value):

@@ -1,7 +1,6 @@
 {
   "metadata" : {
-    "projectname": "buildtest",
-    "projectid": "somethingelse"
+    "project_name": "wasp"
   },
   "verbosity": "info",
   "default_command": "rebuild",

@@ -37,3 +37,8 @@ def main():
     two = d.compile('two.d')
     link = d.link(one, two)
     return cp, group(one, two, link).use(':dc'), dc
+
+
+@wasp.command('create-wasp', description='Creates')
+def create_wasp():
+    pass
