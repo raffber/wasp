@@ -1,4 +1,7 @@
-from wasp import File, group, shell, tool
+import os
+import zlib
+import binascii
+from wasp import File, group, shell, tool, ctx
 from wasp.ext.watch import watch
 import wasp
 from wasp.fs import find_exe
@@ -39,6 +42,46 @@ def main():
     return cp, group(one, two, link).use(':dc'), dc
 
 
-@wasp.command('create-wasp', description='Creates')
+def recursive_list(dirname):
+    lst = [f for f in os.listdir(dirname)]
+    ret = []
+    for f in lst:
+        absf = os.path.join(dirname, f)
+        if os.path.isdir(absf):
+            ret.extend(recursive_list(absf))
+        else:
+            ret.append(absf)
+    return ret
+
+
+def do_create_wasp(task):
+    waspdir = 'src'
+    target = task.arguments.value('file')
+    with open(target, 'a') as out:
+        out.write('\n\nwasp_packed=[')
+        for fpath in recursive_list(waspdir):
+            ext = os.path.splitext(fpath)[1]
+            if ext != '.py':
+                continue
+            relpath = os.path.relpath(fpath, start=waspdir)
+            with open(fpath, 'rb') as f:
+                data = f.read()
+                data = zlib.compress(data)
+                data = binascii.b2a_base64(data)
+                out.write('\n("{0}", {1}),'.format(relpath, data))
+        out.write('\n]\n')
+        out.write("""
+
+if __name__ == '__main__':
+    main()
+
+
+""")
+
+
+@wasp.command('create-wasp', description='Builds the wasp redistributable')
 def create_wasp():
-    pass
+    dest = ctx.builddir.join('wasp')
+    cp = wasp.copy('dist/wasp-prebuild', dest).produce(':wasp-copy')
+    t = wasp.Task(targets='wasp', fun=do_create_wasp).use(':wasp-copy', file=dest)
+    return cp, t

@@ -98,10 +98,10 @@ class CannotSerializeError(Exception):
 
 class CallableList(list):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, arg=None):
+        super().__init__()
         self._collect_returns_fun = lambda ret: ret[-1] if len(ret) > 0 else None
-        self._arg = None
+        self._arg = arg
 
     def collect(self, fun):
         self._collect_returns_fun = fun
@@ -111,8 +111,10 @@ class CallableList(list):
         ret = []
         for callable_ in self:
             assert callable(callable_), 'Objects added to a CallableList must be callable'
-
-            ret.append(callable_(*args, **kwargs))
+            if self._arg is not None:
+                ret.append(callable_(self._arg, *args, **kwargs))
+            else:
+                ret.append(callable_(*args, **kwargs))
         return self._collect_returns_fun(ret)
 
 

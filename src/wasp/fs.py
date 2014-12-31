@@ -398,7 +398,7 @@ DEFAULT_PERMSSIONS = 0o644
 class CopyFileTask(Task):
     # TODO: port to windows....
 
-    def __init__(self, fs, destination, permissions=DEFAULT_PERMSSIONS, recursive=False):
+    def __init__(self, fs, destination, permissions=None, recursive=False):
         self._recursive = recursive
         self._permissions = permissions
         self._destination = Directory(destination)
@@ -415,7 +415,8 @@ class CopyFileTask(Task):
                     shutil.copytree(str(f), formatted)
                 else:
                     shutil.copy2(str(f), formatted)
-                os.chmod(formatted, self._permissions)
+                if self._permissions is not None:
+                    os.chmod(formatted, self._permissions)
             except OSError as e:
                 self.log.fatal('Failed to copy `{0}` to `{1}`: {2}'.format(str(f), formatted, str(e)))
                 self.success = False

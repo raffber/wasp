@@ -156,16 +156,11 @@ class ArgumentCollection(Serializable):
         for k, v in d.items():
             self[k] = v
 
-    # TODO: commented because of following todo.
-    # reconsider this?!
-    # @property
-    # def subcollections(self):
-    #     # TODO: consider returning a special dict, which
-    #     # makes sure that upon __setitem__, the ArgumentCollection is
-    #     # assigned the correct parent, however, if this does not happen, it's
-    #     # not too bad, proper lookup will just not work. Maybe this mistake is
-    #     # difficult for people to figure out?!
-    #     return self._subs
+    def value(self, key):
+        arg = self.get(key)
+        if arg is None:
+            return None
+        return arg.value
 
     def __call__(self, name):
         return self.subcollection(name)

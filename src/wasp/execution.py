@@ -416,6 +416,7 @@ def run_task(task):
         msg = log.format_fail('Error while executing task ({0}): `{1}`'.format(type(e).__name__,  str(e)),
                               ''.join(traceback.format_tb(e.__traceback__)))
         log.fatal(msg)
+        real_task.success = False
     for node in real_task.targets:
         node.signature(task.ns).refresh()
     extensions.api.task_finished(task)
