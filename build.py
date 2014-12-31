@@ -22,18 +22,18 @@ def autorebuild_doc():
 
 @wasp.command('test', description='Run unit and integration tests.')
 def test():
-    pytest = find_exe('py.test', argprefix='pytest')
-    return shell('{pytest} tests').use(pytest), pytest
+    pytest = find_exe('py.test', argprefix='pytest').produce(':pytest')
+    return shell('{pytest} tests').use(':pytest'), pytest
 
 
 @wasp.build
 def main():
-    dc = d.find_dc()
+    dc = d.find_dc().produce(':dc')
     f = File('notes')
     cp = shell('cp {CPFLAGS} {SRC} {TGT}',
                sources=f, targets=f.to_builddir(), cwd='doc'
                ).use(cpflags='-r')
-    one = d.compile('one.d').produce(':one')
-    two = d.compile('two.d').use(':one')
+    one = d.compile('one.d')
+    two = d.compile('two.d')
     link = d.link(one, two)
-    return cp, group(one, two, link).use(dc), dc
+    return cp, group(one, two, link).use(':dc'), dc

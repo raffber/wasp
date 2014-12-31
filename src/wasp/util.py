@@ -22,23 +22,17 @@ def checksum(data):
     return '{0}'.format(adler32(data) & 0xffffffff)
 
 
-def _json_binary_string(data):
-    ret = b''
-    if isinstance(data, dict):
-        lst = [(k, v) for k, v in data.items()]
-        lst.sort(key=lambda x: x[0])
-        for k, v in lst:
-            ret += k.encode('ASCII') + _json_binary_string(v)
-    elif isinstance(data, list):
-        for v in data:
-            ret += _json_binary_string(v)
-    else:
-        ret += '{0}'.format(data).encode('ASCII')
-    return ret
-
-
 def json_checksum(data):
-    return checksum(_json_binary_string(data))
+    ret = 0
+    if isinstance(data, dict):
+        for k, v in data.items():
+            ret += json_checksum(v)*json_checksum(k)
+    elif isinstance(data, list):
+        for item in data:
+            ret += json_checksum(item)
+    else:
+        ret = adler32('{0}'.format(data).encode('ASCII')) & 0xffffffff
+    return ret
 
 
 class Factory(object):

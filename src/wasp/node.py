@@ -1,6 +1,6 @@
 from uuid import uuid4 as generate_uuid
 from . import ctx, signatures, produced_signatures
-from .signature import FileSignature, CacheSignature
+from .signature import FileSignature, CacheSignature, DummySignature
 from .argument import ArgumentCollection
 
 
@@ -56,9 +56,7 @@ class FileNode(Node):
 
 
 class SymbolicNode(Node):
-    def __init__(self, key=None):
-        if key is None:
-            key = ':' + str(generate_uuid())
+    def __init__(self, key):
         super().__init__(key=key)
 
     def _make_signature(self):
@@ -84,6 +82,15 @@ class SymbolicNode(Node):
         if args.isempty():
             return
         ctx.cache.prefix('symblic-nodes')[self.key] = args
+
+
+class DummyNode(Node):
+
+    def __init__(self):
+        super().__init__(key=str(generate_uuid()))
+
+    def _make_signature(self):
+        return DummySignature()
 
 
 def is_symbolic_node_string(arg):

@@ -202,9 +202,30 @@ class CacheSignature(Signature):
             self._value = None
             return None
         jsonarr = factory.to_json(data)
-        value = json_checksum(jsonarr)
+        value = str(json_checksum(jsonarr))
         self._value = value
+        if self.key != ':dc':
+            return value
         return value
 
 
 factory.register(CacheSignature)
+
+
+class DummySignature(Signature):
+
+    def to_json(self):
+        return super(Signature, self).to_json()
+
+    @classmethod
+    def from_json(cls, d):
+        return cls()
+
+    def __eq__(self, other):
+        return True
+
+    def __ne__(self, other):
+        return False
+
+
+factory.register(DummySignature)
