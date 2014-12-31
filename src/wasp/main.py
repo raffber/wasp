@@ -349,6 +349,8 @@ def retrieve_pretty_printing():
 
 
 def load_extensions_from_config(config):
+    if config.extensions is None:
+        return
     for ext_name in config.extensions:
         extensions.load('wasp.ext.' + ext_name, required=True)
 

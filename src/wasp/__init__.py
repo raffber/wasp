@@ -30,7 +30,7 @@ ctx = Proxy('The wasp context wasp.ctx can only be accessed after initialization
 # TODO: fix this such that this is possible
 
 
-class WaspVersion(object):
+class Version(object):
     """
     Object representing the version of wasp.
     """
@@ -68,7 +68,7 @@ class WaspVersion(object):
             return False
 
 
-version = WaspVersion(0, 1, 0)
+version = Version(0, 1, 0)
 """
 Represents the version of this module.
 """

@@ -54,9 +54,9 @@ def recursive_list(dirname):
     return ret
 
 
-def do_create_wasp(task):
+def do_create_wasp(task, target):
     waspdir = 'src'
-    target = task.arguments.value('file')
+    v = wasp.version
     with open(target, 'a') as out:
         out.write('\n\nwasp_packed=[')
         for fpath in recursive_list(waspdir):
@@ -73,15 +73,17 @@ def do_create_wasp(task):
         out.write("""
 
 if __name__ == '__main__':
-    main()
+    main({major}, {minor}, {point})
 
 
-""")
+""".format(major=v.major, minor=v.minor, point=v.point))
 
 
 @wasp.command('create-wasp', description='Builds the wasp redistributable')
 def create_wasp():
     dest = ctx.builddir.join('wasp')
     cp = wasp.copy('dist/wasp-prebuild', dest).produce(':wasp-copy')
-    t = wasp.Task(targets='wasp', fun=do_create_wasp).use(':wasp-copy', file=dest)
+    t = wasp.Task(targets='wasp',
+                  fun=lambda task: do_create_wasp(task, dest)
+        ).use(':wasp-copy', file=dest)
     return cp, t
