@@ -23,16 +23,34 @@ class WaspInstallationError(RuntimeError):
         super().__init__(msg)
 
 
+def remove_recursive(path):
+    """
+    Recursively remove directory tree.
+    """
+    if not os.path.isdir(path):
+        os.remove(path)
+        return
+    for subpath in os.listdir(path):
+        remove_recursive(os.path.join(path, subpath))
+
+
 def unpack(unpack_dir):
-    if not os.path.exists(unpack_dir):
-        os.mkdir(unpack_dir)
-    for item in wasp_packed:
-        filename, content = item
+    """
+    Unpacks this script into unpack_dir.
+    Already existing files are removed.
+    """
+    # recursive remove existing install
+    if os.path.exists(unpack_dir):
+        remove_recursive(unpack_dir)
+    os.mkdir(unpack_dir)
+    for filename, content in wasp_packed:
         dirname = os.path.dirname(filename)
+        # check if a dir needs to be created
         if dirname != '':
             dirname = os.path.join(unpack_dir, dirname)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
+        # decompress and write file
         fname = os.path.join(unpack_dir, filename)
         with open(fname, 'w') as f:
             compressed = binascii.a2b_base64(content)
@@ -40,27 +58,38 @@ def unpack(unpack_dir):
             s = data.decode('UTF-8')
             f.write(s)
 
+
 def main(major, minor, point):
     script = sys.argv[0]
     script = os.path.realpath(script)
     cur_dir = os.path.dirname(script)
+    # make sure cwd is the directory in which the wasp script
+    # is. Thus, topdir gets set to cwd.
     os.chdir(cur_dir)
     unpack_dir = os.path.join(cur_dir, UNPACK_DIR)
+    # check if already unpacked
     if not os.path.exists(unpack_dir):
         unpack(unpack_dir)
+    # make wasp importable
     sys.path.append(unpack_dir)
     try:
         try:
             wasp = __import__('wasp')
             v = wasp.version
+            # check version, if it does not match the version of this
+            # script, unpack and reload
             if v.major != major or v.minor != minor or v.point != point:
                 unpack(unpack_dir)
                 wasp = importlib.reload(wasp)
         except:
+            # something bad happend during import, maybe something
+            # is corrupted => try unpacking again
             unpack(unpack_dir)
+            # and reload
             wasp = importlib.reload(wasp)
     except ImportError:
         raise WaspInstallationError('Something went wrong during the installation. Does {0} directory with all wasp files exist?'.format(UNPACK_DIR))
+    # run the main routine
     from wasp.main import run
     success = run(cur_dir)
     if success:
