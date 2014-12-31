@@ -24,7 +24,8 @@ class WaspInstallationError(RuntimeError):
 
 
 def unpack(unpack_dir):
-    os.mkdir(unpack_dir)
+    if not os.path.exists(unpack_dir):
+        os.mkdir(unpack_dir)
     for item in wasp_packed:
         filename, content = item
         dirname = os.path.dirname(filename)
@@ -49,11 +50,15 @@ def main(major, minor, point):
         unpack(unpack_dir)
     sys.path.append(unpack_dir)
     try:
-        wasp = __import__('wasp')
-        v = wasp.version
-        if v.major != major or v.minor != minor or v.point != point:
+        try:
+            wasp = __import__('wasp')
+            v = wasp.version
+            if v.major != major or v.minor != minor or v.point != point:
+                unpack(unpack_dir)
+                wasp = importlib.reload(wasp)
+        except:
             unpack(unpack_dir)
-            wasp = importlib.reload('wasp')
+            wasp = importlib.reload(wasp)
     except ImportError:
         raise WaspInstallationError('Something went wrong during the installation. Does {0} directory with all wasp files exist?'.format(UNPACK_DIR))
     from wasp.main import run
@@ -62,4 +67,5 @@ def main(major, minor, point):
         sys.exit(0)
     else:
         sys.exit(1)
+
 
