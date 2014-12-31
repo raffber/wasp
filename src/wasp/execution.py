@@ -256,6 +256,10 @@ class Executor(object):
                 self._dag.insert([spawned])
         self._consumed_nodes.extend(task.task.sources)
         self._produced_nodes.extend(task.task.targets)
+        for target in task.targets:
+            sig = target.signature(ns=self._ns)
+            sig.refresh()
+            produced_signatures.update(sig, ns=self._ns)
         if start:
             self._start()
 
@@ -277,15 +281,19 @@ class Executor(object):
         pass
 
     def _post_run(self):
-        # during execution, nodes have been consumed and produced. Thus, if new tasks should be processed
-        # which consume or produce the same nodes, these tasks need to see the updated signatures of these
-        # nodes to determine if they need to be run again.
-        # TODO: improve this! signatures must be sorted by task
-        # also this should be called more like history or produced_signatures or something like that
-        for node in self.consumed_nodes:
-            produced_signatures.update(node, ns=self._ns)
-        for node in self.produced_nodes:
-            produced_signatures.update(node, ns=self._ns)
+        # update everything that was not a target (targets were already updated)
+        consumed = set(x.key for x in self.consumed_nodes)
+        produced = set(x.key for x in self.produced_nodes)
+        to_update = consumed - produced
+        dict_consumed = {}
+        for x in self.consumed_nodes:
+            dict_consumed[x.key] = x
+        for k, v in dict_consumed.items():
+            if k not in to_update:
+                continue
+            sig = v.signature(ns=self._ns)
+            sig.refresh()
+            produced_signatures.update(sig, ns=self._ns)
 
 
 class ParallelExecutor(Executor):
