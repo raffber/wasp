@@ -86,7 +86,7 @@ def main(major, minor, point):
             # is corrupted => try unpacking again
             unpack(unpack_dir)
             # and reload
-            wasp = importlib.reload(wasp)
+            wasp = __import__('wasp')
     except ImportError:
         raise WaspInstallationError('Something went wrong during the installation. Does {0} directory with all wasp files exist?'.format(UNPACK_DIR))
     # run the main routine

@@ -5,12 +5,17 @@ from .argument import ArgumentCollection
 
 
 class Node(object):
-    def __init__(self, key=None):
+    def __init__(self, key=None, discard=False):
         if key is None:
             key = generate_uuid()
         else:
             assert isinstance(key, str), 'Identifier for Node must be a string'
         self._key = key
+        self._discard = discard
+
+    @property
+    def discard(self):
+        return self._discard
 
     def _make_signature(self):
         raise NotImplementedError
@@ -20,6 +25,8 @@ class Node(object):
         return self._key
 
     def signature(self, ns=None):
+        if self._discard:
+            return DummySignature()
         signature = signatures.get(self.key, ns=ns)
         if signature is None:
             signature = self._make_signature()
@@ -56,8 +63,9 @@ class FileNode(Node):
 
 
 class SymbolicNode(Node):
-    def __init__(self, key):
-        super().__init__(key=key)
+    def __init__(self, key, discard=False):
+        super().__init__(key=key, discard=discard)
+        self._cache = None
 
     def _make_signature(self):
         return CacheSignature(self.key, prefix='symblic-nodes', cache_key=self.key)
@@ -67,6 +75,10 @@ class SymbolicNode(Node):
         Returns the content of the node in form of an ArgumentCollection.
         :return: An ArgumentCollection with the contents of the node.
         """
+        if self.discard:
+            if self._cache is None:
+                return ArgumentCollection()
+            return self._cache
         arg_col = ctx.cache.prefix('symblic-nodes').get(self.key, None)
         if arg_col is None:
             return ArgumentCollection()
@@ -81,16 +93,10 @@ class SymbolicNode(Node):
         """
         if args.isempty():
             return
+        if self.discard:
+            self._cache = args
+            return
         ctx.cache.prefix('symblic-nodes')[self.key] = args
-
-
-class DummyNode(Node):
-
-    def __init__(self):
-        super().__init__(key=str(generate_uuid()))
-
-    def _make_signature(self):
-        return DummySignature()
 
 
 def is_symbolic_node_string(arg):

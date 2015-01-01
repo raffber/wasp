@@ -215,7 +215,7 @@ factory.register(CacheSignature)
 class DummySignature(Signature):
 
     def to_json(self):
-        return super(Signature, self).to_json()
+        return None
 
     @classmethod
     def from_json(cls, d):

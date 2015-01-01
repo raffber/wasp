@@ -39,7 +39,7 @@ def main():
     one = d.compile('one.d')
     two = d.compile('two.d')
     link = d.link(one, two)
-    return cp, group(one, two, link).use(':dc'), dc
+    return cp, group(one, two, link).use(dc), dc
 
 
 def recursive_list(dirname):

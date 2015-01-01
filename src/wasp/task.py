@@ -83,7 +83,8 @@ class Task(object):
         """
         for node in self._used_nodes:
             # retrieve all nodes
-            self.use(node.read())
+            if isinstance(node, SymbolicNode):
+                self.use(node.read())
         for arg in self._required_arguments:
             if arg.key not in self.arguments:
                 # attempt to retrieve the argument from the common sources
@@ -214,7 +215,7 @@ class Task(object):
             elif isinstance(a, Node):
                 self.sources.append(a)
             elif isinstance(a, Task):
-                node = SymbolicNode()
+                node = SymbolicNode(str(uuid()), discard=True)
                 a.produce(node)
                 self._used_nodes.append(node)
                 self.sources.append(node)
