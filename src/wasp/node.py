@@ -63,7 +63,7 @@ class FileNode(Node):
 
 
 class SymbolicNode(Node):
-    def __init__(self, key, discard=False):
+    def __init__(self, key=None, discard=False):
         super().__init__(key=key, discard=discard)
         self._cache = None
 

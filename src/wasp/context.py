@@ -114,12 +114,9 @@ class Context(object):
                 continue
             old_sig = signatures[fpath]
             if old_sig != signature:
-                log.info('Build scripts have changed since last execution!'
-                              'All previous configurations have been cleared!')
-                invalid = True
-                break
-        if invalid:
-            self._cache.clear()
+                log.info(log.format_info('Build scripts have changed since last execution!',
+                          'All previous configurations have been cleared!'))
+                self._cache.clear()
 
     @property
     def cache(self):

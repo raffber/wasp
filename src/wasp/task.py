@@ -215,7 +215,7 @@ class Task(object):
             elif isinstance(a, Node):
                 self.sources.append(a)
             elif isinstance(a, Task):
-                node = SymbolicNode(str(uuid()), discard=True)
+                node = SymbolicNode(discard=True)
                 a.produce(node)
                 self._used_nodes.append(node)
                 self.sources.append(node)
