@@ -108,7 +108,6 @@ class Context(object):
         for key, generator_collection in self._cache.prefix('generators').items():
             self._generators[key] = generator_collection
         signatures = self._cache.prefix('script-signatures')
-        invalid = False
         for (fpath, signature) in self._scripts_signatures.items():
             if fpath not in signatures:
                 continue

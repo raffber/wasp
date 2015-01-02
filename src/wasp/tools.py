@@ -34,9 +34,9 @@ class ToolsCollection(dict):
         tooldir = Directory(path)
         f = File(tooldir.join(name + '.py'))
         try:
-            sys.path.append(tooldir.path)
+            sys.path.insert(0, tooldir.path)
             module = load_module_by_name(name)
-            sys.path.pop()
+            del sys.path[0]
         except FileNotFoundError:
             raise NoSuchToolError('Tool with name `{0}` not found in `{1}`'.format(name, path))
         self[name] = module

@@ -56,7 +56,7 @@ class ArgumentCollection(Serializable):
         self._subs = None
         self._parent = None
         self.set_parent(parent)
-        self._name = None
+        self._key = None
         self.set_name(name)
 
     @classmethod
@@ -87,17 +87,32 @@ class ArgumentCollection(Serializable):
         return {x.key: x.value for x in self.values()}
 
     def add(self, *args, **kw):
+        """
+        Adds arguments to the collection. Arguments can either be given in \*args, or
+        they can be specified using keyword arguments. Example::
+
+            In [1]: foo = Argument('foo').assign('foo')
+            In [2]: bar = Argument('bar').assign('bar')
+            In [3]: col = ArgumentCollection()
+            In [4]: col.add(foo, bar, foobar='test')
+            In [5]: col
+            Out[5]: {foo = foo, foobar = test, bar = bar}
+        """
         for arg in args:
             self._add_single(arg)
         for key, value in kw.items():
             self._add_single(Argument(key).assign(value))
 
     def _add_single(self, arg):
+        """
+        Adds a single Argument or an ArgumentCollection to the collection.
+        :param arg: non-None object of type Argument or ArgumentCollection.
+        """
         if isinstance(arg, Argument):
             self[arg.key] = arg
             return
         # if arg == self, we get a serious f****up and undebuggable crash, so check this
-        assert (isinstance(arg, ArgumentCollection) or isinstance(arg, Argument)) and arg != self, \
+        assert isinstance(arg, ArgumentCollection) and arg != self, \
                 'Can only add() Argument or ArgumentCollection to ArgumentCollection'
         assert arg.name is not None, 'ArgumentCollection() must have a key, otherwise ' \
                                      'it cannot be added to ArgumentCollection'
@@ -105,19 +120,28 @@ class ArgumentCollection(Serializable):
         self._subs[arg.name] = arg
 
     def __setitem__(self, key, value):
-        assert isinstance(key, str), 'Key must be of type string.'
+        """
+        Sets self[key] to Argument(key, value=value).
+        Otherwise self[key] is set to to value and value is expected to be of type Argument.
+        """
+        key = str(key)
         if isinstance(value, str):
             value = Argument(key, value=value)
         assert isinstance(value, Argument), 'Can only set Argument in ArgumentCollection.__setitem__.'
         self._d.__setitem__(key, value)
 
     def to_json(self):
-        if self.parent is not None:
-            # TODO: think about how this could be implemented and if its desirable to implement it
-            # to my understanding, parents should only be used for creating namespaces of ArgumentCollection.
-            raise CannotSerializeError('Only objects of type ArgumentCollection without parents nor '
-                                       'subcollection can be serialized. Consider using shallowcopy(),'
-                                       'which returns a new object of only the items in this collection.')
+        """
+        Overrides Serializable.to_json(). Returns a dict.
+        NOTE: The parent of self is not serialized. If a hierarchy should
+        be serialized, use the top-most object for serialization.
+        """
+        # if self.parent is not None:
+        #     # TODO: think about how this could be implemented and if its desirable to implement it
+        #     # to my understanding, parents should only be used for creating namespaces of ArgumentCollection.
+        #     raise CannotSerializeError('Only objects of type ArgumentCollection without parents nor '
+        #                                'subcollection can be serialized. Consider using shallowcopy(),'
+        #                                'which returns a new object of only the items in this collection.')
         d = factory.to_json(self._d)
         d['arguments'] = [arg.to_json() for arg in self.values()]
         if self._subs is not None:
@@ -129,6 +153,9 @@ class ArgumentCollection(Serializable):
 
     @classmethod
     def from_json(cls, d):
+        """
+        Restores an ArgumentCollection object from a json-dict.
+        """
         self = cls()
         for argjson in d['arguments']:
             arg = factory.from_json(argjson)
@@ -138,9 +165,13 @@ class ArgumentCollection(Serializable):
         return self
 
     def __getitem__(self, key):
+        """
+        Returns the Argument associated with key.
+        If key is not found in self and self is assigned a parent, the
+        Argument is looked-up therein.
+        Otherwise, an empty argument is created and returned.
+        """
         key = str(key)
-        # assert isinstance(key, str), 'ArgumentCollection keys ' \
-        #                              'must be strings, found: {0}'.format(type(key).__name__)
         if key not in self:
             if self.parent is not None and key in self.parent:
                 return self.parent[key]
@@ -148,29 +179,41 @@ class ArgumentCollection(Serializable):
         return self._d.__getitem__(key)
 
     def subcollection(self, name):
+        """
+        Adds a child-collection to this ArgumentCollection and returns it.
+        """
         if name not in self._subs:
             self._subs.add(ArgumentCollection(parent=self))
         return self._subs[name]
 
     def update(self, d):
+        """
+        Updates self with the key-value pairs found in d.
+        See :meth:`ArgumentCollection.__setitem__` for more details.
+        """
         for k, v in d.items():
             self[k] = v
 
     def value(self, key):
+        """
+        Returns the value of the argument of self[key].
+        If key not in self, return None.
+        """
         arg = self.get(key)
         if arg is None:
             return None
         return arg.value
 
     def __call__(self, name):
+        """Equivalent to self.subcollection(name)"""
         return self.subcollection(name)
 
     def get_name(self):
-        return self._name
+        return self._key
 
     def set_name(self, name):
         assert name is None or isinstance(name, str), 'Name of an ArgumentCollection must either be None or str.'
-        self._name = name
+        self._key = name
 
     name = property(get_name, set_name)
 
@@ -185,67 +228,95 @@ class ArgumentCollection(Serializable):
     parent = property(get_parent, set_parent)
 
     def copy(self):
+        """
+        Copy self, such that it can be modified without modifying the
+        original collection. The tree of subcollections is copied
+        recursively.
+        """
         ret = ArgumentCollection(name=self.name, parent=self.parent)
         ret.update(dict(self._d.items()))
-        ret._subs.update(self._subs)
+        for subcol in self._subs:
+            new_subcol = subcol.copy()
+            ret.add(new_subcol)
         return ret
 
-    def shallowcopy(self):
-        return self._d.copy()
-
     def get(self, k, d=None):
-        try:
-            return self.__getitem__(k)
-        except KeyError:
-            pass
-        return d
+        """
+        :return: ``d`` if ``k`` not in self, self[k] otherwise.
+        """
+        if k not in self:
+            return d
+        return self.__getitem__(k)
 
     def items(self):
+        """
+        :return: An iterator of (key, argument) which iterates over all arguments in self and self.parent.
+        """
         if self.parent is None:
             return self._d.items()
         return chain(self._d.items(), self.parent.items())
 
     def values(self):
+        """
+        :return: An iterator of argument which iterates over all arguments in self and self.parent.
+        """
         if self.parent is None:
             return self._d.values()
         return chain(self._d.values(), self.parent.values())
 
     def keys(self):
+        """
+        :return: An iterator of key which iterates over all arguments in self and self.parent.
+        """
         if self.parent is None:
             return self._d.keys()
         return chain(self._d.keys(), self.parent.keys())
 
-    def __contains__(self, item):
+    def __contains__(self, key):
+        """
+        Checks if self or self.parent contains an argument identified
+        by ``key``.
+        """
         if self.parent is None:
-            return self._d.__contains__(item)
-        return self._d.__contains__(item) or self.parent.__contains__(item)
+            return self._d.__contains__(key)
+        return self._d.__contains__(key) or self.parent.__contains__(key)
 
     def __iter__(self):
+        """Same as self.keys()"""
         return iter(self.keys())
 
-    # necessary?!
-    # def __len__(self):
-    #     len_subs = len(self._subs) if self._subs is not None else 0
-    #     return len(self._d) + len_subs
-
     def isempty(self):
-        parent_empty = self._parent is None or self._parent.isempty()
-        subs_empty = self._subs is None or len(self._subs) == 0
-        return parent_empty and subs_empty and len(self._d) == 0
+        """
+        :return: True if self and self.parent is empty, i.e. no items can be accessed.
+        """
+        parent_empty = self._parent is None or len(self._parent) == 0
+        #subs_empty = self._subs is None or len(self._subs) == 0
+        return parent_empty and len(self._d) == 0  # and subs_empty
 
     def overwrite_merge(self, higher_priority):
+        """
+        Merge ``higher_priority`` into  self. If the key is already contained in self,
+        overwrite the value of self.
+        """
         if higher_priority is None:
             return
         for k, v in higher_priority.items():
             self[k] = v
 
     def keep_merge(self, lower_priority):
+        """
+        Merge ``lower_priority`` into  self. If the key is already contained in self,
+        keep the value of self.
+        """
         for k, v in lower_priority.items():
             if k not in self:
                 self[k] = v
 
     @classmethod
     def load(cls, fpath):
+        """
+        Loads the ArgumentCollection from a json file on the disc.
+        """
         d = {}
         with open(fpath, 'r') as f:
             try:
@@ -258,6 +329,9 @@ class ArgumentCollection(Serializable):
             self.add(Argument(k).assign(v))
         return self
 
+    def __repr__(self):
+        return '{' + ', '.join('{0} = {1}'.format(k, v.value) for k, v in self.items()) + '}'
+
 
 factory.register(ArgumentCollection)
 
@@ -267,12 +341,24 @@ class Argument(Serializable):
     Serializable object which represents a key-value pair.
     It can be created from various sources, such as environment-variables, command line options
     or manually, see the :meth:`Argument.retrieve` method for more details.
+    The Argument remembers they type of its first assigned value. Assigning another type requires
+    changing the type settings. Attempting to set a value with different type will trigger
+    an AssertionError.
     """
 
     def __init__(self, key, value=None, type=None):
+        """
+        Creats a new Argument with a given key. If value and/or type arguments are present,
+        the value/type of this Argument will be set.
+        :param key: Expected to be a string with length > 0 and match ARGUMENT_KEY_RE.
+        :param value: If value is given, it will be immediately assigned to self. if type is None,
+        the type(value) will be used.
+        :param type: Sets the required type of the argument.
+        """
         self.key = key
-        self.lowerkey = key.lower()
-        self.upperkey = key.upper()
+        assert isinstance(key, str) and len(key) > 0
+        self._lowerkey = key.lower()
+        self._upperkey = key.upper()
         self._value = None
         self._required_type = None
         self._use_type(type)
@@ -287,6 +373,20 @@ class Argument(Serializable):
         d['key'] = self.key
         return d
 
+    @property
+    def lowerkey(self):
+        """
+        same as self.key.lower()
+        """
+        return self._lowerkey
+
+    @property
+    def upperkey(self):
+        """
+        same as self.key.upper()
+        """
+        return self._upperkey
+
     @classmethod
     def from_json(cls, d):
         value = factory.from_json(d['value'])
@@ -295,10 +395,11 @@ class Argument(Serializable):
 
     @property
     def type(self):
+        """
+        :return: The type of the value of this Argument. Returns None if the arguent was never assigned
+            any value.
+        """
         return self._required_type
-
-    def get_value(self):
-        return self._value
 
     def _use_type(self, tp):
         assert tp is None or tp == str or \
@@ -306,14 +407,19 @@ class Argument(Serializable):
         self._required_type = tp
         self.set_value(self.value)
 
+    def get_value(self):
+        return self._value
+
     def set_value(self, value):
         """
-        Raises: ValueError if type conversion from value to the required type is not successful.
+        Assigns ``value`` to self.value. If a type has already been set before, the new value
+        must conform to the requirements of it (i.e. isinstance(value, type) must be True).
+        Raises: TypeError if type conversion from value to the required type is not successful.
         """
         if self._required_type is not None and value is not None:
-            assert isinstance(value, self._required_type),\
-                'Argument {0} must be of type {1}, but found type {2}!' \
-                ''.format(self.lowerkey, self._required_type.__name__, type(value).__name__)
+            # if not isinstance(value, self._required_type):
+            #     raise TypeError('Argument {0} must be of type {1}, but found type {2}!'.format(
+            #         self.lowerkey, self._required_type.__name__, type(value).__name__))
             self._value = (self._required_type)(value)
             return
         if self._required_type is None and value is not None:
@@ -323,6 +429,9 @@ class Argument(Serializable):
     value = property(get_value, set_value)
 
     def _retrieve_from_single(self, arg):
+        """
+        see :meth:`Argument.retrieve`.
+        """
         from .metadata import Metadata
         from .config import Config
         from .environment import Environment
@@ -337,22 +446,42 @@ class Argument(Serializable):
                 return option.value
         elif isinstance(arg, dict):
             # keyword argument
-            return arg.get(self.lowerkey, None)
+            return arg.get(self.key, None)
         elif isinstance(arg, Metadata):
-            return arg.get(self.lowerkey)
+            return arg.get(self.key)
         elif isinstance(arg, ArgumentCollection):
-            v = arg.get(self.lowerkey)
+            v = arg.get(self.key)
             if v is not None:
                 return v.value
         elif isinstance(arg, Config):
             return self._retrieve_from_single(arg.arguments)
-        elif isinstance(arg, str):
-            return arg
-        elif isinstance(arg, list):
+        elif (isinstance(arg, Serializable) or isinstance(arg, float)
+                or isinstance(arg, str) or isinstance(arg, list) or isinstance(arg, bool)
+                or isinstance(arg, int)):
             return arg
         return None
 
     def retrieve(self, *args, default=None):
+        """
+        Retrieve the value of self from various sources.
+        If multiple arguments are given, the value is retrieved
+        from the first source, in which it was found.
+        Possible sources are:
+
+         * Environment (ctx.env, self.upperkey is used for retrieval)
+         * OptionsCollection (ctx.options, self.lowerkey is used for retrieval)
+         * a dict where key is used to retrive the value.
+         * Metadata (can contain key-value pairs))
+         * ArgumentCollection
+         * Config (which contains an arguments section)
+         * Serializable or primitive or list uses the argument itself
+
+        If the argument is not found in any given source, it's value is not set
+        and thus None.
+
+        :param default: Default value which is assigned, if the value was not found.
+        :return: self
+        """
         for a in args:
             ret = self._retrieve_from_single(a)
             if ret is not None:
@@ -363,19 +492,48 @@ class Argument(Serializable):
         return self
 
     def retrieve_all(self, default=None):
+        """
+        Retrieves the value of the Argument from:
+
+         * ctx.arguments
+         * ctx.options
+         * ctx.config
+         * ctx.meta
+         * ctx.env
+
+        The order defines the priority in which the various sources are considered.
+
+        :param default: Default value which is assigned, if the value was not found.
+        :return: self
+        """
         self.retrieve(ctx.arguments, ctx.options, ctx.config, ctx.meta, ctx.env, default=default)
         return self
 
     def require_type(self, tp):
+        """
+        Sets the type of the Argument to tp. If the value does
+        not conform to the type specified, a ValueError is raised.
+
+        :param tp: asdf
+        :return: self
+        """
         self._required_type = tp
         self.set_value(self._value)
         return self
 
     @property
     def is_empty(self):
+        """
+        :return: True if self.value is None, False otherwise
+        """
         return self.value is None
 
     def assign(self, value):
+        """
+        Assigns the value to self.
+
+        :return: self
+        """
         self.value = value
         return self
 
@@ -390,6 +548,24 @@ factory.register(Argument)
 
 
 def format_string(string, arguments, all_required=False):
+    """
+    Similiar to str.format. Formats a string using the values given in
+    an argumentcollection. Example::
+
+        In [1]: col = ArgumentCollection()
+        In [2]: col['foo'] = 'bar'
+        In [3]: col
+        Out[3]: {foo = bar}
+        In [4]: format_string('This is foo{foo}', col)
+        Out[4]: 'This is foobar'
+
+    :param string: String to be formatted. Use {argumentkey} for specifying the destination
+        where the argument should be inserted.
+    :param arguments: ArgumentCollection with values used for formatting the string.
+    :param all_required: Defines whether a KeyError is raised if not all tags in
+        the format string were found in arguments.
+    :return: The formatted string.
+    """
     kw = {}
     for k, v in arguments.items():
         if v.type != str:
@@ -403,11 +579,24 @@ def format_string(string, arguments, all_required=False):
 
 
 def find_argumentkeys_in_string(string):
+    """
+    :return: Returns all argument keys in a format string.
+
+    Example::
+        In [1]: find_argumentkeys_in_string('This is foo{foo} and {bar}')
+        Out[1]: ['foo', 'bar']
+    """
     exp = re.compile('\{(?P<argkey>' + ARGUMENT_KEY_RE_STR + ')\}')
     return exp.findall(string)
 
 
 def value(arg, default=None):
+    """
+    Return the value of an Argument or create a new argument and immediately
+    :meth:`Argument.retrieve_all()` it.
+    :param arg: Either argument or string (to be used as key for creating a new Argument).
+    :param default: Default value if no value could be retrieved.
+    """
     if isinstance(arg, Argument):
         if not arg.is_empty:
             ret = arg.value
@@ -422,4 +611,9 @@ def value(arg, default=None):
 
 
 def arg(arg):
+    """
+    Shortcut for creating an Argument with key = arg.
+
+    :return: Argument(key)
+    """
     return Argument(arg)

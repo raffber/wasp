@@ -1,13 +1,20 @@
 Next Task
 ==========
 
+ * allow merged stdout, stderr output
+    => http://stefaanlippens.net/python-asynchronous-subprocess-pipe-reading
+    => if pretty printing deactivated:
+        -> check for log.info activated -> output stdout
+        -> check for log.warn activated -> output stderr
+        -> if output both: redirect stderr -> stdout -> sys.stdout
+    -> if pretty printing activated:
+        -> keep as is
+ * create output in remove, copy
+
  * test, test, test, test and write doc
+    -> improve log output
  * port to windows
 
- * allow merged stdout, stdin output
-    => default if no pretty printing activated
- * remove as much logic from context as possible
-    --> the context should only store state
 
 Bugs
 =======
@@ -42,6 +49,7 @@ Lower Priorieties/Questions
    - pip install --install-option="--prefix=$PREFIX_PATH" package_name
  * find a way to name arguments using the symbolic node name
     -> namespace the arguments
+ * benchmark --> make things faster
  * allow setting a default arugment in argument collection
     => assign default argument to symbolic node name
 
