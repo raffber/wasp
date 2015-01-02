@@ -10,6 +10,8 @@ Next Task
     -> if pretty printing activated:
         -> keep as is
  * create output in remove, copy
+ * factor out as much as possible from ctx
+    -> recurse files is probably useless -> check signatures in main
 
  * test, test, test, test and write doc
     -> improve log output

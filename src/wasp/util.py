@@ -268,12 +268,10 @@ def is_iterable(arg):
 class Proxy(object):
     __slots__ = ['_data', '__weakref__']
 
-    def __init__(self, error_message, lock_thread=True):
+    def __init__(self, lock_thread=True):
         data = {}
         object.__setattr__(self, '_data', data)
         data['obj'] = object()
-        assert isinstance(error_message, str)
-        data['msg'] = error_message
         data['lock_thread'] = lock_thread
         if lock_thread:
             data['threadid'] = threading.current_thread().ident
@@ -291,7 +289,7 @@ class Proxy(object):
         elif name == '__has_object':
             return data['obj'].__class__ != object
         if not data['obj'].__class__ != object:
-            raise RuntimeError(data['msg'])
+            return object.__getattribute__(self, name)
         return getattr(data['obj'], name)
 
     def __delattr__(self, name):

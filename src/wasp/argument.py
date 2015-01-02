@@ -361,8 +361,9 @@ class Argument(Serializable):
         self._upperkey = key.upper()
         self._value = None
         self._required_type = None
-        self._use_type(type)
         self.set_value(value)
+        if type is not None:
+            self._use_type(type)
         m = ARGUMENT_KEY_RE.match(key)
         if not m:
             raise ValueError('Invalid argument key, expected `{0}`, found: `{1}`'.format(ARGUMENT_KEY_RE_STR, key))
@@ -417,10 +418,11 @@ class Argument(Serializable):
         Raises: TypeError if type conversion from value to the required type is not successful.
         """
         if self._required_type is not None and value is not None:
-            # if not isinstance(value, self._required_type):
-            #     raise TypeError('Argument {0} must be of type {1}, but found type {2}!'.format(
-            #         self.lowerkey, self._required_type.__name__, type(value).__name__))
-            self._value = (self._required_type)(value)
+            if not isinstance(value, self._required_type):
+                raise TypeError('Argument {0} must be of type {1}, but found type {2}!'.format(
+                    self.lowerkey, self._required_type.__name__, type(value).__name__))
+            # self._value = (self._required_type)(value)
+            self._value = value
             return
         if self._required_type is None and value is not None:
             self._use_type(type(value))

@@ -23,11 +23,8 @@ into its namespace and defines all global variables. At the momemnt, these are:
 
 from .util import Proxy
 
-ctx = Proxy('The wasp context wasp.ctx can only be accessed after initialization.', lock_thread=False)
-# Context object. Acts as an access point for the state of the application.
-# It is first initialized as a Proxy of type :class:`util.Proxy`
-# NOTE: cannot be documented with docstrings as sphinx fails in __getattribute___
-# TODO: fix this such that this is possible
+ctx = Proxy(lock_thread=False)
+# TODO: document
 
 
 class Version(object):
