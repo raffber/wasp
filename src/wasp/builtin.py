@@ -9,6 +9,10 @@ from .fs import remove
 
 @handle_options
 def _init_default_args(options):
+    """
+    Initializes default arguments and retrieves
+    them from the environmnet or other sources.
+    """
     arg = Argument('prefix').retrieve_all()
     if arg.is_empty:
         ctx.arguments.add(arg.assign('/usr'))
@@ -16,6 +20,9 @@ def _init_default_args(options):
 
 @options
 def _add_builtin_options(col):
+    """
+    Adds builtin options
+    """
     desc_quiet = 'Set verbosity level to 0 [QUIET]'
     desc_fatal = 'Set verbosity level to 1 [FATAL]'
     desc_error = 'Set verbosity level to 2 [ERROR]'
@@ -41,6 +48,9 @@ def _add_builtin_options(col):
 
 @handle_options
 def _handle_builtin_options(option_handler):
+    """
+    Post-process the options previously set by :func:`_add_builtin_options`.
+    """
     d = ctx.options.all()
 
     def retrieve(flag):
@@ -68,6 +78,12 @@ def _handle_builtin_options(option_handler):
 
 
 class build(FunctionDecorator):
+    """
+    Decorator for registring a build command.
+    Also adds a description and marks the `build` command
+    as a dependency of the `configure` commmand.
+    Furthermore, `configure` and `rebuild` commands are added.
+    """
     def __init__(self, f):
         super().__init__(f)
         produce = ':' + f.__name__
@@ -99,6 +115,10 @@ class build(FunctionDecorator):
 
 
 class install(FunctionDecorator):
+    """
+    Function decorator for registring an `install` command,
+    which depends on `build` and is supposed to install the project.
+    """
     def __init__(self, f):
         super().__init__(f)
         produce = ':' + f.__name__
@@ -115,6 +135,9 @@ class install(FunctionDecorator):
 
 
 class configure(FunctionDecorator):
+    """
+    Function decorator for registring a `configure` command.
+    """
     def __init__(self, f):
         super().__init__(f)
         produce = ':' + f.__name__
@@ -122,6 +145,9 @@ class configure(FunctionDecorator):
 
 
 class clean(FunctionDecorator):
+    """
+    Function decorator for registring a `clean` command.
+    """
     def __init__(self, f):
         super().__init__(f)
         produce = ':' + f.__name__
@@ -130,11 +156,18 @@ class clean(FunctionDecorator):
 
 @command('clear-cache', description='Clears the cache, deleting all recorded information.')
 def _clear_cache():
+    """
+    Clears all items in the cache.
+    """
     ctx.cache.clear()
 
 
 @clean
 def _clean():
+    """
+    Default implementation of the `clean` command.
+    Delete everything within the `build` directory.
+    """
     ret = []
     for f in ctx.builddir.glob('*', exclude='c4che'):
         ret.append(remove(f))
@@ -143,6 +176,10 @@ def _clean():
 
 
 def alias(from_, to_):
+    """
+    Binds a command with name ``from`` to the command with name ``to``.
+    Executing ``from`` is equivalent to executing ``to``.
+    """
     description = None
     for com in decorators.commands:
         if com.name == to_:

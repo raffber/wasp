@@ -1,6 +1,11 @@
 Next Task
 ==========
 
+ * remove context subclassing
+ * merge signatures, produced_signatures into context
+ * merge anything more into context?!
+ * remove proxy?!
+ * allow adding fields to ctx
  * allow merged stdout, stderr output
     => http://stefaanlippens.net/python-asynchronous-subprocess-pipe-reading
     => if pretty printing deactivated:

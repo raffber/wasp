@@ -265,6 +265,10 @@ def is_iterable(arg):
     return isinstance(arg, list) or isinstance(arg, tuple) or isinstance(arg, set)
 
 
+def is_json_primitive(arg):
+    return isinstance(arg, float) or isinstance(arg, bool) or isinstance(arg, str) or isinstance(arg, int)
+
+
 class Proxy(object):
     __slots__ = ['_data', '__weakref__']
 
