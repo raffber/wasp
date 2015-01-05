@@ -10,11 +10,6 @@ Next Task
 Bugs
 =======
 
-[INFO]  Build scripts have changed since last execution!
-    ~~  All previous configurations have been cleared!
-is returned always. and it does not seem to have the right influence
-    => build is not fully executed again
-
 Lower Priorieties/Questions
 ============================
 

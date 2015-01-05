@@ -59,6 +59,9 @@ class ProducedSignatures(object):
     def load(self, cache):
         self._signaturedb = dict(cache.prefix('signaturedb'))
 
+    def clear(self):
+        self._signaturedb.clear()
+
     @lock
     def get(self, key, ns=None):
         if ns is None:
