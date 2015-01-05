@@ -154,8 +154,8 @@ def run(cmd, stdout=None, stderr=None, timeout=100, cwd=None, forward_stderr=Fal
             process = Popen(cmd, stdout=PIPE, stderr=STDOUT, shell=True, cwd=cwd)
         else:
             process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, cwd=cwd)
-        output, err = process.communicate(timeout=timeout)
         exit_code = process.wait(timeout=timeout)
+        output, err = process.communicate()
         if stdout is not None:
             stdout.write(output.decode('UTF-8'))
         if stderr is not None and not forward_stderr:

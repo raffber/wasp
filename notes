@@ -18,6 +18,7 @@ is returned always. and it does not seem to have the right influence
 Lower Priorieties/Questions
 ============================
 
+ * read from stdout and stderr of a process and sync them => poll on communicate()
  * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
  * sync on log => no ugly race conditions in output
     --> with self.log: ...
