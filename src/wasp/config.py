@@ -6,12 +6,24 @@ from .util import parse_assert, FunctionDecorator
 import json
 
 CONFIG_FILE_NAMES = ['wasprc.json', 'wasprc.user.json']
+"""
+Default file names for config files.
+"""
 
 
 class Config(object):
-    # TODO: possibly move create handlers into __new__
+    """
+    Collects config information and parses it from json-like datastructures.
+    :param json_data: dict collecting infromation for parsing the config.
+    """
 
     class KeyHandler(object):
+        """
+        Handler for a config key. Adds a property attribute to
+        ``config.__class__``. Also allows setting a parser which extracts
+        the data from the JSON data structure and a merger which merges multiple
+        config values.
+        """
         def __init__(self, config, keyname, parser=None, merger=None):
             self._keyname = keyname
             self._parser = parser
@@ -56,9 +68,13 @@ class Config(object):
             if key in self._handlers:
                 self._handlers[key].parse(value)
                 continue
+            # this should not happend, in this case, the user provided an invalid key.
             parse_assert(False, 'Unexpected key `{0}`'.format(key))
 
     def populate_handlers(self):
+        """
+        Populates self with configuration handlers.
+        """
         make_handler = lambda k, parser=None, merger=None: Config.KeyHandler(self, k, parser=parser, merger=merger)
         self._handlers = {
             'extensions': make_handler('extensions', parser=self._parse_extensions, merger=self._merge_extensions),
@@ -74,6 +90,10 @@ class Config(object):
 
     @classmethod
     def from_file(cls, fpath):
+        """
+        Create a new config instance from a json file. Returns an empty configuration
+        upon failure.
+        """
         d = None
         try:
             with open(fpath, 'r') as f:
@@ -89,6 +109,15 @@ class Config(object):
 
     @classmethod
     def load_from_directory(cls, fpath, fnames=CONFIG_FILE_NAMES):
+        """
+        Load mulitple files from a directory referenced by ``fpath``.
+        The files are loaded in the precedence they are given in ``fnames`` and
+        and the resulting config objects are merged, where the last loaded
+        file has precedence over the previously loaded files. Thus, config keys
+        defined in wasprc.json can be overridden by wasprc.user.json.
+        :param fpath: Path of the directory.
+        :param fnames: List of file names to be loaded.
+        """
         ret = []
         for fname in fnames:
             path = str(Directory(fpath).join(fname))
@@ -105,6 +134,10 @@ class Config(object):
         return config
 
     def overwrite_merge(self, higher_priority):
+        """
+        Merges two config objects. In case both config files contain
+        the same values, the values from ``higher_priority`` take precedence.
+        """
         for handler in self._handlers.values():
             handler.overwrite_merge(higher_priority)
 
@@ -153,5 +186,11 @@ class Config(object):
 
 
 class config(FunctionDecorator):
+    """
+    Function decorator for registring config handlers.
+    These functions may return a config object, which takes
+    precedence over previously defined config objects.
+    See ``wasp.main.load_decorator_config``.
+    """
     def __init__(self, f):
         decorators.config.append(f)
