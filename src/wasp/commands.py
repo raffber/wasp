@@ -2,17 +2,38 @@ from . import decorators
 
 
 class CommandFailedError(Exception):
+    """
+    Raised if a command fails during execution.
+    """
     pass
 
 
 class CommandCollection(dict):
+    """
+    dict-derived container for storing commands in the form
+    ``{command.name: command}``.
+    """
     def add(self, com):
+        """
+        Adds the command to the collection.
+        """
         if com.name not in self:
             self[com.name] = []
         self[com.name].append(com)
 
 
 class Command(object):
+    """
+    Creates a Command object, which requires a ``name`` and a callback function ``fun``, which generates tasks.
+
+    :param name: Name of the command. The command can be invoked with ``./wasp <command-name>``.
+    :param fun: Handler function of the command. It should return a task or a list thereof.
+    :param description: Description of the command which may be shown to the user.
+    :param depends: List of command names which should run prior to this command.
+    :param produce: An argument to :func:``wasp.Node.make_node``. The resulting node is
+        produced upon command completion.
+    :param option_alias: The name of another command, this command is an alias of.
+    """
     def __init__(self, name, fun, description=None, depends=None, produce=None, option_alias=None):
         self._depends = [] if depends is None else depends
         if isinstance(self._depends, str):
@@ -49,6 +70,10 @@ class Command(object):
 
 
 class command(object):
+    """
+    Decorator for registring functions as command handlers. The same arguments as in :class:`wasp.commands.Command`
+    are used.
+    """
     def __init__(self, name, depends=None, description=None, produce=None, option_alias=None):
         self._name = name
         self._depends = depends

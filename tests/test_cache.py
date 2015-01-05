@@ -6,8 +6,8 @@ import os
 
 
 def test_cache():
-    os.chdir(os.path.abspath(os.path.join(test_dir, 'cache')))
-    cache = Cache(File('cache.json'))
+    os.chdir(os.path.abspath(test_dir))
+    cache = Cache(File('cache/cache.json'))
     cache.prefix('test')['foo'] = File('test')
     cache.save()
     cache.load()
