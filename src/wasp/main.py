@@ -1,3 +1,4 @@
+import types
 from .util import load_module_by_path
 from .config import Config
 from .task import Task, group
@@ -111,13 +112,23 @@ class OptionHandler(object):
 
 
 def retrieve_command_tasks(name):
+    """
+    Retrieves tasks from the command ``name``.
+    :param name: Name of the command.
+    :return: An object of type TaskCollection() populated with tasks.
+    """
     found = False
     tasks_col = TaskCollection()
     if name not in ctx.commands:
         raise NoSuchCommandError('No command with name `{0}` found!'.format(name))
     for command in ctx.commands[name]:
         tasks = command.run()
-        if is_iterable(tasks):
+        if isinstance(tasks, types.GeneratorType):
+            tasks = list(tasks)
+            if command.produce is not None:
+                tasks = group(tasks).produce(command.produce)
+            tasks_col.add(tasks)
+        elif is_iterable(tasks):
             if command.produce is not None:
                 tasks = group(tasks).produce(command.produce)
             tasks_col.add(tasks)

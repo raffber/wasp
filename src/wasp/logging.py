@@ -56,6 +56,10 @@ class Logger(object):
     def verbosity(self):
         return self._verbosity
 
+    @property
+    def pretty(self):
+        return self._pretty
+
     def color(self, s, fg=None, style=None):
         return LogStr(s, fg=fg, style=style)
 

@@ -382,9 +382,21 @@ class RemoveFileTask(Task):
         super().__init__(targets=fs, always=True)
 
     def _run(self):
-        for f in self._files:
-            f.remove()
-        self.success = True
+        try:
+            for f in self._files:
+                f.remove(recursive=self._recursive)
+            msg = 'Removed: [{0}]'.format(', '.join(f.path for f in self._files))
+            self.log.info(self.log.format_success(msg))
+            self.success = True
+        except DirectoryNotEmptyError:
+            msg = 'Failed to remove `{0}`: Directory is ' \
+                  'not empty! (and recursive = {1})'.format(str(f), self._recursive)
+            self.log.fatal(self.log.format_fail(msg))
+            self.success = False
+        except OSError as e:
+            msg = 'Failed to remove `{0}`: {1}'.format(str(f), str(e))
+            self.log.fatal(self.log.format_fail(msg))
+            self.success = False
 
 
 def remove(*args, recursive=False):
@@ -417,8 +429,11 @@ class CopyFileTask(Task):
                     shutil.copy2(str(f), formatted)
                 if self._permissions is not None:
                     os.chmod(formatted, self._permissions)
+                msg = 'Copy {0} to {1}'.format(str(f), formatted)
+                self.log.info(self.log.format_success(msg))
             except OSError as e:
-                self.log.fatal('Failed to copy `{0}` to `{1}`: {2}'.format(str(f), formatted, str(e)))
+                msg = 'Failed to copy `{0}` to `{1}`: {2}'.format(str(f), formatted, str(e))
+                self.log.fatal(self.log.format_fail(msg))
                 self.success = False
                 break
 

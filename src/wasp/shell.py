@@ -1,12 +1,12 @@
 from .task import Task
 from .node import FileNode
-from .argument import Argument
+from .argument import Argument, find_argumentkeys_in_string
 from .util import UnusedArgFormatter, is_iterable
 from .logging import LogStr
 from .fs import Directory
 
 from io import StringIO
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 
 
 class ShellTask(Task):
@@ -64,7 +64,8 @@ class ShellTask(Task):
         return kw_new
 
     def require_all(self):
-        raise NotImplementedError  # TODO: NotImplementedError
+        for argname in find_argumentkeys_in_string(self.cmd):
+            self.require(argname)
         return self
 
     def use_catenate(self, arg):
@@ -91,7 +92,10 @@ class ShellTask(Task):
         commandstring = self._format_cmd(**kw)
         out = StringIO()
         err = StringIO()
-        exit_code = run(commandstring, stdout=out, stderr=err, cwd=self._cwd)
+        if self.log.pretty:
+            exit_code = run(commandstring, stdout=out, stderr=err, cwd=self._cwd)
+        else:
+            exit_code = run(commandstring, stdout=out, stderr=err, cwd=self._cwd, forward_stderr=True)
         self.success = exit_code == 0
         if self.success:
             self.log.info(self.log.format_success() + commandstring)
@@ -123,9 +127,6 @@ class ShellTaskPrinter(object):
 
     def print(self, success, stdout='', stderr='', exit_code=0, commandstring=''):
         log = self._task.log
-        if stdout != '':
-            out = log.format_info(stdout.strip())
-            log.info(out)
         if not success:
             return_value_format = log.color('  --> ' + str(exit_code), fg='red', style='bright')
             out = stderr.strip()
@@ -137,20 +138,28 @@ class ShellTaskPrinter(object):
         elif stderr != '':
             warn_print = log.format_warn(LogStr(commandstring), stderr.strip())
             log.warn(warn_print)
+        if stdout != '':
+            out = log.format_info(stdout.strip())
+            log.info(out)
 
 
 def shell(cmd, sources=[], targets=[], always=False, cwd=None):
     return ShellTask(sources=sources, targets=targets, cmd=cmd, always=always, cwd=cwd)
 
 
-def run(cmd, stdout=None, stderr=None, timeout=100, cwd=None):
-    # cmd = shlex.split(cmd) # no splitting required if shell = True
-    # security issue valid in our case?!
-    process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, cwd=cwd)
-    output, err = process.communicate()
-    exit_code = process.wait(timeout=timeout)
-    if stdout is not None:
-        stdout.write(output.decode('UTF-8'))
-    if stderr is not None:
-        stderr.write(err.decode('UTF-8'))
+def run(cmd, stdout=None, stderr=None, timeout=100, cwd=None, forward_stderr=False):
+    exit_code = None
+    try:
+        if forward_stderr:
+            process = Popen(cmd, stdout=PIPE, stderr=STDOUT, shell=True, cwd=cwd)
+        else:
+            process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, cwd=cwd)
+        output, err = process.communicate(timeout=timeout)
+        exit_code = process.wait(timeout=timeout)
+        if stdout is not None:
+            stdout.write(output.decode('UTF-8'))
+        if stderr is not None and not forward_stderr:
+            stderr.write(err.decode('UTF-8'))
+    except TimeoutError:
+        pass
     return exit_code

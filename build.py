@@ -33,13 +33,14 @@ def test():
 def main():
     dc = d.find_dc().produce(':dc')
     f = File('notes')
-    cp = shell('cp {CPFLAGS} {SRC} {TGT}',
-               sources=f, targets=f.to_builddir(), cwd='doc'
-               ).use(cpflags='-r')
+    yield shell('cp {CPFLAGS} {SRC} {TGT}',
+                sources=f, targets=f.to_builddir(), cwd='doc'
+                ).use(cpflags='-r')
     one = d.compile('one.d')
     two = d.compile('two.d')
     link = d.link(one, two)
-    return cp, group(one, two, link).use(dc), dc
+    yield group(one, two, link).use(dc)
+    yield dc
 
 
 def recursive_list(dirname):
@@ -85,5 +86,5 @@ def create_wasp():
     cp = wasp.copy('dist/wasp-prebuild', dest).produce(':wasp-copy')
     t = wasp.Task(targets='wasp',
                   fun=lambda task: do_create_wasp(task, dest)
-        ).use(':wasp-copy', file=dest)
+                  ).use(':wasp-copy', file=dest)
     return cp, t

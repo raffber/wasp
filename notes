@@ -1,17 +1,6 @@
 Next Task
 ==========
 
- * allow merged stdout, stderr output
-    => http://stefaanlippens.net/python-asynchronous-subprocess-pipe-reading
-    => if pretty printing deactivated:
-        -> check for log.info activated -> output stdout
-        -> check for log.warn activated -> output stderr
-        -> if output both: redirect stderr -> stdout -> sys.stdout
-    -> if pretty printing activated:
-        -> keep as is
- * create output in remove, copy
- * make sure command handler functions can yield tasks
-
  * test, test, test, test and write doc
     -> improve log output
  * port to windows
@@ -20,6 +9,11 @@ Next Task
 
 Bugs
 =======
+
+[INFO]  Build scripts have changed since last execution!
+    ~~  All previous configurations have been cleared!
+is returned always. and it does not seem to have the right influence
+    => build is not fully executed again
 
 Lower Priorieties/Questions
 ============================

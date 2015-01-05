@@ -178,8 +178,8 @@ def _clean():
     Delete everything within the `build` directory.
     """
     ret = []
-    for f in ctx.builddir.glob('*', exclude='c4che'):
-        ret.append(remove(f))
+    for f in ctx.builddir.glob('*', exclude=ctx.cachedir.path):
+        ret.append(remove(f, recursive=True))
     ctx.signatures.invalidate_all()
     return ret
 

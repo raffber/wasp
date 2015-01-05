@@ -30,3 +30,9 @@ The wasp.commands module
 
 .. automodule:: wasp.commands
     :members:
+
+The wasp.context module
+------------------------
+
+.. automodule:: wasp.context
+    :members:

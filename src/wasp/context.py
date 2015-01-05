@@ -14,11 +14,9 @@ from .util import Namespace
 
 class Context(object):
     """
-     * signatures: A database of all signatures known to the system.
-     * produces_signatures: A database of all signatures which
-       have been successfully produced. Comparing current signatures with the
-       signatures in this database allows determining if a node (e.g. a file) has
-       changed between now and the time when the node was produced (e.g. by a task).
+    This object captures the state of the application. It is accessible using
+    :data:`wasp.ctx`. This class only contains minor functionality components
+    and only acts as a locator for data.
     """
 
     def __init__(self):
@@ -44,14 +42,28 @@ class Context(object):
 
     @property
     def g(self):
+        """
+        Returns a :class:`wasp.util.Namespace` object, which allows
+        setting arbitrary attributes. This is useful for communicating
+        data between different build modules.
+        """
         return self._g
 
     @property
     def signatures(self):
+        """
+        A database of all signatures known to the system.
+        """
         return self._signatures
 
     @property
     def produced_signatures(self):
+        """
+        A database of all signatures which have been successfully produced.
+        Comparing current signatures with the signatures in this database
+        allows determining if a node (e.g. a file) has changed between now
+        and the time when the node was produced (e.g. by a task).
+        """
         return self._produced_signatures
 
     def get_config(self):
@@ -62,6 +74,9 @@ class Context(object):
         self._config = config
 
     config = property(get_config, set_config)
+    """
+    Returns the configuration of the project.
+    """
 
     def get_meta(self):
         return self._meta
@@ -70,9 +85,17 @@ class Context(object):
         self._meta = meta
 
     meta = property(get_meta, set_meta)
+    """
+    Returns the metadata of the project.
+    """
 
     @property
     def tools(self):
+        """
+        Returns an object of type :class:`wasp.tools.ToolCollection` which
+        contains the currently loaded tools and provides a facililty
+        to load more tools.
+        """
         return self._tools
 
     def generators(self, commandname):
@@ -82,6 +105,9 @@ class Context(object):
 
     @property
     def topdir(self):
+        """
+        Returns the top directory of the project.
+        """
         return self._topdir
 
     def get_builddir(self):
@@ -95,6 +121,12 @@ class Context(object):
         self._cache = Cache(File(self._cachedir.join(CACHE_FILE)))
 
     builddir = property(get_builddir, set_builddir)
+    """
+    Allows adjusting the build directory of the project.
+    By default, task producing files should make sure that
+    they write to this directory and leave the topdir clean.
+    Furthermore, the cache directory can be found in <builddir>/c4che/
+    """
 
     @property
     def cachedir(self):
