@@ -17,14 +17,6 @@ Next Task
  * port to pypy
 
 
-CTX refactoring
------------------
-
- * create a namespace ctx.g
- * implement namespace class
- * factor out as much as possible from ctx
-    -> recurse files is probably useless -> check signatures in main
-
 Bugs
 =======
 

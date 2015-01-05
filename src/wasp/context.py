@@ -9,6 +9,7 @@ from .generator import GeneratorCollection
 from .metadata import Metadata
 from .tools import ToolsCollection
 from .commands import CommandCollection
+from .util import Namespace
 
 
 class Context(object):
@@ -39,6 +40,11 @@ class Context(object):
         self._signatures = SignatureProvider()
         # create the cache
         self._cache = None
+        self._g = Namespace()
+
+    @property
+    def g(self):
+        return self._g
 
     @property
     def signatures(self):

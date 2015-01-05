@@ -1,3 +1,4 @@
+from . import setup_context
 from wasp import ArgumentCollection, Argument, arg, value, ctx, Metadata, FlagOption, Context
 from wasp import format_string, find_argumentkeys_in_string
 from wasp.options import OptionsCollection
@@ -27,6 +28,7 @@ def test_argument():
 
 
 def test_argument_retrieve():
+    setup_context()
     meta = Metadata()
     meta.foo = 'bar'
     ctx.__assign_object(Context())

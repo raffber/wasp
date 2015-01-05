@@ -269,6 +269,15 @@ def is_json_primitive(arg):
     return isinstance(arg, float) or isinstance(arg, bool) or isinstance(arg, str) or isinstance(arg, int)
 
 
+class Namespace(object):
+
+    def __getattr__(self, item):
+        return object.__getattribute__(self, item)
+
+    def __setattr__(self, key, value):
+        object.__setattr__(self, key, value)
+
+
 class Proxy(object):
     __slots__ = ['_data', '__weakref__']
 
