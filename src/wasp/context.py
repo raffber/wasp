@@ -1,20 +1,26 @@
 from .options import OptionsCollection
-from .cache import Cache
-from .signature import FileSignature
+from .cache import Cache, CACHE_FILE
+from .signature import SignatureProvider, ProducedSignatures
 from .argument import ArgumentCollection
 from .environment import Environment
-from .fs import Directory
+from .fs import Directory, File
 from .config import Config
 from .generator import GeneratorCollection
 from .metadata import Metadata
 from .tools import ToolsCollection
-from . import produced_signatures, signatures, log
 from .commands import CommandCollection
 
 
 class Context(object):
+    """
+     * signatures: A database of all signatures known to the system.
+     * produces_signatures: A database of all signatures which
+       have been successfully produced. Comparing current signatures with the
+       signatures in this database allows determining if a node (e.g. a file) has
+       changed between now and the time when the node was produced (e.g. by a task).
+    """
 
-    def __init__(self, meta=None, config=None, recurse_files=[], builddir='build'):
+    def __init__(self):
         self._generators = {}
         self._tools = ToolsCollection('wasp-tools')
         self._arguments = ArgumentCollection()
@@ -22,38 +28,42 @@ class Context(object):
         self._options = OptionsCollection()
         self._env = Environment()
         self._commands = CommandCollection()
-        # we need to get the initialization order right.
-        # the simplest way to do this is to initialize things first
-        # that have no dependencies
-        if meta is None:
-            meta = Metadata()
-        self._meta = meta
+        self._meta = Metadata()
         # create the directories
         self._topdir = Directory('.',  make_absolute=True)
         assert self._topdir.exists, 'The given topdir must exist!!'
-        self._builddir = Directory(builddir)
-        self._builddir.ensure_exists()
-        self._cachedir = Directory(self._builddir.join('c4che'))
-        if config is None:
-            self._config = Config()
-        else:
-            self._config = config
-        # create the signature for this build script
-        # the current build script
-        fname = self._topdir.join('build.py')
-        self._scripts_signatures = {fname: FileSignature(fname)}
-        for fpath in recurse_files:
-            self._scripts_signatures[fpath] = FileSignature(fpath)
+        self._cachedir = None
+        self._builddir = None
+        self._config = Config()
+        self._produced_signatures = ProducedSignatures()
+        self._signatures = SignatureProvider()
         # create the cache
-        self._cache = Cache(self._cachedir)
+        self._cache = None
 
     @property
-    def config(self):
+    def signatures(self):
+        return self._signatures
+
+    @property
+    def produced_signatures(self):
+        return self._produced_signatures
+
+    def get_config(self):
         return self._config
 
-    @property
-    def meta(self):
+    def set_config(self, config):
+        assert isinstance(config, Config)
+        self._config = config
+
+    config = property(get_config, set_config)
+
+    def get_meta(self):
         return self._meta
+
+    def set_meta(self, meta):
+        self._meta = meta
+
+    meta = property(get_meta, set_meta)
 
     @property
     def tools(self):
@@ -68,9 +78,17 @@ class Context(object):
     def topdir(self):
         return self._topdir
 
-    @property
-    def builddir(self):
+    def get_builddir(self):
         return self._builddir
+
+    def set_builddir(self, builddir):
+        assert isinstance(builddir, Directory)
+        builddir.ensure_exists()
+        self._builddir = builddir
+        self._cachedir = Directory(self._builddir.join('c4che'))
+        self._cache = Cache(File(self._cachedir.join(CACHE_FILE)))
+
+    builddir = property(get_builddir, set_builddir)
 
     @property
     def cachedir(self):
@@ -93,10 +111,7 @@ class Context(object):
         return self._commands
 
     def save(self):
-        d = self.cache.prefix('script-signatures')
-        for fpath, signature in self._scripts_signatures.items():
-            d[fpath] = signature
-        signatures.save(self._cache)
+        self.signatures.save(self._cache)
         d = self.cache.prefix('generators')
         for key, generator_collection in self._generators.items():
             d[key] = generator_collection
@@ -104,18 +119,9 @@ class Context(object):
 
     def load(self):
         self._cache.load()
-        produced_signatures.load(self._cache)
+        self.produced_signatures.load(self._cache)
         for key, generator_collection in self._cache.prefix('generators').items():
             self._generators[key] = generator_collection
-        signatures = self._cache.prefix('script-signatures')
-        for (fpath, signature) in self._scripts_signatures.items():
-            if fpath not in signatures:
-                continue
-            old_sig = signatures[fpath]
-            if old_sig != signature:
-                log.info(log.format_info('Build scripts have changed since last execution!',
-                          'All previous configurations have been cleared!'))
-                self._cache.clear()
 
     @property
     def cache(self):

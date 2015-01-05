@@ -6,9 +6,7 @@ They main class :class:`Argument` is a serializable key-value pair.
 from . import ctx, factory
 import re
 import json
-from .util import Serializable, CannotSerializeError, UnusedArgFormatter, parse_assert, is_json_primitive
-
-from itertools import chain
+from .util import Serializable, UnusedArgFormatter, parse_assert, is_json_primitive
 
 
 ARGUMENT_KEY_RE_STR = '[\w\d]+[\w\d_-]*'

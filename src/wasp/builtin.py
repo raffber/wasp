@@ -1,10 +1,19 @@
-from . import options, signatures, ctx, CommandFailedError, decorators
+from . import options, ctx, CommandFailedError, decorators
 from .main import run_command
 from .util import FunctionDecorator
 from .commands import Command, command
 from .options import FlagOption, handle_options
 from .argument import Argument
 from .fs import remove
+
+
+class init(object):
+    """
+    Decorator for registring a function which is executed just after
+    the build-module is loaded.
+    """
+    def __init__(self, f):
+        decorators.init.append(f)
 
 
 @handle_options
@@ -171,7 +180,7 @@ def _clean():
     ret = []
     for f in ctx.builddir.glob('*', exclude='c4che'):
         ret.append(remove(f))
-    signatures.invalidate_all()
+    ctx.signatures.invalidate_all()
     return ret
 
 

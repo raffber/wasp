@@ -1,6 +1,5 @@
-from .util import Serializable
+from .util import Serializable, FunctionDecorator
 from . import factory, decorators
-from .util import FunctionDecorator
 
 from collections import OrderedDict
 

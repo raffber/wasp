@@ -1,5 +1,5 @@
 from uuid import uuid4 as generate_uuid
-from . import ctx, signatures, produced_signatures
+from . import ctx
 from .signature import FileSignature, CacheSignature, DummySignature
 from .argument import ArgumentCollection
 
@@ -27,14 +27,14 @@ class Node(object):
     def signature(self, ns=None):
         if self._discard:
             return DummySignature()
-        signature = signatures.get(self.key, ns=ns)
+        signature = ctx.signatures.get(self.key, ns=ns)
         if signature is None:
             signature = self._make_signature()
-            signatures.add(signature, ns=ns)
+            ctx.signatures.add(signature, ns=ns)
         return signature
 
     def has_changed(self, ns=None):
-        sig = produced_signatures.get(self.key, ns=ns)
+        sig = ctx.produced_signatures.get(self.key, ns=ns)
         if sig is None:
             return True
         if sig != self.signature(ns=ns):
@@ -42,7 +42,7 @@ class Node(object):
         return False
 
     def invalidate(self, ns=None):
-        signatures.invalidate_signature(self.key, ns=ns)
+        ctx.signatures.invalidate_signature(self.key, ns=ns)
 
 
 class FileNode(Node):

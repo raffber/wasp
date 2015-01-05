@@ -1,7 +1,7 @@
 import traceback
 from .task import Task, TaskGroup
 from .util import EventLoop, Event, is_iterable
-from . import log, produced_signatures, extensions
+from . import log, ctx, extensions
 from .task_collection import TaskCollection
 
 from threading import Thread
@@ -259,7 +259,7 @@ class Executor(object):
         for target in task.targets:
             sig = target.signature(ns=self._ns)
             sig.refresh()
-            produced_signatures.update(sig, ns=self._ns)
+            ctx.produced_signatures.update(sig, ns=self._ns)
         if start:
             self._start()
 
@@ -293,7 +293,7 @@ class Executor(object):
                 continue
             sig = v.signature(ns=self._ns)
             sig.refresh()
-            produced_signatures.update(sig, ns=self._ns)
+            ctx.produced_signatures.update(sig, ns=self._ns)
 
 
 class ParallelExecutor(Executor):

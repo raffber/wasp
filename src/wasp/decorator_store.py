@@ -2,7 +2,6 @@
 
 class DecoratorStore(object):
     _other = {}
-    create_context = None
     metadata = None
 
     def __setattr__(self, key, value):

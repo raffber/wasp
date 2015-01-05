@@ -1,19 +1,19 @@
 from .util import load_module_by_path
-from .context import Context
 from .config import Config
 from .task import Task, group
 from .task_collection import TaskCollection
 from .tools import proxies as tool_proxies, NoSuchToolError
-from .options import StringOption, OptionsCollection
+from .options import StringOption
 from .execution import execute, ParallelExecutor
 from .node import make_nodes
 from .argument import Argument
-from . import _recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators
+from . import _recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators, Directory
 from .util import is_iterable
 
 import argparse
 import os
 import sys
+from wasp.signature import FileSignature
 
 FILE_NAMES = ['build.py', 'build.user.py', 'BUILD', 'BUILD.user']
 
@@ -108,28 +108,6 @@ class OptionHandler(object):
         return self._verbosity
 
     verbosity = property(get_verbosity, set_verbosity)
-
-
-def create_context(loaded_files, config=None):
-    """
-    Creates the context object (wasp.ctx) based either on the @create_context decorator (if it exists)
-    or creates a default context otherwise.
-    :param loaded_files: The files which are recursed into.
-    :return: The created context.
-    """
-    if decorators.create_context is not None:
-        context = decorators.create_context(config)
-    else:
-        metadata = config.metadata
-        if decorators.metadata is not None:
-            metadata = decorators.metadata()
-        context = Context(recurse_files=loaded_files, meta=metadata, config=config)
-    context.arguments.overwrite_merge(config.arguments)
-    import wasp
-    # assign context to proxy
-    wasp.ctx.__assign_object(context)
-    context.load()
-    return context
 
 
 def retrieve_command_tasks(name):
@@ -376,7 +354,40 @@ def load_decorator_config(config):
     if config.verbosity is not None and log.verbosity == log.DEFAULT:
         # configuration overwrites default from command line/env
         log.configure(verbosity=config.verbosity)
+    ctx.config = config
+    ctx.arguments.overwrite_merge(config.arguments)
+    if config.metadata is not None:
+        ctx.meta = config.metadata
+    if decorators.metadata is not None:
+        ctx.meta = decorators.metadata()
     return config
+
+
+def init_context():
+    ctx.builddir = Directory('build')
+    ctx.load()
+
+
+def check_script_signatures(loaded_files):
+    changed = False
+    d = ctx.cache.prefix('script-signatures')
+    current_signatures = {}
+    for f in loaded_files:
+        current_signatures[f] = FileSignature(f)
+    for f, cur_sig in current_signatures.items():
+        if f not in d.keys():
+            changed = True
+            break
+        old_sig = d[f]
+        if cur_sig != old_sig:
+            changed = True
+            break
+    if changed:
+        ctx.cache.clear()
+        log.info(log.format_info('Build scripts have changed since last execution!',
+                   'All previous configurations have been cleared!'))
+    d.clear()
+    d.update(current_signatures)
 
 
 def run(dir_path):
@@ -416,15 +427,13 @@ def run(dir_path):
         loaded_files.extend(load_recursive())
         extensions.api.all_scripts_loaded()
         # load/overwrite config from decorators
-        config = load_decorator_config(config)
-        # create the context using the files that were loaded.
-        # the list is mainly required to determine if the build
-        # files have changed.
-        create_context(loaded_files, config=config)
+        load_decorator_config(config)
         extensions.api.context_created()
+        init_context()
     except FatalError:
         return False
     try:
+        check_script_signatures(loaded_files)
         # load all command decorators into the context
         for com in decorators.commands:
             ctx.commands.add(com)

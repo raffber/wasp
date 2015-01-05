@@ -4,27 +4,16 @@ into its namespace and defines all global variables. At the momemnt, these are:
 
  * decorators: Acts as a central storage for storing functions registered
    using decorators
- * ctx: Captures the state of the application, such as the top-directory
+ * ctx: Captures the state of the application, such as the top-directory and signatures of files.
  * osinfo: Allows retrieving information about the operating system
    the application is running on.
  * version: Defines the version of the application.
  * log: The logger for the application.
  * factory: A factory for producing types which inherits from Serializable.
    During module import, they must be registered.
- * signatures: A database of all signatures known to the system.
- * produces_signatures: A database of all signatures which
-   have been successfully produced. Comparing current signatures with the
-   signatures in this database allows determining if a node (e.g. a file) has
-   changed between now and the time when the node was produced (e.g. by a task).
  * extensions: A collection of registered extensions.
  * _recurse_files: A list of files which have been registered by :func:`recurse`
 """
-
-
-from .util import Proxy
-
-ctx = Proxy(lock_thread=False)
-# TODO: document
 
 
 class Version(object):
@@ -133,23 +122,13 @@ a type and :func:`wasp.util.Factory.from_json` and `wasp.util.Factory.to_json` t
 """
 
 
-from .signature import SignatureProvider, ProducedSignatures
-signatures = SignatureProvider()
-"""
-A database of all signatures known to the system.
-"""
-produced_signatures = ProducedSignatures()
-"""
-A database of all signatures which
-have been successfully produced. Comparing current signatures with the
-signatures in this database allows determining if a node (e.g. a file) has
-changed between now and the time when the node was produced (e.g. by a task).
-"""
-
-
 from .extension import ExtensionCollection, ExtensionMetadata
 extensions = ExtensionCollection()
 """A collection of registered extensions"""
+
+from .util import Proxy
+ctx = Proxy()
+# TODO: document
 
 
 def recurse(*fpaths):
@@ -180,12 +159,13 @@ from .config import config, Config
 from .options import options, handle_options, FlagOption, EnableOption, StringOption, IntOption
 from .argument import Argument, value, arg, format_string, find_argumentkeys_in_string, ArgumentCollection
 from .commands import command, Command, CommandFailedError
-from .hooks import init, create_context
 from .fs import Directory, File, copy, remove, files, defer_install, find, find_exe, find_lib
 from .task import Task, group, sequential, task
 from .task_collection import TaskCollection
 from .shell import shell, ShellTask
 from .fs import Directory, files
 from .tools import tool
-from .builtin import build, configure, install, alias
+from .builtin import build, configure, install, alias, init
 from .metadata import metadata, Metadata
+
+ctx.__assign_object(Context())

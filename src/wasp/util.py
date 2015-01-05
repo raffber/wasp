@@ -272,20 +272,13 @@ def is_json_primitive(arg):
 class Proxy(object):
     __slots__ = ['_data', '__weakref__']
 
-    def __init__(self, lock_thread=True):
+    def __init__(self):
         data = {}
         object.__setattr__(self, '_data', data)
         data['obj'] = object()
-        data['lock_thread'] = lock_thread
-        if lock_thread:
-            data['threadid'] = threading.current_thread().ident
-        else:
-            data['threadid'] = 0
 
     def __getattribute__(self, name):
         data = object.__getattribute__(self, '_data')
-        if data['lock_thread'] and threading.current_thread().ident != data['threadid']:
-            raise RuntimeError('Attempt to access proxy object from outside its scope.')
         if name == '__assign_object':
             def assign_object(obj):
                 data['obj'] = obj

@@ -1,6 +1,5 @@
-from wasp import ArgumentCollection, Argument, arg, value, ctx, Metadata, FlagOption
+from wasp import ArgumentCollection, Argument, arg, value, ctx, Metadata, FlagOption, Context
 from wasp import format_string, find_argumentkeys_in_string
-from . import setup_context, destroy_context
 from wasp.options import OptionsCollection
 
 
@@ -30,7 +29,8 @@ def test_argument():
 def test_argument_retrieve():
     meta = Metadata()
     meta.foo = 'bar'
-    setup_context(meta=meta)
+    ctx.__assign_object(Context())
+    ctx.meta = meta
     # test retrieval from ctx.env
     ctx.env['FOO'] = 'bar'
     arg = Argument('foo').retrieve(ctx.env)
@@ -60,8 +60,6 @@ def test_argument_retrieve():
 
     arg = Argument('foo').retrieve('bar')
     assert arg.value == 'bar'
-
-    destroy_context()
 
 
 def test_argument_collection():

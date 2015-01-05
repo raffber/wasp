@@ -4,10 +4,6 @@ from .util import Proxy, load_module_by_name
 proxies = {}
 
 
-class ToolError(RuntimeError):
-    pass
-
-
 class NoSuchToolError(RuntimeError):
     pass
 
@@ -32,7 +28,6 @@ class ToolsCollection(dict):
         if path is None:
             path = self._tooldir.path
         tooldir = Directory(path)
-        f = File(tooldir.join(name + '.py'))
         try:
             sys.path.insert(0, tooldir.path)
             module = load_module_by_name(name)
@@ -73,11 +68,10 @@ class ToolsCollection(dict):
 def tool(name):
     from . import ctx
     assert isinstance(name, str), 'The name of the tool must be a name of a tool to be loaded.'
-    if ctx.__has_object:
-        try:
-            return ctx.tools(name)
-        except ToolError:
-            pass
+    try:
+        return ctx.tools[name]
+    except NoSuchToolError:
+        pass
     proxy = Proxy("Tools can only be accessed after they have been loaded.")
     proxies[name] = proxy
     return proxy
