@@ -7,6 +7,7 @@ from .fs import Directory
 
 from io import StringIO
 from subprocess import Popen, PIPE, STDOUT
+import shlex
 
 
 class ShellTask(Task):
@@ -49,7 +50,7 @@ class ShellTask(Task):
             if arg.type != str and arg.type != list:
                 continue
             val = arg.value
-            if isinstance(val, list):
+            if is_iterable(val):
                 val = ' '.join([str(i) for i in list])
             kw[arg.upperkey] = str(val)
         # assign upper and lower keys, s.t. it is up to the preference of
@@ -83,28 +84,27 @@ class ShellTask(Task):
         for c in self.children:
             c.use_arg(arg)
 
-    def _format_cmd(self, **kw):
+    def _format_cmd(self):
+        kw = self._process_args()
         s = UnusedArgFormatter().format(self.cmd, **kw)
         return s
 
     def _run(self):
-        kw = self._process_args()
-        commandstring = self._format_cmd(**kw)
+        commandstring = self._format_cmd()
         out = StringIO()
         err = StringIO()
         if self.log.pretty:
             exit_code = run(commandstring, stdout=out, stderr=err, cwd=self._cwd)
         else:
             exit_code = run(commandstring, stdout=out, stderr=err, cwd=self._cwd, forward_stderr=True)
-        self.success = exit_code == 0
+        stdout = out.getvalue()
+        stderr = err.getvalue()
+        self._finished(exit_code, stdout, stderr)
         if self.success:
             self.log.info(self.log.format_success() + commandstring)
         self.has_run = True
-        stdout = out.getvalue()
-        stderr = err.getvalue()
         self.printer.print(self.success, stdout=stdout, stderr=stderr,
                            exit_code=exit_code, commandstring=commandstring)
-        self._finished(exit_code, stdout, stderr)
 
     def __repr__(self):
         return '<class ShellTask: {0}>'.format(self.cmd)
@@ -163,3 +163,7 @@ def run(cmd, stdout=None, stderr=None, timeout=100, cwd=None, forward_stderr=Fal
     except TimeoutError:
         pass
     return exit_code
+
+
+def quote(s):
+    return shlex.quote(s)

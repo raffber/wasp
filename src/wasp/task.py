@@ -90,13 +90,13 @@ class Task(object):
                 # attempt to retrieve the argument from the common sources
                 arg = Argument(arg.key).retrieve_all()
                 if arg.is_empty:
-                    raise MissingArgumentError('Missing argument for task "{0}":'
+                    raise MissingArgumentError('Missing argument for task:'
                                                ' Required argument "{1}" is empty.'.format(self.key, arg.key))
                 self.arguments.add(arg)
             elif self.arguments[arg.key].is_empty:
                 self.arguments[arg.key].retrieve_all()
                 if self.arguments[arg.key].is_empty():
-                    raise MissingArgumentError('Missing argument for task "{0}":'
+                    raise MissingArgumentError('Missing argument for task:'
                                                ' Required argument "{1}" is empty.'.format(self.key, arg.key))
 
     @property

@@ -162,7 +162,7 @@ from .commands import command, Command, CommandFailedError
 from .fs import Directory, File, copy, remove, files, defer_install, find, find_exe, find_lib
 from .task import Task, group, sequential, task
 from .task_collection import TaskCollection
-from .shell import shell, ShellTask
+from .shell import shell, ShellTask, quote
 from .fs import Directory, files
 from .tools import tool
 from .builtin import build, configure, install, alias, init

@@ -339,6 +339,7 @@ class FindTask(Task):
             self._success = False
             self._print_fail()
         else:
+            self._print_success(result_file, result_dir)
             self._success = True
         ap = self._argprefix
         if ap is not None:
@@ -356,6 +357,9 @@ class FindTask(Task):
     def _print_fail(self):
         self.log.fatal(self.log.format_fail('Cannot find required file! Looking for: [{0}]'
                         .format(', '.join(self._names))))
+
+    def _print_success(self, file, dir):
+        self.log.info(self.log.format_success('Found file `{0}` in `{1}`'.format(file, dir)))
 
 
 def find(*names, dirs=None, argprefix=None, required=True):

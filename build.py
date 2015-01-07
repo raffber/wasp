@@ -9,6 +9,12 @@ from wasp.fs import find_exe
 d = tool('d')
 sphinx = tool('sphinx')
 latex = tool('latex')
+node = tool('node')
+
+@wasp.command('node')
+def _node():
+    npm = node.find_npm()
+    return node.ensure('express').use(npm)
 
 
 @wasp.command('doc', description='Build project documentation.')

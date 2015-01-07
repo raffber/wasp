@@ -1,12 +1,9 @@
 Next Task
 ==========
 
- * make sure the node that is autoproduced from a function name does
-   not overlap with another node in the hierarchy => usage sample is :sass
-   -> is it actually problem?! yep!
-   -> move to def-<fun-name> again
-
- * make directory.join and directory.glob return path
+ * create a boolean node....
+ * improve error output, somehow identify task if MissingArgumentError
+ * task.parallel must exist (e.g. for invoking external pkg managers)
 
  * test, test, test, test and write doc
     -> improve log output
@@ -76,6 +73,8 @@ NPM Extension
  * make sure there is a way to tap into npm
  * probably also maven...
  * ... and pip
+ * and cargo
+ => how to support out of tree builds? maybe just don't?
 
 
 subproject Extension
