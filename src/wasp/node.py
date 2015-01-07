@@ -118,14 +118,14 @@ def make_nodes(arg):
 
 
 def make_node(arg):
-    from .fs import File
+    from .fs import Path
     from .task import Task
     if isinstance(arg, str):
         if is_symbolic_node_string(arg):
             return SymbolicNode(arg)
         else:
             return FileNode(arg)
-    elif isinstance(arg, File):
+    elif isinstance(arg, Path):
         return FileNode(arg.path)
     elif isinstance(arg, Node):
         return arg

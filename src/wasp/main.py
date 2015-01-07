@@ -1,4 +1,3 @@
-import types
 from .util import load_module_by_path
 from .config import Config
 from .task import Task, group
@@ -10,11 +9,13 @@ from .node import make_nodes
 from .argument import Argument
 from . import _recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators, Directory
 from .util import is_iterable
+from .signature import FileSignature
 
 import argparse
 import os
 import sys
-from wasp.signature import FileSignature
+import types
+
 
 FILE_NAMES = ['build.py', 'build.user.py', 'BUILD', 'BUILD.user']
 

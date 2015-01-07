@@ -95,7 +95,7 @@ class build(FunctionDecorator):
     """
     def __init__(self, f):
         super().__init__(f)
-        produce = ':' + f.__name__
+        produce = ':def-' + f.__name__
         decorators.commands.append(Command('build', f, description='Builds the project'
                                            , depends='configure', produce=produce))
         found_rebuild = False
@@ -149,7 +149,7 @@ class configure(FunctionDecorator):
     """
     def __init__(self, f):
         super().__init__(f)
-        produce = ':' + f.__name__
+        produce = ':def-' + f.__name__
         decorators.commands.append(Command('configure', f, description='Configures the project', produce=produce))
 
 
@@ -159,7 +159,7 @@ class clean(FunctionDecorator):
     """
     def __init__(self, f):
         super().__init__(f)
-        produce = ':' + f.__name__
+        produce = ':def-' + f.__name__
         decorators.commands.append(Command('clean', f, description='Clean generated files.', produce=produce))
 
 
@@ -177,11 +177,8 @@ def _clean():
     Default implementation of the `clean` command.
     Delete everything within the `build` directory.
     """
-    ret = []
-    for f in ctx.builddir.glob('*', exclude=ctx.cachedir.path):
-        ret.append(remove(f, recursive=True))
+    yield remove(ctx.builddir.glob('*', exclude=ctx.cachedir.path), recursive=True)
     ctx.signatures.invalidate_all()
-    return ret
 
 
 def alias(from_, to_):

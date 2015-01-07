@@ -130,10 +130,17 @@ class Context(object):
 
     @property
     def cachedir(self):
+        """
+        Returns the cache directory.
+        """
         return self._cachedir
 
     @property
     def env(self):
+        """
+        Returns the environment the application runs in.
+        :return: Object of type :class:`wasp.environmnet.Environment`
+        """
         return self._env
 
     @property

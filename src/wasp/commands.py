@@ -85,7 +85,7 @@ class command(object):
         if self._produce is not None:
             produce = self._produce
         else:
-            produce = ':' + f.__name__
+            produce = ':def-' + f.__name__
         decorators.commands.append(Command(self._name, f,
                                            description=self._description, depends=self._depends,
                                            produce=produce, option_alias=self._option_alias))

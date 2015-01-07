@@ -118,19 +118,6 @@ class Path(Serializable):
     def to_builddir(self):
         return Path(ctx.builddir.join(self._path))
 
-def paths(*args):
-    ret = []
-    for item in args:
-        if isinstance(item, Path):
-            ret.append(item)
-        elif isinstance(item, str):
-            ret.append(Path(item))
-        elif isinstance(item, FileNode):
-            ret.append(Path(item.path))
-        elif is_iterable(item):
-            ret.extend(paths(*item))
-    return ret
-
 
 class Directory(Path):
 
@@ -139,7 +126,8 @@ class Directory(Path):
         Creates a directory object of the given path.
         If a path to a file is given, the directory name of the file is used.
         :param path: Path to a directory or path to a file.
-        :param make_absolute: Defines whether the directory should be handleded as an absolute directory or a relative one.
+        :param make_absolute: Defines whether the directory should be handleded
+            as an absolute directory or a relative one.
         """
         if isinstance(path, Path) or isinstance(path, FileNode):
             path = path.path
@@ -157,7 +145,7 @@ class Directory(Path):
                 assert isinstance(arg, str), 'Expected either File, FileNode' \
                                              ' or str, but found `{0}`'.format(type(arg).__name__)
                 new_args.append(arg)
-        return os.path.join(self.path, *new_args) + append
+        return Path(os.path.join(self.path, *new_args) + append)
 
     def glob(self, pattern, exclude=None, dirs=True):
         """
@@ -177,10 +165,20 @@ class Directory(Path):
                 m = exculde_pattern.match(x)
                 if m:
                     continue
-            if os.path.isdir(x) and not dirs:
+            isdir = os.path.isdir(x)
+            if isdir and not dirs:
                 continue
-            ret.append(x)
+            elif isdir:
+                ret.append(Directory(x))
+            else:
+                ret.append(File(x))
         return ret
+
+    def mkdir(self, name):
+        fpath = os.path.join(self.path, name)
+        d = Directory(fpath)
+        d.ensure_exists()
+        return d
 
     def ensure_exists(self):
         try:
@@ -290,6 +288,28 @@ def files(*args, ignore=False):
     return ret
 
 
+def paths(*args, ignore=False):
+    ret = []
+    for f in args:
+        if isinstance(f, FileNode):
+            ret.append(File(f.path))
+        elif isinstance(f, str):
+            if Path(f).isdir():
+                ret.append(Directory(f))
+            else:
+                ret.append(File(f))
+        elif isinstance(f, File):
+            ret.append(f)
+        elif isinstance(f, Directory):
+            ret.append(f)
+        elif is_iterable(f):
+            ret.extend(paths(*f))
+        elif not ignore:
+            raise ValueError('No compatible type given to `files()`. Expected FileNode, str or File.')
+    return ret
+
+
+
 class FindTask(Task):
     def __init__(self, *names, dirs=None, argprefix=None, required=True):
         super().__init__(always=True)
@@ -374,11 +394,11 @@ def find_lib(*names, dirs=None, argprefix=None, required=True):
     return FindLibrary(names, dirs=dirs, argprefix=argprefix, required=required)
 
 
-class RemoveFileTask(Task):
+class RemoveTask(Task):
 
     def __init__(self, fs, recursive=False):
         self._recursive = recursive
-        self._files = files(fs, ignore=True)
+        self._files = paths(fs, ignore=True)
         super().__init__(targets=fs, always=True)
 
     def _run(self):
@@ -400,21 +420,21 @@ class RemoveFileTask(Task):
 
 
 def remove(*args, recursive=False):
-    return RemoveFileTask(args, recursive=recursive)
+    return RemoveTask(args, recursive=recursive)
 
 
 BINARY_PERMISSIONS = 0o755
 DEFAULT_PERMSSIONS = 0o644
 
 
-class CopyFileTask(Task):
+class CopyTask(Task):
     # TODO: port to windows....
 
     def __init__(self, fs, destination, permissions=None, recursive=False):
         self._recursive = recursive
         self._permissions = permissions
         self._destination = Directory(destination)
-        self._files = files(fs, ignore=True)
+        self._files = paths(fs, ignore=True)
         super().__init__(targets=fs, always=True)
 
     def _run(self):
@@ -439,7 +459,7 @@ class CopyFileTask(Task):
 
 
 def copy(source, destination, permissions=None, recursive=False):
-    return CopyFileTask(source, destination, permissions=permissions, recursive=recursive)
+    return CopyTask(source, destination, permissions=permissions, recursive=recursive)
 
 
 class FileInstallGenerator(Generator):
