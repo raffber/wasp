@@ -55,4 +55,4 @@ def _make_prefix(prefix):
 def ensure(*packages, prefix=None):
     ctx.builddir.mkdir('node_modules')
     prefix = _make_prefix(prefix)
-    return group([TestInstalled(pkg).use(prefix=prefix) for pkg in packages])
+    return group([TestInstalled(pkg).use(':node/find-npm', prefix=prefix) for pkg in packages])

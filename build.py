@@ -12,15 +12,17 @@ latex = tool('latex')
 node = tool('nodejs')
 
 
-@wasp.command('nodejs')
+@wasp.command('configure')
+def configure():
+    yield node.find_npm()
+    yield node.ensure('jsmin').produce(':has-jsmin')
+    yield node.find_package_binary('jsmin', argprefix='jsmin').use(':has-jsmin').produce(':jsmin')
+
+
+@wasp.command('nodejs', depends='configure')
 def _nodejs():
-    npm = node.find_npm()
-    yield npm
-    yield node.ensure('jsmin').use(npm).produce(':has-jsmin')
-    jsmin = node.find_package_binary('jsmin', argprefix='jsmin').use(':has-jsmin')
-    yield jsmin
     for f in ctx.topdir.glob('*.js'):
-        yield shell('{jsmin} {SRC} > {TGT}', sources=f, targets=f.to_builddir()).use(jsmin)
+        yield shell('{jsmin} {SRC} > {TGT}', sources=f, targets=f.to_builddir()).use(':jsmin')
 
 
 @wasp.command('doc', description='Build project documentation.')
@@ -37,8 +39,8 @@ def autorebuild_doc():
 
 @wasp.command('test', description='Run unit and integration tests.')
 def test():
-    pytest = find_exe('py.test', argprefix='pytest').produce(':pytest')
-    return shell('{pytest} tests').use(':pytest'), pytest
+    yield find_exe('py.test', argprefix='pytest').produce(':pytest')
+    yield shell('{pytest} tests').use(':pytest')
 
 
 @wasp.build

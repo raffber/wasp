@@ -2,9 +2,13 @@ Next Task
 ==========
 
  * create a boolean node.... as in run_if(fun, task) -> TriggerNode
- * finding stuff is annoying sometimes => allow people to use
+ * finding stuff is annoying sometimes => allow people skip find and provide
+    a default value for certain arguments
+    -> it should be possible to allow default
  * configuration depending on what things have been found
     -> how would one implement that?!
+    -> atm: make_node(':asdf').read()
+ * rename make_node() to node() and make_nodes() to nodes()
  * improve error output, somehow identify task if MissingArgumentError
  * remove the number of pitfalls
     -> collect them
