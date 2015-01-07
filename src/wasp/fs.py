@@ -284,7 +284,7 @@ def files(*args, ignore=False):
         elif is_iterable(f):
             ret.extend(files(*f))
         elif not ignore:
-            raise ValueError('No compatible type given to `files()`. Expected FileNode, str or File.')
+            raise ValueError('No compatible type given to `files()`.')
     return ret
 
 
@@ -305,18 +305,35 @@ def paths(*args, ignore=False):
         elif is_iterable(f):
             ret.extend(paths(*f))
         elif not ignore:
-            raise ValueError('No compatible type given to `files()`. Expected FileNode, str or File.')
+            raise ValueError('No compatible type given to `paths()`.')
     return ret
 
+
+def directories(*args, ignore=False):
+    ret = []
+    for f in args:
+        if isinstance(f, FileNode):
+            ret.append(Directory(f.path))
+        elif isinstance(f, str):
+            ret.append(Directory(f))
+        elif isinstance(f, File):
+            ret.append(f.directory())
+        elif isinstance(f, Directory):
+            ret.append(f)
+        elif isinstance(f, Path):
+            ret.append(Directory(f.path))
+        elif is_iterable(f):
+            ret.extend(directories(*f))
+        elif not ignore:
+            raise ValueError('No compatible type given to `directories()`.')
+    return ret
 
 
 class FindTask(Task):
     def __init__(self, *names, dirs=None, argprefix=None, required=True):
         super().__init__(always=True)
-        if isinstance(dirs, str):
-            dirs = [dirs]
         self._argprefix = argprefix
-        self._dirs = dirs
+        self._dirs = directories(dirs)
         self._names = list(names)
         self._required = required
 
@@ -324,15 +341,14 @@ class FindTask(Task):
         found = False
         result_file = ''
         result_dir = ''
-        for dd in self._dirs:
+        for d in self._dirs:
             if found:
                 break
-            d = Directory(dd)
             for name in self._names:
                 f = File(d.join(name))
                 if f.exists:
                     result_file = f.path
-                    result_dir = dd
+                    result_dir = str(d)
                     found = True
                     break
         if self._required and not found:

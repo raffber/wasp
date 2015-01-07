@@ -130,11 +130,13 @@ class TaskContainer(object):
 class DAG(object):
     def __init__(self, tasks, produce=None):
         self._tasks = []
+        self._waiting_tasks = []
         self._target_map = {}
         self.insert(tasks)
         self._runnable_tasks = []
         self._executing_tasks = []
         if produce is not None:
+            self._waiting_tasks.clear()
             limited_set = set()
             produce_ids = [p.key for p in produce]
             required = []
@@ -152,8 +154,6 @@ class DAG(object):
                 for x in limited:
                     limited_set.add(x)
             self._waiting_tasks = [x for x in limited_set]
-        else:
-            self._waiting_tasks = tasks
 
     def _limit_selection(self, required_task):
         required = []
@@ -201,7 +201,7 @@ class DAG(object):
         # p = average number of tasks producing a target
         # create map from target => task --> O(m*n)
         for task in tasks:
-            for target in task.task.targets:
+            for target in task.targets:
                 if target.key not in self._target_map:
                     self._target_map[target.key] = []
                 self._target_map[target.key].append(task)
@@ -211,6 +211,7 @@ class DAG(object):
                 if source.key in self._target_map.keys():
                     additional_deps = self._target_map[source.key]
                     task.dependencies.extend(additional_deps)
+        self._waiting_tasks.extend(tasks)
 
     def has_finished(self):
         return len(self._runnable_tasks) == 0 and len(self._waiting_tasks) == 0 and len(self._executing_tasks) == 0
@@ -251,9 +252,10 @@ class Executor(object):
         spawned = task.task.spawn()
         if spawned is not None:
             if is_iterable(spawned):
-                self._dag.insert(list(spawned))
+                deps, containers = _flatten(spawned)
             else:
-                self._dag.insert([spawned])
+                deps, containers = _flatten([spawned])
+            self._dag.insert(containers)
         self._consumed_nodes.extend(task.task.sources)
         self._produced_nodes.extend(task.task.targets)
         for target in task.targets:

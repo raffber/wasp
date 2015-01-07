@@ -1,8 +1,14 @@
 Next Task
 ==========
 
- * create a boolean node....
+ * create a boolean node.... as in run_if(fun, task) -> TriggerNode
+ * finding stuff is annoying sometimes => allow people to use
+ * configuration depending on what things have been found
+    -> how would one implement that?!
  * improve error output, somehow identify task if MissingArgumentError
+ * remove the number of pitfalls
+    -> collect them
+    -> fix them
  * task.parallel must exist (e.g. for invoking external pkg managers)
 
  * test, test, test, test and write doc
@@ -27,7 +33,7 @@ Lower Priorieties/Questions
  * set default verbosity to info?!
  * what is --verror used for?
  * binary json?! maybe implmented by myself?
- * yaml subset which can be translated to json
+ * yaml subset which can be translated to json (a.k.a yson)
  * invocation from recursive directory: how to deduce topdir?!
  * simplify global bashcompletion activation
  * verbosity per decorator (use command class, assign all tasks their logger just after calling a command)
@@ -66,6 +72,12 @@ it is not the intended design of wasp. Though it might be useful for performance
     -> create .wasptop file automatically
     -> either gitignore or check-in
 
+Pitfalls
+========
+
+ * better communicate if you forget to add a task
+    i.e. if a task is used() but never added, this should somehow be detected
+ * possibly make a pitfalls handler where information is collected
 
 NPM Extension
 --------------

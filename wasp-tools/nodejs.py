@@ -1,6 +1,4 @@
-from wasp import find_exe, ctx, ShellTask, group, quote, shell
-
-import json
+from wasp import find_exe, ctx, ShellTask, group, quote, shell, Directory
 
 
 def find_npm():
@@ -9,6 +7,15 @@ def find_npm():
 
 def find_node():
     return find_exe('node', argprefix='node').produce(':node/find-node')
+
+
+def find_package_binary(binaryname, prefix=None, argprefix='bin'):
+    if isinstance(prefix, str):
+        prefix = Directory(prefix)
+    if prefix is None:
+        prefix = ctx.builddir
+    bin_dir = prefix.join('node_modules/.bin')
+    return find_exe(binaryname, dirs=bin_dir, argprefix=argprefix)
 
 
 class TestInstalled(ShellTask):
@@ -22,35 +29,30 @@ class TestInstalled(ShellTask):
 
     @property
     def cmd(self):
-        return 'npm_config_json=true {npm} {prefix} ls {package}'
+        return '{npm} {prefix} ls {package}'
 
     def _finished(self, exit_code, out, err):
-        self.success = exit_code == 0
+        self.success = exit_code == 0 or exit_code == 1
         if not self.success:
             return
-        try:
-            data = json.loads(out)
-        except ValueError:
-            self.success = False
-            self.log.fatal(self.log.format_fail(
-                'Expected JSON result while executing:',
-                self._format_cmd(),
-                'Result was',
-                out))
-            return
-        self._installed = len(data) != 0
+        self._installed = exit_code == 0
         self.result['installed'] = self._installed
 
     def _spawn(self):
         if not self._installed and self._spawn_install:
-            return shell('npm_config_json=true {npm} {prefix} install {package}').use(self.arguments)
+            return shell('{npm} {prefix} install {package}').use(self.arguments)
         return None
 
 
-def ensure(*packages, prefix=None):
-    ctx.builddir.mkdir('node_modules')
+def _make_prefix(prefix):
     if prefix is None:
         prefix = '--prefix ' + quote(ctx.builddir.path)
     elif str(prefix) == str(ctx.topdir):
         prefix = ''
+    return prefix
+
+
+def ensure(*packages, prefix=None):
+    ctx.builddir.mkdir('node_modules')
+    prefix = _make_prefix(prefix)
     return group([TestInstalled(pkg).use(prefix=prefix) for pkg in packages])

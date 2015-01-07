@@ -9,12 +9,18 @@ from wasp.fs import find_exe
 d = tool('d')
 sphinx = tool('sphinx')
 latex = tool('latex')
-node = tool('node')
+node = tool('nodejs')
 
-@wasp.command('node')
-def _node():
+
+@wasp.command('nodejs')
+def _nodejs():
     npm = node.find_npm()
-    return node.ensure('express').use(npm)
+    yield npm
+    yield node.ensure('jsmin').use(npm).produce(':has-jsmin')
+    jsmin = node.find_package_binary('jsmin', argprefix='jsmin').use(':has-jsmin')
+    yield jsmin
+    for f in ctx.topdir.glob('*.js'):
+        yield shell('{jsmin} {SRC} > {TGT}', sources=f, targets=f.to_builddir()).use(jsmin)
 
 
 @wasp.command('doc', description='Build project documentation.')

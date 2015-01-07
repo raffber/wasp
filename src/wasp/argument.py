@@ -114,7 +114,7 @@ class ArgumentCollection(Serializable):
         Otherwise self[key] is set to to value and value is expected to be of type Argument.
         """
         key = str(key)
-        if isinstance(value, str):
+        if is_json_primitive(value):
             value = Argument(key, value=value)
         assert isinstance(value, Argument), 'Can only set Argument in ArgumentCollection.__setitem__.'
         self._d.__setitem__(key, value)
