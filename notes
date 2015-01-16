@@ -1,19 +1,17 @@
 Next Task
 ==========
 
- * create a boolean node.... as in run_if(fun, task) -> TriggerNode
- * finding stuff is annoying sometimes => allow people skip find and provide
-    a default value for certain arguments
-    -> it should be possible to allow default
+ * properly fix that output of shell tasks.... no realtime output is annoying
+ * copy: autocreate directory?! allow destfile (not just destdir)
+ * copy: always=True
+ * glob recursive and not recursive
+ * watch: allow watching multiple directories
  * configuration depending on what things have been found
     -> how would one implement that?!
-    -> atm: make_node(':asdf').read()
+    -> atm: node(':asdf').read()
+    ->
  * rename make_node() to node() and make_nodes() to nodes()
- * improve error output, somehow identify task if MissingArgumentError
- * remove the number of pitfalls
-    -> collect them
-    -> fix them
- * task.parallel must exist (e.g. for invoking external pkg managers)
+ * error in task: print failure AFTER stack trace
 
  * test, test, test, test and write doc
     -> improve log output
@@ -27,7 +25,15 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
- * read from stdout and stderr of a process and sync them => poll on communicate()
+ * finding stuff is annoying sometimes => allow people skip find and provide
+    a default value for certain arguments
+    -> it should be possible to allow default
+ * create a boolean node.... as in run_if(fun, task) -> TriggerNode
+ * improve error output, somehow identify task if MissingArgumentError
+ * remove the number of pitfalls
+    -> collect them
+    -> fix them
+ * task.parallel must exist (e.g. for invoking external pkg managers)
  * in case of invalid json, ALWAYS raise ValueError! => replace assert with parse_assert
  * sync on log => no ugly race conditions in output
     --> with self.log: ...

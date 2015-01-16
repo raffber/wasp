@@ -60,6 +60,8 @@ class ShellTask(Task):
         # and use lower-case strings.
         kw_new = {}
         for k, v in kw.items():
+            if '-' in k:
+                k = k.replace('-', '_')
             kw_new[k] = v
             kw_new[k.lower()] = v
         return kw_new

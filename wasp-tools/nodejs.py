@@ -9,13 +9,15 @@ def find_node():
     return find_exe('node', argprefix='node').produce(':node/find-node')
 
 
-def find_package_binary(binaryname, prefix=None, argprefix='bin'):
+def find_package_binary(binaryname, prefix=None, argprefix=None):
     if isinstance(prefix, str):
         prefix = Directory(prefix)
     if prefix is None:
         prefix = ctx.builddir
+    if argprefix is None:
+        argprefix = binaryname
     bin_dir = prefix.join('node_modules/.bin')
-    return find_exe(binaryname, dirs=bin_dir, argprefix=argprefix)
+    return find_exe(binaryname, dirs=bin_dir, argprefix=argprefix).produce(':' + argprefix)
 
 
 class TestInstalled(ShellTask):

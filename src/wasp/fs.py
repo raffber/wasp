@@ -145,7 +145,12 @@ class Directory(Path):
                 assert isinstance(arg, str), 'Expected either File, FileNode' \
                                              ' or str, but found `{0}`'.format(type(arg).__name__)
                 new_args.append(arg)
-        return Path(os.path.join(self.path, *new_args) + append)
+        path = os.path.join(self.path, *new_args) + append
+        if os.path.isdir(path):
+            return Directory(path)
+        if os.path.isfile(path):
+            return File(path)
+        return Path(path)
 
     def glob(self, pattern, exclude=None, dirs=True):
         """

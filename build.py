@@ -70,6 +70,7 @@ def recursive_list(dirname):
 
 
 def do_create_wasp(task, target):
+    target = str(target)
     waspdir = 'src'
     v = wasp.version
     with open(target, 'a') as out:
@@ -97,8 +98,7 @@ if __name__ == '__main__':
 @wasp.command('create-wasp', description='Builds the wasp redistributable')
 def create_wasp():
     dest = ctx.builddir.join('wasp')
-    cp = wasp.copy('dist/wasp-prebuild', dest).produce(':wasp-copy')
-    t = wasp.Task(targets='wasp',
+    yield wasp.copy('dist/wasp-prebuild', ctx.builddir).produce(':wasp-copy')
+    yield wasp.Task(targets=dest,
                   fun=lambda task: do_create_wasp(task, dest)
                   ).use(':wasp-copy', file=dest)
-    return cp, t
