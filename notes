@@ -1,7 +1,7 @@
 Next Task
 ==========
 
- * properly fix that output of shell tasks.... no realtime output is annoying
+ * introduce realtime ouput (in case of not pretty printing)
  * copy: autocreate directory?! allow destfile (not just destdir)
  * copy: always=True
  * glob recursive and not recursive

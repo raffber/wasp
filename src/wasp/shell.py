@@ -1,3 +1,4 @@
+import sys
 from .task import Task
 from .node import FileNode
 from .argument import Argument, find_argumentkeys_in_string
@@ -100,7 +101,7 @@ class ShellTask(Task):
 
     def _run(self):
         commandstring = self._format_cmd()
-        exit_code, out = run(commandstring, cwd=self._cwd)
+        exit_code, out = run(commandstring, cwd=self._cwd, print=not self.log.pretty)
         self._out = out
         self._finished(exit_code, out.stdout, out.stderr)
         if self.success:
@@ -154,18 +155,23 @@ class ProcessOut(object):
     ERR = 1
     OUT = 0
 
-    def __init__(self):
+    def __init__(self, print=False):
         self._out = []
         self._stdout_cache = None
         self._stderr_cache = None
         self._merged_cache = None
         self._finished = False
+        self._print = print
 
     def write(self, msg, stdout=True):
         if stdout:
             self._out.append((msg, self.OUT))
         else:
             self._out.append((msg, self.ERR))
+        if self._print and stdout:
+            print(msg, file=sys.stdout)
+        else:
+            print(msg, file=sys.stderr)
 
     def finished(self):
         self._finished = True
@@ -192,9 +198,9 @@ class ProcessOut(object):
         return self._merged_cache
 
 
-def run(cmd, timeout=100, cwd=None):
+def run(cmd, timeout=100, cwd=None, print=False):
     exit_code = None
-    out = ProcessOut()
+    out = ProcessOut(print=print)
     try:
         process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, cwd=cwd, universal_newlines=True)
         # XXX: this is some proper hack, but it is quite unavoidable
