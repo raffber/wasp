@@ -5,9 +5,11 @@ from .util import UnusedArgFormatter, is_iterable
 from .logging import LogStr
 from .fs import Directory
 
-from io import StringIO
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import Popen, PIPE
 import shlex
+from time import sleep
+
+POLL_TIMEOUT = 0.05
 
 
 class ShellTask(Task):
@@ -93,19 +95,12 @@ class ShellTask(Task):
 
     def _run(self):
         commandstring = self._format_cmd()
-        out = StringIO()
-        err = StringIO()
-        if self.log.pretty:
-            exit_code = run(commandstring, stdout=out, stderr=err, cwd=self._cwd)
-        else:
-            exit_code = run(commandstring, stdout=out, stderr=err, cwd=self._cwd, forward_stderr=True)
-        stdout = out.getvalue()
-        stderr = err.getvalue()
-        self._finished(exit_code, stdout, stderr)
+        exit_code, out = run(commandstring, cwd=self._cwd)
+        self._finished(exit_code, out.stdout, out.stderr)
         if self.success:
             self.log.info(self.log.format_success() + commandstring)
         self.has_run = True
-        self.printer.print(self.success, stdout=stdout, stderr=stderr,
+        self.printer.print(self.success, stdout=out.stdout, stderr=out.stderr,
                            exit_code=exit_code, commandstring=commandstring)
 
     def __repr__(self):
@@ -149,22 +144,72 @@ def shell(cmd, sources=[], targets=[], always=False, cwd=None):
     return ShellTask(sources=sources, targets=targets, cmd=cmd, always=always, cwd=cwd)
 
 
-def run(cmd, stdout=None, stderr=None, timeout=100, cwd=None, forward_stderr=False):
-    exit_code = None
-    try:
-        if forward_stderr:
-            process = Popen(cmd, stdout=PIPE, stderr=STDOUT, shell=True, cwd=cwd)
+class ProcessOut(object):
+    ERR = 1
+    OUT = 0
+
+    def __init__(self):
+        self._out = []
+        self._stdout_cache = None
+        self._stderr_cache = None
+        self._merged_cache = None
+        self._finished = False
+
+    def write(self, msg, stdout=True):
+        if stdout:
+            self._out.append((msg, self.OUT))
         else:
-            process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, cwd=cwd)
-        exit_code = process.wait(timeout=timeout)
-        output, err = process.communicate()
-        if stdout is not None:
-            stdout.write(output.decode('UTF-8'))
-        if stderr is not None and not forward_stderr:
-            stderr.write(err.decode('UTF-8'))
+            self._out.append((msg, self.ERR))
+
+    def finished(self):
+        self._finished = True
+
+    @property
+    def stdout(self):
+        if self._finished and self._stdout_cache is not None:
+            return self._stdout_cache
+        self._stdout_cache = '\n'.join(filter(lambda x: x is not None, [x if tp == self.OUT else None for x, tp in self._out]))
+        return self._stdout_cache
+
+    @property
+    def stderr(self):
+        if self._finished and self._stderr_cache is not None:
+            return self._stderr_cache
+        self._stderr_cache = '\n'.join(filter(lambda x: x is not None, [x if tp == self.ERR else None for x, tp in self._out]))
+        return self._stderr_cache
+
+    @property
+    def merged(self):
+        if self._finished and self._merged_cache is not None:
+            return self._merged_cache
+        self._merged_cache = '\n'.join(x for x, tp in self._out)
+        return self._merged_cache
+
+
+def run(cmd, timeout=100, cwd=None):
+    exit_code = None
+    out = ProcessOut()
+    try:
+        process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, cwd=cwd, universal_newlines=True)
+        # XXX: this is some proper hack, but it is quite unavoidable
+        # maybe use different library?!
+        time_running = 0
+        while process.poll() is None:
+            time_running += POLL_TIMEOUT
+            sleep(POLL_TIMEOUT)  # poll interval is 50ms
+            if time_running >= timeout:
+                raise TimeoutError
+            stdout = process.stdout.read()
+            if len(stdout) != 0:
+                out.write(stdout, stdout=True)
+            stderr = process.stderr.read()
+            if len(stderr) != 0:
+                out.write(stderr, stdout=False)
+        out.finished()
+        exit_code = process.returncode
     except TimeoutError:
         pass
-    return exit_code
+    return exit_code, out
 
 
 def quote(s):

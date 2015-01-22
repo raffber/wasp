@@ -10,9 +10,7 @@ Next Task
     -> how would one implement that?!
     -> atm: node(':asdf').read()
     ->
- * rename make_node() to node() and make_nodes() to nodes()
  * error in task: print failure AFTER stack trace
- * think about how to override find_xxx stuff.
 
  * test, test, test, test and write doc
     -> improve log output
@@ -28,6 +26,7 @@ are already defined.
 
 => keeping information between tasks:
     node(':asdf').write(asdf)
+
 
 => remove nested ArgumentCollections?! --> yes, pass information with ctx.g.asdf = asdf
     -> evaluation order of handlers should be clearly defined
