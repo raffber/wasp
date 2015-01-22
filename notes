@@ -1,20 +1,31 @@
 Next Task
 ==========
 
+Current:
+---------
+ * symbolicnode.write must also support initialization from:
+    -> dict
+    -> list
+    -> kwargs
+    -> more?!
+    -> call collection()
+ * glob recursive and not recursive
+
+Next
+-----
+
  * copy: autocreate directory?! allow destfile (not just destdir)
- * copy: always=True => rly?
+    autocreate = True
  * new command property: run_if_dependency: True / False
     -> False for configure
     -> True for pretty much everything else?!
     -> can this be accomplished by triggers?!
     -> run(as_dependency=True/False) <--- Best solution
- * glob recursive and not recursive
+
  * watch: allow watching multiple directories
- * configuration depending on what things have been found
-    -> how would one implement that?!
-    -> atm: node(':asdf').read()
-    ->
- * error in task: print failure AFTER stack trace
+ * automatically serialize/restore things in ctx.g if primitive or serializable
+ * option remember?! how? -> retrieve option collection from cache
+    and override it with actually set options
 
  * test, test, test, test and write doc
     -> improve log output

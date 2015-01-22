@@ -323,6 +323,10 @@ class ArgumentCollection(Serializable):
         return '{' + ', '.join('{0} = {1}'.format(k, v.value) for k, v in self.items()) + '}'
 
 
+def collection(*args, **kw):
+    raise NotImplementedError
+
+
 factory.register(ArgumentCollection)
 
 

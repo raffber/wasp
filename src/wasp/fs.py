@@ -152,14 +152,16 @@ class Directory(Path):
             return File(path)
         return Path(path)
 
-    def glob(self, pattern, exclude=None, dirs=True):
+    def glob(self, pattern, exclude=None, dirs=True, recursive=True):
         """
         Finds all path names in the directory according to unix-shell rules. The exculde pattern
         is given in regular expressions. This method uses glob.glob() internally.
         :param pattern: Unix-shell like pattern to match.
         :param dirs: If True, directories are matched as well, otherwise, they are excluded
+        :param recursive: Match pattern recursively in directory.
         :param exclude: Regular expression pattern for exculding files.
         """
+        raise NotImplementedError  # recursive
         ret = []
         exculde_pattern = None
         if exclude is not None:
