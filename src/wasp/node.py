@@ -1,7 +1,7 @@
 from uuid import uuid4 as generate_uuid
 from . import ctx
 from .signature import FileSignature, CacheSignature, DummySignature
-from .argument import ArgumentCollection
+from .argument import ArgumentCollection, Argument
 
 
 class Node(object):
@@ -87,10 +87,15 @@ class SymbolicNode(Node):
 
     def write(self, args):
         """
-        Write an ArgumentCollection and store it with the symbolic node.
-        :param args: The ArgumentCollection to store
+        Write an ArgumentCollection or an Argument (which is converted to ArgumentCollection)
+            and store it with the symbolic node.
+        :param args: The ArgumentCollection or the Argument to store
         :return: None
         """
+        if isinstance(args, Argument):
+            x = args
+            args = ArgumentCollection()
+            args.add(x)
         if args.isempty():
             return
         if self.discard:

@@ -12,11 +12,39 @@ Next Task
     ->
  * rename make_node() to node() and make_nodes() to nodes()
  * error in task: print failure AFTER stack trace
+ * think about how to override find_xxx stuff.
 
  * test, test, test, test and write doc
     -> improve log output
  * port to windows
  * port to pypy
+
+
+Argument Refactor
+==================
+
+=> task option to autofetch arguments from ctx.arguments, even if they
+are already defined.
+
+=> keeping information between tasks:
+    node(':asdf').write(asdf)
+
+=> remove nested ArgumentCollections?! --> yes, pass information with ctx.g.asdf = asdf
+    -> evaluation order of handlers should be clearly defined
+    -> evaluate handler by order of import
+
+=> autocall overrides?! tools should call overrides
+
+=> implement command line option to set ctx.arguments tasks:
+    -d key=value
+    --define key=value
+    => accept " " or [" ", " ", " "] => how to parse?!
+
+Ideas
+-------
+ * task.argument_overrides returns AllowArgumentOverrides
+ * task.argument_overrides(argkey=None, sources=ctx.arguments)
+ * task.argument_overrides = True
 
 
 Bugs
