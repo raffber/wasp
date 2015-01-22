@@ -5,7 +5,7 @@ from .task_collection import TaskCollection
 from .tools import proxies as tool_proxies, NoSuchToolError
 from .options import StringOption
 from .execution import execute, ParallelExecutor
-from .node import make_nodes
+from .node import nodes
 from .argument import Argument
 from . import _recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators, Directory
 from .util import is_iterable
@@ -187,7 +187,7 @@ def execute_tasks(name, tasks):
     jobs = Argument('jobs', type=int).retrieve_all(default=1).value
     produce = ctx.options.group(name)['target'].value
     if produce is not None:
-        produce = make_nodes(produce)
+        produce = nodes(produce)
     executor = extensions.api.create_executor(name)
     if executor == NotImplemented:
         executor = ParallelExecutor(jobs=jobs, ns=name)

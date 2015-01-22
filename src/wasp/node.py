@@ -108,21 +108,21 @@ def is_symbolic_node_string(arg):
     return len(arg) > 1 and arg[0] == ':'
 
 
-def make_nodes(arg):
+def nodes(arg):
     if arg is None:
         return []
     from .task import Task
     lst = []
     if isinstance(arg, list) or isinstance(arg, tuple):
         for item in arg:
-            lst.extend(make_nodes(item))
+            lst.extend(nodes(item))
         return lst
     elif isinstance(arg, Task):
         return list(arg.targets)
-    return [make_node(arg)]
+    return [node(arg)]
 
 
-def make_node(arg):
+def node(arg):
     from .fs import Path
     from .task import Task
     if isinstance(arg, str):

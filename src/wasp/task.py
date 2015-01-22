@@ -1,4 +1,4 @@
-from .node import make_nodes, is_symbolic_node_string, SymbolicNode, make_node, Node
+from .node import nodes, is_symbolic_node_string, SymbolicNode, node, Node
 from uuid import uuid4 as uuid
 from .util import CallableList, is_iterable
 from .argument import Argument, ArgumentCollection
@@ -16,8 +16,8 @@ class MissingArgumentError(Exception):
 
 class Task(object):
     def __init__(self, sources=None, targets=None, children=None, always=False, fun=None):
-        self._sources = make_nodes(sources)
-        self._targets = make_nodes(targets)
+        self._sources = nodes(sources)
+        self._targets = nodes(targets)
         if len(self._sources) == 0 and len(self._targets) == 0:
             always = True
         if children is None:
@@ -160,8 +160,8 @@ class Task(object):
         Adds targets to the task.
         The function accepts the same positional arguments as :ref:make_nodes().
         """
-        nodes = make_nodes(args)
-        self.targets.extend(nodes)
+        ext = nodes(args)
+        self.targets.extend(ext)
         return self
 
     def depends(self, *args, use=True):
@@ -169,11 +169,11 @@ class Task(object):
         Sets dependencies to the task.
         The function accepts the same positional arguments as :ref:make_nodes().
         """
-        nodes = make_nodes(args)
-        self.sources.extend(nodes)
+        ext = nodes(args)
+        self.sources.extend(ext)
         if not use:
             return
-        for node in nodes:
+        for node in ext:
             if isinstance(node, SymbolicNode):
                 self.use(node.read())
         return self
@@ -215,15 +215,15 @@ class Task(object):
             elif isinstance(a, Node):
                 self.sources.append(a)
             elif isinstance(a, Task):
-                node = SymbolicNode(discard=True)
-                a.produce(node)
-                self._used_nodes.append(node)
-                self.sources.append(node)
+                x = SymbolicNode(discard=True)
+                a.produce(x)
+                self._used_nodes.append(x)
+                self.sources.append(x)
             elif isinstance(a, str):
                 if is_symbolic_node_string(a):
-                    node = make_node(a)
-                    self._used_nodes.append(node)
-                    self.sources.append(node)
+                    x = node(a)
+                    self._used_nodes.append(x)
+                    self.sources.append(x)
                 else:
                     arg = Argument(a).retrieve_all()
                     self.use_arg(arg)

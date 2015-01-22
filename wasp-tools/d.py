@@ -1,6 +1,6 @@
 import wasp
 from wasp.fs import defer_install, BINARY_PERMISSIONS, Directory, File, FindTask
-from wasp.node import make_nodes, FileNode
+from wasp.node import nodes, FileNode
 from wasp import ShellTask, Task, osinfo
 
 
@@ -51,7 +51,7 @@ class FindCompiler(FindTask):
 
 def compile(*sources):
     ret = []
-    for source in make_nodes(sources):
+    for source in nodes(sources):
         assert isinstance(source, FileNode)
         target = source.to_file().to_builddir().append_extension('.o')
         task = Compile(sources=source, targets=target)
@@ -63,7 +63,7 @@ def link(*sources, target='main', install=True):
     f = wasp.File(target)
     if install:
         defer_install(f.to_builddir(), destination='{PREFIX}/bin/', permissions=BINARY_PERMISSIONS)
-    return Link(sources=make_nodes(sources), targets=f.to_builddir())
+    return Link(sources=nodes(sources), targets=f.to_builddir())
 
 
 def find_dc(names=COMPILER_NAMES, dirs=COMPILER_DIRS):
