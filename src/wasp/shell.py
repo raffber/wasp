@@ -21,6 +21,11 @@ class ShellTask(Task):
             self._cwd = None
         else:
             self._cwd = Directory(cwd, make_absolute=True).path
+        self._out = None
+
+    @property
+    def out(self):
+        return self._out
 
     @property
     def cwd(self):
@@ -96,6 +101,7 @@ class ShellTask(Task):
     def _run(self):
         commandstring = self._format_cmd()
         exit_code, out = run(commandstring, cwd=self._cwd)
+        self._out = out
         self._finished(exit_code, out.stdout, out.stderr)
         if self.success:
             self.log.info(self.log.format_success() + commandstring)
