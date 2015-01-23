@@ -269,6 +269,10 @@ def is_json_primitive(arg):
     return isinstance(arg, float) or isinstance(arg, bool) or isinstance(arg, str) or isinstance(arg, int)
 
 
+def is_json_serializable(arg):
+    return is_json_primitive(arg) or isinstance(arg, list) or isinstance(arg, dict)
+
+
 class Namespace(object):
 
     def __getattr__(self, item):

@@ -6,7 +6,7 @@ They main class :class:`Argument` is a serializable key-value pair.
 from . import ctx, factory
 import re
 import json
-from .util import Serializable, UnusedArgFormatter, parse_assert, is_json_primitive
+from .util import Serializable, UnusedArgFormatter, parse_assert, is_json_primitive, is_json_serializable
 
 
 ARGUMENT_KEY_RE_STR = '[\w\d]+[\w\d_-]*'
@@ -71,7 +71,8 @@ class ArgumentCollection(Serializable):
         for k, v in d.items():
             assert isinstance(k, str), 'Expected a dict with string keys.'
             if not isinstance(v, Argument):
-                assert isinstance(v, Serializable) or is_json_primitive(v), ''
+                assert is_json_serializable(v), 'Values must be json serializable such that' \
+                                                'they can be assigned to an Argument'
                 ret.add(Argument(k).assign(v))
             else:
                 ret.add(v)
@@ -324,7 +325,24 @@ class ArgumentCollection(Serializable):
 
 
 def collection(*args, **kw):
-    raise NotImplementedError
+    """
+    Creates an ArgumentCollection from args and kw.
+    :param args: Accepts list, dict ArgumentCollection or Argument
+    :param kw: Calls ArgumentCollection.from_dict.
+    :return: An ArgumentCollection created from the arguments
+    """
+    col = ArgumentCollection()
+    for arg in args:
+        if isinstance(arg, list):
+            col.overwrite_merge(collection(arg))
+        elif isinstance(arg, ArgumentCollection):
+            col.overwrite_merge(arg)
+        elif isinstance(arg, dict):
+            col.overwrite_merge(ArgumentCollection.from_dict(arg))
+        elif isinstance(arg, Argument):
+            col.add(arg)
+    col.overwrite_merge(ArgumentCollection.from_dict(kw))
+    return col
 
 
 factory.register(ArgumentCollection)

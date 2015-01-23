@@ -415,8 +415,8 @@ def run_task(task):
             real_task.on_fail()
         real_task.postprocess()
     except Exception as e:
-        msg = log.format_fail('{1}\nError while executing task: `{0}`'.format(type(e).__name__,  str(e)),
-                              ''.join(traceback.format_tb(e.__traceback__)))
+        msg = log.format_fail(''.join(traceback.format_tb(e.__traceback__)),
+                '{0}: {1}'.format(type(e).__name__,  str(e)))
         log.fatal(msg)
         real_task.success = False
     for node in real_task.targets:

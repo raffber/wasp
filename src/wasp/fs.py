@@ -1,3 +1,4 @@
+from itertools import chain
 import os
 import re
 import shutil
@@ -156,30 +157,58 @@ class Directory(Path):
         """
         Finds all path names in the directory according to unix-shell rules. The exculde pattern
         is given in regular expressions. This method uses glob.glob() internally.
-        :param pattern: Unix-shell like pattern to match.
-        :param dirs: If True, directories are matched as well, otherwise, they are excluded
+        :param pattern: Regular expression pattern for including files.
+        :param dirs: Determines if directories are matched as well.
         :param recursive: Match pattern recursively in directory.
         :param exclude: Regular expression pattern for exculding files.
         """
-        raise NotImplementedError  # recursive
         ret = []
-        exculde_pattern = None
+        include_re = re.compile(pattern)
         if exclude is not None:
-            exculde_pattern = re.compile(exclude)
-        globs = glob(os.path.join(self.path, pattern))
-        for x in globs:
-            if exclude is not None:
-                m = exculde_pattern.match(x)
-                if m:
+            exclude_re = re.compile(exclude)
+        else:
+            exclude_re = None
+        if recursive:
+            for dirpath, dirnames, filenames in os.walk(self._path):
+                if dirs:
+                    it = chain(dirnames, filenames)
+                else:
+                    it = filenames
+                for f in it:
+                    m = include_re.match(f)
+                    if m:
+                        if exclude_re is not None and exclude_re.match(f):
+                            continue
+                        ret.append(f)
+        else:
+            for f in os.listdir(self._path):
+                if not dirs and os.path.isdir(f):
                     continue
-            isdir = os.path.isdir(x)
-            if isdir and not dirs:
-                continue
-            elif isdir:
-                ret.append(Directory(x))
-            else:
-                ret.append(File(x))
+                m = include_re.match(f)
+                if m:
+                    if exclude_re is not None and exclude_re.match(f):
+                        continue
+                    ret.append(f)
         return ret
+        # raise NotImplementedError  # recursive
+        # ret = []
+        # exculde_pattern = None
+        # if exclude is not None:
+        #     exculde_pattern = re.compile(exclude)
+        # globs = glob(os.path.join(self.path, pattern))
+        # for x in globs:
+        #     if exclude is not None:
+        #         m = exculde_pattern.match(x)
+        #         if m:
+        #             continue
+        #     isdir = os.path.isdir(x)
+        #     if isdir and not dirs:
+        #         continue
+        #     elif isdir:
+        #         ret.append(Directory(x))
+        #     else:
+        #         ret.append(File(x))
+        # return ret
 
     def mkdir(self, name):
         fpath = os.path.join(self.path, name)

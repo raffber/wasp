@@ -3,13 +3,6 @@ Next Task
 
 Current:
 ---------
- * symbolicnode.write must also support initialization from:
-    -> dict
-    -> list
-    -> kwargs
-    -> more?!
-    -> call collection()
- * glob recursive and not recursive
 
 Next
 -----

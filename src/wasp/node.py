@@ -87,8 +87,7 @@ class SymbolicNode(Node):
 
     def write(self, *args, **kw):
         """
-        TODO:
-        :return: None
+        Creates an argument collection from *args and **kw using :meth:`arguments.collection`.
         """
         col = collection(*args, **kw)
         if col.isempty():
