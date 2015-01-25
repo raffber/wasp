@@ -6,7 +6,7 @@ Current:
 
 Next
 -----
-
+ * fix output formatting
  * copy: autocreate directory?! allow destfile (not just destdir)
     autocreate = True
  * new command property: run_if_dependency: True / False
@@ -24,6 +24,12 @@ Next
     -> improve log output
  * port to windows
  * port to pypy
+
+Package Manager (i.e. npm)
+==========================
+
+ * create a reperesentation for a package manager in core
+ * a file should be given that is contained in a package
 
 
 Argument Refactor

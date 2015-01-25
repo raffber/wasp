@@ -5,7 +5,7 @@ import shutil
 
 from .node import FileNode
 from .task import Task
-from .util import Serializable, is_iterable
+from .util import Serializable, is_iterable, first
 from . import factory, ctx
 from .generator import Generator
 from .argument import format_string, find_argumentkeys_in_string
@@ -179,7 +179,8 @@ class Directory(Path):
                     if m:
                         if exclude_re is not None and exclude_re.match(f):
                             continue
-                        ret.append(f)
+                        newpath = os.path.join(self._path, f)
+                        ret.append(newpath)
         else:
             for f in os.listdir(self._path):
                 if not dirs and os.path.isdir(f):
@@ -188,27 +189,15 @@ class Directory(Path):
                 if m:
                     if exclude_re is not None and exclude_re.match(f):
                         continue
-                    ret.append(f)
-        return ret
-        # raise NotImplementedError  # recursive
-        # ret = []
-        # exculde_pattern = None
-        # if exclude is not None:
-        #     exculde_pattern = re.compile(exclude)
-        # globs = glob(os.path.join(self.path, pattern))
-        # for x in globs:
-        #     if exclude is not None:
-        #         m = exculde_pattern.match(x)
-        #         if m:
-        #             continue
-        #     isdir = os.path.isdir(x)
-        #     if isdir and not dirs:
-        #         continue
-        #     elif isdir:
-        #         ret.append(Directory(x))
-        #     else:
-        #         ret.append(File(x))
-        # return ret
+                    newpath = os.path.join(self._path, f)
+                    ret.append(newpath)
+        new_ret = []
+        for x in ret:
+            if os.path.isdir(x):
+                new_ret.append(Directory(x))
+            else:
+                new_ret.append(File(x))
+        return new_ret
 
     def mkdir(self, name):
         fpath = os.path.join(self.path, name)
@@ -368,9 +357,11 @@ def directories(*args, ignore=False):
 class FindTask(Task):
     def __init__(self, *names, dirs=None, argprefix=None, required=True):
         super().__init__(always=True)
-        self._argprefix = argprefix
         self._dirs = directories(dirs)
         self._names = list(names)
+        if argprefix is None:
+            argprefix = first(self._names)
+        self._argprefix = argprefix
         self._required = required
 
     def _run(self):

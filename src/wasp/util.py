@@ -256,6 +256,12 @@ def load_module_by_path(fpath, module_name=None):
     return m
 
 
+def first(lst):
+    for x in lst:
+        return x
+    return None
+
+
 def load_module_by_name(name):
     return importlib.import_module(name)
 

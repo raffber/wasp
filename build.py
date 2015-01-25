@@ -16,12 +16,12 @@ node = tool('nodejs')
 def configure():
     yield node.find_npm()
     yield node.ensure('jsmin').produce(':has-jsmin')
-    yield node.find_package_binary('jsmin', argprefix='jsmin').use(':has-jsmin').produce(':jsmin')
+    yield node.find_exe('jsmin').use(':has-jsmin').produce(':jsmin')
 
 
 @wasp.command('nodejs', depends='configure')
 def _nodejs():
-    for f in ctx.topdir.glob('*.js'):
+    for f in ctx.topdir.glob('.*?.js'):
         yield shell('{jsmin} {SRC} > {TGT}', sources=f, targets=f.to_builddir()).use(':jsmin')
 
 

@@ -377,6 +377,7 @@ def load_decorator_config(config):
 
 def init_context():
     ctx.builddir = Directory('build')
+    load_tools()
     ctx.load()
 
 
@@ -444,8 +445,9 @@ def run(dir_path):
         extensions.api.all_scripts_loaded()
         # load/overwrite config from decorators
         load_decorator_config(config)
-        extensions.api.context_created()
+        # initialize the context
         init_context()
+        extensions.api.context_created()
     except FatalError:
         return False
     try:
@@ -457,8 +459,6 @@ def run(dir_path):
         for hook in decorators.init:
             hook()
         extensions.api.initialized()
-        # autoload all tools that have not been loaded
-        load_tools()
         # parse options
         options = OptionHandler()
         extensions.api.retrieve_options(ctx.options)
