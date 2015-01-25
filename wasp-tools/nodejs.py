@@ -1,15 +1,16 @@
-from wasp import find_exe, ctx, ShellTask, group, quote, shell, Directory
+from wasp import ctx, ShellTask, group, quote, shell, Directory
 from wasp.node import Node
 from wasp.signature import Signature
 from wasp.util import lock
+from wasp import find_exe as find_exe_wasp
 
 
 def find_npm():
-    return find_exe('npm', argprefix='npm').produce(':node/find-npm')
+    return find_exe_wasp('npm', argprefix='npm').produce(':node/find-npm')
 
 
 def find_node():
-    return find_exe('node', argprefix='node').produce(':node/find-node')
+    return find_exe_wasp('node', argprefix='node').produce(':node/find-node')
 
 
 def find_exe(binaryname, prefix=None, argprefix=None):
@@ -20,7 +21,7 @@ def find_exe(binaryname, prefix=None, argprefix=None):
     if argprefix is None:
         argprefix = binaryname
     bin_dir = prefix.join('node_modules/.bin')
-    return find_exe(binaryname, dirs=bin_dir, argprefix=argprefix).produce(':' + argprefix)
+    return find_exe_wasp(binaryname, dirs=bin_dir, argprefix=argprefix).produce(':' + argprefix)
 
 
 def _package_key(name, version, prefix):

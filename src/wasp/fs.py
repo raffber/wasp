@@ -9,7 +9,6 @@ from .util import Serializable, is_iterable, first
 from . import factory, ctx
 from .generator import Generator
 from .argument import format_string, find_argumentkeys_in_string
-from glob import glob
 
 
 def sanitize_path(fpath):
@@ -105,6 +104,9 @@ class Path(Serializable):
             raise DirectoryNotEmptyError('Directory not empty: `{0}`'.format(self.path))
         for path in lst:
             total = os.path.join(self.path, path)
+            if not os.path.exists(total):
+                continue  # we might have previously removed a symlink to this file
+                # in this case, the removal might fail
             isdir = os.path.isdir(total)
             if isdir and recursive:
                 Path(total).remove(recursive=True)

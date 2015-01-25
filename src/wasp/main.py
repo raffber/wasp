@@ -377,7 +377,8 @@ def load_decorator_config(config):
 
 def init_context():
     ctx.builddir = Directory('build')
-    load_tools()
+    load_tools()  # this has to happen BEFORE! the context is loaded
+    # because tools should be able to register themselves in factories
     ctx.load()
 
 

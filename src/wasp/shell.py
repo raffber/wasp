@@ -170,7 +170,7 @@ class ProcessOut(object):
             self._out.append((msg, self.ERR))
         if self._print and stdout:
             print(msg, file=sys.stdout)
-        else:
+        elif self._print:
             print(msg, file=sys.stderr)
 
     def finished(self):

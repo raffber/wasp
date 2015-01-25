@@ -177,7 +177,7 @@ def _clean():
     Default implementation of the `clean` command.
     Delete everything within the `build` directory.
     """
-    yield remove(ctx.builddir.glob('.*', exclude=ctx.cachedir.path), recursive=True)
+    yield remove(ctx.builddir.glob('.*', exclude=ctx.cachedir.path, recursive=False), recursive=True)
     ctx.signatures.invalidate_all()
 
 
