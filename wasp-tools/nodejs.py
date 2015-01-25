@@ -1,8 +1,13 @@
-from wasp import ctx, ShellTask, group, quote, shell, Directory
+import json
+from wasp import ctx, ShellTask, group, quote, shell, Directory, factory
 from wasp.node import Node
 from wasp.signature import Signature
 from wasp.util import lock
 from wasp import find_exe as find_exe_wasp
+
+# TODO: test with different prefixes
+# TODO: test without prefix
+# TODO: test with different package versions
 
 
 def find_npm():
@@ -67,10 +72,32 @@ class NpmPackageNodeSignature(Signature):
 
     @lock
     def refresh(self, value=None):
-        pass
+        if value is not None:
+            self._value = value
+            self._valid = True
+            return value
+        f = self._prefix.join('node_modules', self._name, 'package.json')
+        with open(str(f), 'r') as f:
+            data = json.load(f)
+        # if not os.path.exists(self.path):
+        #     self._valid = False
+        #     self._value = None
+        #     return
+        # if os.path.isdir(self.path):
+        #     # TODO: think about this.... maybe use all the content?!
+        #     # that would be useful for example when packaging a .tgz
+        #     self._value = 'directory'
+        #     self._valid = True
+        #     return self._value
+        # with open(self.path, 'rb') as f:
+        #     data = f.read()
+        # value = checksum(data)
+        # self._value = value
+        # self._valid = True
+        # return value
 
 
-# factory.register()
+factory.register(NpmPackageNodeSignature)
 
 
 class TestInstalled(ShellTask):

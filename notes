@@ -8,6 +8,7 @@ Next
 -----
  * check if relto is honored all the time str(path) should return standardized
     reperesentation
+ * rewrite nodejs module to use nodes
  * copy: autocreate directory?! allow destfile (not just destdir)
     autocreate = True
  * new command property: run_if_dependency: True / False
@@ -25,13 +26,6 @@ Next
     -> improve log output
  * port to windows
  * port to pypy
-
-Package Manager (i.e. npm)
-==========================
-
- * a file should be given that is contained in a package
- * create a reperesentation for a package manager in core
-
 
 Argument Refactor
 ==================
@@ -104,8 +98,6 @@ Lower Priorieties/Questions
  * find a way to name arguments using the symbolic node name
     -> namespace the arguments
  * benchmark --> make things faster
- * allow setting a default arugment in argument collection
-    => assign default argument to symbolic node name
 
 
 Global Installation and call from subdirectory
