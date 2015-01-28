@@ -150,7 +150,10 @@ class configure(FunctionDecorator):
     def __init__(self, f):
         super().__init__(f)
         produce = ':def-' + f.__name__
-        decorators.commands.append(Command('configure', f, description='Configures the project', produce=produce))
+        decorators.commands.append(Command('configure', f,
+                                           description='Configures the project',
+                                           produce=produce,
+                                           skip_as_depenency=True))
 
 
 class clean(FunctionDecorator):

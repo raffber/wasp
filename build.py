@@ -9,14 +9,21 @@ from wasp.fs import find_exe
 d = tool('d')
 sphinx = tool('sphinx')
 latex = tool('latex')
-node = tool('nodejs')
+nodejs = tool('nodejs')
 
 
 @wasp.command('configure')
 def configure():
-    yield node.find_npm()
-    yield node.ensure('jsmin').produce(':has-jsmin')
-    yield node.find_exe('jsmin').use(':has-jsmin').produce(':jsmin')
+    yield nodejs.find_npm()
+    t = nodejs.install('jsmin')
+    yield t
+    yield nodejs.find_exe('jsmin').depends(t).produce(':jsmin')
+    # npm = nodejs.find_npm()
+    # with chain() as c:
+    #     c += nodejs.install('jsmin')
+    #     c += nodejs.find_exe('jsmin').produce(':jsmin')
+    # yield c
+    # yield chain(nodejs.install('jsmin'), nodejs.find_exe('jsmin').produce(':jsmin'))
 
 
 @wasp.command('nodejs', depends='configure')

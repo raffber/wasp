@@ -4,55 +4,45 @@ Next Task
 Current:
 ---------
 
+ * argument refactor
+
 Next
 -----
- * check if relto is honored all the time str(path) should return standardized
-    reperesentation
- * rewrite nodejs module to use nodes
- * copy: autocreate directory?! allow destfile (not just destdir)
-    autocreate = True
  * new command property: run_if_dependency: True / False
     -> False for configure
     -> True for pretty much everything else?!
     -> can this be accomplished by triggers?!
     -> run(as_dependency=True/False) <--- Best solution
-
+ * FileNode: autocreate directories for target nodes?!
+ * copy: allow destfile (not just destdir) autocreate = True
  * watch: allow watching multiple directories
  * automatically serialize/restore things in ctx.g if primitive or serializable
  * option remember?! how? -> retrieve option collection from cache
     and override it with actually set options
+    ctx.options.group('asdf').remember(keys=[...])
+    during load time, after context load, make merge_keep() with loaded options
 
  * test, test, test, test and write doc
-    -> improve log output
  * port to windows
  * port to pypy
 
 Argument Refactor
 ==================
 
-=> task option to autofetch arguments from ctx.arguments, even if they
-are already defined.
-
-=> keeping information between tasks:
-    node(':asdf').write(asdf)
-
-
 => remove nested ArgumentCollections?! --> yes, pass information with ctx.g.asdf = asdf
     -> evaluation order of handlers should be clearly defined
     -> evaluate handler by order of import
-
-=> autocall overrides?! tools should call overrides
-
+=> overrides: task.overrides.append(provider)
+=> ArgumentProviderBase
+    -> defines __getitem__ and __setitem__
+=> ArgumentProvider(ArgumentProviderBase)
+    -> .limit(keys) limits the keys available
+    -> provider(..., keys=[]) creates an argumentprovider and limits with keys
 => implement command line option to set ctx.arguments tasks:
     -d key=value
     --define key=value
     => accept " " or [" ", " ", " "] => how to parse?!
 
-Ideas
--------
- * task.argument_overrides returns AllowArgumentOverrides
- * task.argument_overrides(argkey=None, sources=ctx.arguments)
- * task.argument_overrides = True
 
 
 Bugs
@@ -60,7 +50,31 @@ Bugs
 
 Lower Priorieties/Questions
 ============================
-
+ * somehow trigger find_npm() automatically?!
+ * check this: is node refresh always parallelized?!
+ * improve chaining support sth like nodejs.install('jsmin').find_exe('jsmin')
+    -> automatically insert dependencies
+    -> could be done with scope
+        with nodejs.chain() as n:
+            yield n.install('jsmin')
+            yield n.find_exe('jsmin').produce(':jsmin')
+        -> equates to: n.install('jsmin').produce(':asdf') and n.find_exe('jsmin').depends(':asdf')
+    -> nodejs can: import from wasp.task import make_chain -> chain = make_chain(install, finde_exe)
+    -> maybe chain can be generalized?
+    -> register TaskCreator (i.e. function returning a task)
+    -> chain() populates with all TaskCreators
+    or:
+    with chain() as c:
+        c += task
+        c += task
+    yield c <=== simplest and best solution
+    and:
+    with depends(task) as d:
+        d += task
+        d += task
+ * allow ctx.g('subdir')? such that variables can be scoped => ctx.g(__file__)
+ * check if relto is honored all the time str(path) should return standardized
+    reperesentation
  * finding stuff is annoying sometimes => allow people skip find and provide
     a default value for certain arguments
     -> it should be possible to allow default

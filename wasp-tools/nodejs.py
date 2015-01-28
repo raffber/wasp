@@ -2,7 +2,7 @@ import json
 from wasp import ctx, ShellTask, group, quote, shell, Directory, factory
 from wasp.node import Node
 from wasp.signature import Signature
-from wasp.util import lock
+from wasp.util import lock, checksum
 from wasp import find_exe as find_exe_wasp
 
 # TODO: test with different prefixes
@@ -11,11 +11,11 @@ from wasp import find_exe as find_exe_wasp
 
 
 def find_npm():
-    return find_exe_wasp('npm', argprefix='npm').produce(':node/find-npm')
+    return find_exe_wasp('npm', argprefix='npm').produce(':nodejs/find-npm')
 
 
 def find_node():
-    return find_exe_wasp('node', argprefix='node').produce(':node/find-node')
+    return find_exe_wasp('node', argprefix='node').produce(':nodejs/find-node')
 
 
 def find_exe(binaryname, prefix=None, argprefix=None):
@@ -29,13 +29,20 @@ def find_exe(binaryname, prefix=None, argprefix=None):
     return find_exe_wasp(binaryname, dirs=bin_dir, argprefix=argprefix).produce(':' + argprefix)
 
 
-def _package_key(name, version, prefix):
-    key = 'npm://{0}/{1}@{2}'.format(prefix, name, version)
+def _package_key(name, version=None, prefix=None):
+    if version is not None:
+        key = 'npm://{0}/{1}@{2}'.format(prefix, name, version)
+    else:
+        key = 'npm://{0}/{1}'.format(prefix, name)
     return key
 
 
+def package(name, version=None, prefix=None):
+    return NpmPackageNode(name, version=version, prefix=prefix)
+
+
 class NpmPackageNode(Node):
-    def __init__(self, name, version, prefix=None):
+    def __init__(self, name, version=None, prefix=None):
         if isinstance(prefix, str):
             prefix = Directory(prefix)
         if prefix is None:
@@ -77,64 +84,40 @@ class NpmPackageNodeSignature(Signature):
             self._valid = True
             return value
         f = self._prefix.join('node_modules', self._name, 'package.json')
-        with open(str(f), 'r') as f:
-            data = json.load(f)
-        # if not os.path.exists(self.path):
-        #     self._valid = False
-        #     self._value = None
-        #     return
-        # if os.path.isdir(self.path):
-        #     # TODO: think about this.... maybe use all the content?!
-        #     # that would be useful for example when packaging a .tgz
-        #     self._value = 'directory'
-        #     self._valid = True
-        #     return self._value
-        # with open(self.path, 'rb') as f:
-        #     data = f.read()
-        # value = checksum(data)
-        # self._value = value
-        # self._valid = True
-        # return value
+        if not f.exists:
+            self._value = None
+            self._valid = False
+            return None
+        with open(str(f), 'rb') as f:
+            data = f.read()
+        value = checksum(data)
+        self._value = value
+        self._valid = True
+        return value
 
 
 factory.register(NpmPackageNodeSignature)
 
 
-class TestInstalled(ShellTask):
-    def __init__(self, package, spawn=True):
-        super().__init__(always=True)
-        self._package = package
-        self._installed = None
-        self._spawn_install = spawn
-        self.arguments['package'] = package
-        self.require('npm')
-
-    @property
-    def cmd(self):
-        return '{npm} {prefix} ls {package}'
-
-    def _finished(self, exit_code, out, err):
-        self.success = exit_code == 0 or exit_code == 1
-        if not self.success:
-            return
-        self._installed = exit_code == 0
-        self.result['installed'] = self._installed
-
-    def _spawn(self):
-        if not self._installed and self._spawn_install:
-            return shell('{npm} {prefix} install {package}').use(self.arguments)
-        return None
+def install(pkg, prefix=None, update=True):
+    # TODO: support version
+    # TODO: defer update of the package to 'update' task
+    # but only if version was not given (otherwise, this does not make much sense)
+    if prefix is None:
+        prefix = ctx.builddir
+    if not isinstance(prefix, str):
+        prefix = str(prefix)
+    Directory(prefix).mkdir('node_modules')
+    cmdline_prefix = _make_prefix(prefix)
+    return shell('{npm} {prefix} install {package}')\
+        .use(package=pkg, prefix=cmdline_prefix)\
+        .produce(package(pkg, prefix=prefix))\
+        .use(':nodejs/find-npm')
 
 
 def _make_prefix(prefix):
-    if prefix is None:
-        prefix = '--prefix ' + quote(ctx.builddir.path)
-    elif str(prefix) == str(ctx.topdir):
+    if str(prefix) == str(ctx.topdir):
         prefix = ''
+    else:
+        prefix = '--prefix ' + quote(prefix)
     return prefix
-
-
-def ensure(*packages, prefix=None):
-    ctx.builddir.mkdir('node_modules')
-    prefix = _make_prefix(prefix)
-    return group([TestInstalled(pkg).use(':node/find-npm', prefix=prefix) for pkg in packages])

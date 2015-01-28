@@ -112,7 +112,7 @@ class OptionHandler(object):
     verbosity = property(get_verbosity, set_verbosity)
 
 
-def retrieve_command_tasks(name):
+def retrieve_command_tasks(name, as_dependency=False):
     """
     Retrieves tasks from the command ``name``.
     :param name: Name of the command.
@@ -123,7 +123,7 @@ def retrieve_command_tasks(name):
     if name not in ctx.commands:
         raise NoSuchCommandError('No command with name `{0}` found!'.format(name))
     for command in ctx.commands[name]:
-        tasks = command.run()
+        tasks = command.run(as_dependency=as_dependency)
         if isinstance(tasks, types.GeneratorType):
             tasks = list(tasks)
             if command.produce is not None:
@@ -159,7 +159,6 @@ def run_command_dependencies(name, executed_commands=[]):
     succ = True
     if executed_commands is None:
         executed_commands = []
-    command_cache = ctx.cache.prefix('commands')
     if name in executed_commands:
         return
     # run all dependencies
@@ -169,12 +168,7 @@ def run_command_dependencies(name, executed_commands=[]):
         # run all dependencies automatically
         # if they fail, this command fails as well
         for dependency in command.depends:
-            if dependency not in command_cache:
-                # dependency never executed
-                succ = run_command(dependency, executed_commands=executed_commands)
-            elif not command_cache[dependency]['success']:
-                # dependency not executed successfully
-                succ = run_command(dependency, executed_commands=executed_commands)
+            succ = run_command(dependency, executed_commands=executed_commands, as_dependency=True)
             if not succ:
                 return False
     return True
@@ -203,7 +197,7 @@ def execute_tasks(name, tasks):
     return True
 
 
-def run_command(name, executed_commands=None):
+def run_command(name, executed_commands=None, as_dependency=False):
     """
     Runs a command specified by name. All dependencies of the command are
     executed, if they have not successfully executed before.
@@ -219,9 +213,8 @@ def run_command(name, executed_commands=None):
     if not run_command_dependencies(name, executed_commands=executed_commands):
         return False
     # now run the commands
-    ret = False
     try:
-        tasks_col = retrieve_command_tasks(name)
+        tasks_col = retrieve_command_tasks(name, as_dependency=True)
         extensions.api.tasks_collected(tasks_col)
         # now execute all tasks
         ret = execute_tasks(name, tasks_col)
