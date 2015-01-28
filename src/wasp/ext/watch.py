@@ -5,6 +5,7 @@ from wasp import osinfo, log
 
 import os
 import re
+from wasp.util import is_iterable
 
 
 try:
@@ -31,14 +32,20 @@ try:
                 assert files is not None
                 self._files = files
 
-        def __init__(self, files, regexp=None, directory=None, callback=None):
+        def __init__(self, files=None, regexp=None, dirs=None, callback=None):
             self._regexp = regexp
             self._watchmanager = pyinotify.WatchManager()
-            self._dir = directory
-            self._files = [os.path.abspath(f) for f in files]
+            if files is not None:
+                self._files = [os.path.abspath(f) for f in files]
+            else:
+                self._files = []
             self._dirs = set([os.path.dirname(f) for f in self._files])
-            if self._dir is not None:
-                self._dirs.add(self._dir)
+            if dirs is not None:
+                if is_iterable(dirs) and not isinstance(dirs, str):
+                    for x in dirs:
+                        self._dirs.add(x)
+                else:
+                    self._dirs.add(dirs)
             self._callback = callback
             assert self._callback is not None
 
@@ -56,8 +63,8 @@ try:
                 notifier.stop()
 
     class watch(object):
-        def __init__(self, *files, directory=None, regexp=None, command='watch'):
-            self._monitor = MonitorDaemon(files, regexp=regexp, directory=directory, callback=self._callback)
+        def __init__(self, files=None, dirs=None, regexp=None, command='watch'):
+            self._monitor = MonitorDaemon(files=files, regexp=regexp, dirs=dirs, callback=self._callback)
             self._f = None
             self._command = command
 
@@ -81,17 +88,17 @@ except ImportError as e:
     if osinfo.linux:
         log.warn('`daemon` extension requires the pyinotify package, which is not installed. Please install it.')
     else:
-        log.warn('`daemon` extension is not available on your platform')
+        log.warn('`daemon` extension is not available on your platform!')
 
     class MonitorDaemon(object):
-        def __init__(self, files, regexp=None, directory=None, callback=None):
+        def __init__(self, files=None, regexp=None, dirs=None, callback=None):
             pass
 
         def run(self):
             pass
 
     class watch(object):
-        def __init__(self, *files, directory=None, regexp=None):
+        def __init__(self, files=None, directory=None, dirs=None, command='watch'):
             pass
 
         def __call__(self, f):

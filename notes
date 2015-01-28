@@ -4,46 +4,29 @@ Next Task
 Current:
 ---------
 
- * argument refactor
-
 Next
 -----
- * copy: allow destfile (not just destdir) autocreate = True
- * watch: allow watching multiple directories
  * automatically serialize/restore things in ctx.g if primitive or serializable
  * option remember?! how? -> retrieve option collection from cache
     and override it with actually set options
     ctx.options.group('asdf').remember(keys=[...])
     during load time, after context load, make merge_keep() with loaded options
-
- * test, test, test, test and write doc
- * port to windows
- * port to pypy
-
-Argument Refactor
-==================
-
-=> remove nested ArgumentCollections?! --> yes, pass information with ctx.g.asdf = asdf
-    -> evaluation order of handlers should be clearly defined
-    -> evaluate handler by order of import
-=> overrides: task.overrides.append(provider)
-=> ArgumentProviderBase
-    -> defines __getitem__ and __setitem__
-=> ArgumentProvider(ArgumentProviderBase)
-    -> .limit(keys) limits the keys available
-    -> provider(..., keys=[]) creates an argumentprovider and limits with keys
-=> implement command line option to set ctx.arguments tasks:
+ * implement command line option to set ctx.arguments tasks:
     -d key=value
     --define key=value
     => accept " " or [" ", " ", " "] => how to parse?!
 
 
+ * test, test, test, test and write doc
+ * port to windows
+ * port to pypy
 
 Bugs
 =======
 
 Lower Priorieties/Questions
 ============================
+ * progress bar! -> extension?!
  * ShellTask: are arguments properly quoted?
  * somehow trigger find_npm() automatically?!
  * check this: is node refresh always parallelized?!
@@ -107,6 +90,21 @@ Lower Priorieties/Questions
  * find a way to name arguments using the symbolic node name
     -> namespace the arguments
  * benchmark --> make things faster
+
+Argument Refactor
+==================
+
+=> remove nested ArgumentCollections?! --> yes, pass information with ctx.g.asdf = asdf
+    -> evaluation order of handlers should be clearly defined
+    -> evaluate handler by order of import
+=> overrides: task.overrides.append(provider)
+=> ArgumentProviderBase
+    -> defines __getitem__ and __setitem__
+=> ArgumentProvider(ArgumentProviderBase)
+    -> .limit(keys) limits the keys available
+    -> provider(..., keys=[]) creates an argumentprovider and limits with keys
+=> what about not overriding arguments by default?!
+    -> maybe don't override arg if already there? (in check())
 
 
 Global Installation and call from subdirectory

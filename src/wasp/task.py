@@ -84,7 +84,9 @@ class Task(object):
         for node in self._used_nodes:
             # retrieve all nodes
             if isinstance(node, SymbolicNode):
-                self.use(node.read())
+                for arg in node.read().values():
+                    if arg.key not in self.arguments or self.arguments[arg.key].is_empty():
+                        self.use(arg)
         for arg in self._required_arguments:
             if arg.key not in self.arguments:
                 # attempt to retrieve the argument from the common sources
