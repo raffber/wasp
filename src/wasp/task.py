@@ -270,18 +270,13 @@ class Task(object):
 class TaskGroup(Task):
     def __init__(self, children):
         assert is_iterable(children), 'chilren argument to TaskGroup() is expected to be iterable.'
-        grouped_sources, grouped_targets = self._prepare_tasks(children)
-        # TODO: wrong!
-        self._grouped_sources = grouped_sources
-        self._grouped_targets = grouped_targets
-        super().__init__(sources=self._grouped_sources, targets=self._grouped_targets, children=children, always=True)
-
-    def _prepare_tasks(self, children):
         # this should all be O(n+m) assuming n is the total number of sources
         # and m is the total number of targets
         # flatten sources and targets first
         sources = self._flatten(children, lambda x: x.sources)
+        s_all = list(sources)
         targets = self._flatten(children, lambda x: x.targets)
+        t_all = list(targets)
         targets_new = []
         for t in targets.values():
             # remove source node if it is also a target
@@ -291,8 +286,9 @@ class TaskGroup(Task):
                 del sources[t.key]
             else:
                 targets_new.append(t)
-        return list(sources.values()), targets_new
-
+        self._grouped_sources = s_all
+        self._grouped_targets = t_all
+        super().__init__(sources=list(sources.values()), targets=targets_new, children=children, always=True)
 
     @property
     def grouped_targets(self):
