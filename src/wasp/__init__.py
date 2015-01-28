@@ -114,12 +114,13 @@ can be cloned (and modified) if a part of the application should log differently
 """
 
 
-from .util import Factory, Serializable
+from .util import Factory, Serializable, Namespace
 factory = Factory()
 """
 Factory object for registering Serializable types. Call :func:`wasp.util.Factory.register` for registering
 a type and :func:`wasp.util.Factory.from_json` and `wasp.util.Factory.to_json` to (de-)serialize objects.
 """
+factory.register(Namespace)
 
 
 from .extension import ExtensionCollection, ExtensionMetadata

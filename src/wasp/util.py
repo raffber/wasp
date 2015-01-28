@@ -276,16 +276,32 @@ def is_json_primitive(arg):
 
 
 def is_json_serializable(arg):
-    return is_json_primitive(arg) or isinstance(arg, list) or isinstance(arg, dict)
+    return is_json_primitive(arg) or isinstance(arg, list) or isinstance(arg, dict) or isinstance(arg, Serializable)
 
 
-class Namespace(object):
+class Namespace(Serializable):
 
     def __getattr__(self, item):
         return object.__getattribute__(self, item)
 
     def __setattr__(self, key, value):
         object.__setattr__(self, key, value)
+
+    def to_json(self):
+        d = super().to_json()
+        for k, v in vars(self).items():
+            if is_json_serializable(v):
+                d[k] = v
+        return d
+
+    @classmethod
+    def from_json(cls, d):
+        self = cls()
+        for k, v in d.items():
+            if k == '__type__':
+                continue
+            self.__setattr__(k, v)
+        return self
 
 
 class Proxy(object):

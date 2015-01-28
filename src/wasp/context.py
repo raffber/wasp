@@ -157,6 +157,7 @@ class Context(object):
 
     def save(self):
         self.signatures.save(self._cache)
+        self._cache.prefix('g')['last_run'] = self._g
         d = self.cache.prefix('generators')
         for key, generator_collection in self._generators.items():
             d[key] = generator_collection
@@ -164,6 +165,7 @@ class Context(object):
 
     def load(self):
         self._cache.load()
+        self._g = self._cache.prefix('g').get('last_run', Namespace())
         self.produced_signatures.load(self._cache)
         for key, generator_collection in self._cache.prefix('generators').items():
             self._generators[key] = generator_collection

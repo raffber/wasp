@@ -4,9 +4,11 @@ Next Task
 Current:
 ---------
 
+ * automatically serialize/restore things in ctx.g if primitive or serializable
+
+
 Next
 -----
- * automatically serialize/restore things in ctx.g if primitive or serializable
  * option remember?! how? -> retrieve option collection from cache
     and override it with actually set options
     ctx.options.group('asdf').remember(keys=[...])
