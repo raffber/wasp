@@ -292,12 +292,10 @@ class TaskGroup(Task):
 
     @property
     def grouped_targets(self):
-        raise NotImplementedError  # TODO: wrong!
         return self._grouped_targets
 
     @property
     def grouped_sources(self):
-        raise NotImplementedError  # TODO: wrong!
         return self._grouped_sources
 
     def _flatten(self, tasks, fun):
