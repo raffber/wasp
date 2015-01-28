@@ -62,7 +62,6 @@ class OptionHandler(object):
             grp = ctx.options.group(name=name)
             grp.description = descriptions[name]
             grp.add(StringOption('target', 'Only produce the given target.', keys=['t', 'target']))
-        # TODO: add --define or -d options => howto parse?!
         # call option decorators
         for option_decorator in decorators.options:
             option_decorator(ctx.options)
@@ -157,7 +156,6 @@ def retrieve_command_tasks(name, as_dependency=False):
 
 
 def run_command_dependencies(name, executed_commands=[]):
-    succ = True
     if executed_commands is None:
         executed_commands = []
     if name in executed_commands:

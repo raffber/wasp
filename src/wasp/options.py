@@ -1,5 +1,7 @@
+import re
 from .util import Serializable, FunctionDecorator
 from . import factory, decorators, ctx
+from wasp.argument import ARGUMENT_KEY_RE_STR
 
 from collections import OrderedDict
 
@@ -84,6 +86,7 @@ class OptionsCollection(OrderedDict):
             if override or k not in self.keys() or self[k].empty():
                 self.add(v)
 
+
 def sanitize_name(name):
     return name.replace(' ', '_').lower()
 
@@ -161,6 +164,43 @@ class Option(Serializable):
 
     def empty(self):
         return self._value == self._default
+
+
+class ArgumentOption(Option):
+
+    KEY_VALUE_RE = re.compile('^(?P<arg_key>' + ARGUMENT_KEY_RE_STR + ')=[\"\']?(?P<arg_value>.*?)[\"\']?$')
+
+    def add_to_argparse(self, args):
+        strings = []
+        for prefix, key in zip(self._prefix, self._keys):
+            strings.append(prefix + key)
+        args.add_argument(*strings, action='append'
+                          , help=self._description, dest=self.name)
+
+    def retrieve_from_dict(self, args):
+        from .argument import ArgumentCollection, Argument
+        vlst = args.get(self.name, None)
+        self.value = ArgumentCollection()
+        if vlst is None:
+            return
+        assert isinstance(vlst, list), 'Value must be a list or None.'
+        for v in vlst:
+            m = self.KEY_VALUE_RE.match(v)
+            if not m:
+                raise ValueError('Invalid command line string: `{0}`'.format(v))
+            arg_value = m.group('arg_value')
+            arg_key = m.group('arg_key')
+            self.value.add(Argument(arg_key).assign(arg_value))
+
+    def set_value(self, value):
+        from .argument import ArgumentCollection
+        assert value is None or isinstance(value, ArgumentCollection), \
+            'Invalid argument for ArgumentOption(): value ' \
+            'expected to be either None or of type ArgumentCollection()'
+        if value is None:
+            self._value = ArgumentCollection()
+        else:
+            self._value = value
 
 
 class FlagOption(Option):

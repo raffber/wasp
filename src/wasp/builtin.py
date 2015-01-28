@@ -2,7 +2,7 @@ from . import options, ctx, CommandFailedError, decorators
 from .main import run_command
 from .util import FunctionDecorator
 from .commands import Command, command
-from .options import FlagOption, handle_options
+from .options import FlagOption, handle_options, ArgumentOption
 from .argument import Argument
 from .fs import remove
 
@@ -28,7 +28,7 @@ def _init_default_args(options):
 
 
 @options
-def _add_builtin_options(col):
+def _add_log_options(col):
     """
     Adds builtin options
     """
@@ -56,7 +56,7 @@ def _add_builtin_options(col):
 
 
 @handle_options
-def _handle_builtin_options(option_handler):
+def _handle_log_options(option_handler):
     """
     Post-process the options previously set by :func:`_add_builtin_options`.
     """
@@ -84,6 +84,16 @@ def _handle_builtin_options(option_handler):
         assert False, 'No verbosity configured as default and no verbosity set!'
     if quiet:  # -q overwrites all
         option_handler.verbosity = 0
+
+
+@options
+def _add_argument_options(col):
+    col.add(ArgumentOption(name='arguments', keys=['d', 'define'],
+                           description='Adds arguments to ctx.arguments. E.g. -d cflags="-g -O0"'))
+
+@handle_options
+def _handle_argument_options(option_handler):
+    ctx.arguments.overwrite_merge(ctx.options['arguments'].value)
 
 
 class build(FunctionDecorator):
