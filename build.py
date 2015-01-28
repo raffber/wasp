@@ -29,7 +29,7 @@ def _nodejs():
 @wasp.command('doc', description='Build project documentation.')
 def doc():
     compiler = sphinx.find()
-    html = sphinx.html('doc').use(compiler)
+    html = sphinx.html('doc')
     return html, compiler
 
 
@@ -46,7 +46,7 @@ def test():
 
 @wasp.build
 def main():
-    dc = d.find_dc().produce(':dc')
+    dc = d.find_dc()
     f = File('notes')
     yield shell('cp {CPFLAGS} {SRC} {TGT}',
                 sources=f, targets=f.to_builddir(), cwd='doc'
@@ -54,7 +54,7 @@ def main():
     one = d.compile('one.d')
     two = d.compile('two.d')
     link = d.link(one, two)
-    yield group(one, two, link).use(':dc')
+    yield group(one, two, link)
     yield dc
 
 

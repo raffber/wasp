@@ -1,7 +1,7 @@
 import wasp
-from wasp.fs import defer_install, BINARY_PERMISSIONS, Directory, File, find_exe
+from wasp.fs import defer_install, BINARY_PERMISSIONS, find_exe
 from wasp.node import nodes, FileNode
-from wasp import ShellTask, Task, osinfo
+from wasp import ShellTask, osinfo
 
 
 class Compile(ShellTask):
@@ -45,15 +45,18 @@ def compile(*sources):
         target = source.to_file().to_builddir().append_extension('.o')
         task = Compile(sources=source, targets=target)
         ret.append(task)
-    return wasp.group(ret)
+    return wasp.group(ret).use(':d/dc')
 
 
 def link(*sources, target='main', install=True):
     f = wasp.File(target)
     if install:
         defer_install(f.to_builddir(), destination='{PREFIX}/bin/', permissions=BINARY_PERMISSIONS)
-    return Link(sources=nodes(sources), targets=f.to_builddir())
+    return Link(sources=nodes(sources), targets=f.to_builddir()).use(':d/dc')
 
 
-def find_dc(names=COMPILER_NAMES, dirs=COMPILER_DIRS):
-    return find_exe(*names, dirs=dirs, argprefix='dc')
+def find_dc(names=COMPILER_NAMES, dirs=COMPILER_DIRS, produce=True):
+    ret = find_exe(*names, dirs=dirs, argprefix='dc').produce(':d/dc')
+    if produce:
+        ret.produce(':d/dc')
+    return ret

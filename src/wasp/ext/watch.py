@@ -98,7 +98,7 @@ except ImportError as e:
             pass
 
     class watch(object):
-        def __init__(self, files=None, directory=None, dirs=None, command='watch'):
+        def __init__(self, files=None, dirs=None, regexp=None, command='watch'):
             pass
 
         def __call__(self, f):

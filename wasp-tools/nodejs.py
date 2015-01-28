@@ -1,5 +1,4 @@
-import json
-from wasp import ctx, ShellTask, group, quote, shell, Directory, factory
+from wasp import ctx, quote, shell, Directory, factory
 from wasp.node import Node
 from wasp.signature import Signature
 from wasp.util import lock, checksum
@@ -10,15 +9,21 @@ from wasp import find_exe as find_exe_wasp
 # TODO: test with different package versions
 
 
-def find_npm():
-    return find_exe_wasp('npm', argprefix='npm').produce(':nodejs/find-npm')
+def find_npm(produce=True):
+    ret = find_exe_wasp('npm', argprefix='npm')
+    if produce:
+        ret.produce(':nodejs/find-npm')
+    return ret
 
 
-def find_node():
-    return find_exe_wasp('node', argprefix='node').produce(':nodejs/find-node')
+def find_node(produce=True):
+    ret = find_exe_wasp('node', argprefix='node')
+    if produce:
+        ret.produce(':nodejs/find-node')
+    return ret
 
 
-def find_exe(binaryname, prefix=None, argprefix=None):
+def find_exe(binaryname, prefix=None, argprefix=None, produce=True):
     if isinstance(prefix, str):
         prefix = Directory(prefix)
     if prefix is None:
@@ -26,7 +31,10 @@ def find_exe(binaryname, prefix=None, argprefix=None):
     if argprefix is None:
         argprefix = binaryname
     bin_dir = prefix.join('node_modules/.bin')
-    return find_exe_wasp(binaryname, dirs=bin_dir, argprefix=argprefix).produce(':' + argprefix)
+    ret = find_exe_wasp(binaryname, dirs=bin_dir, argprefix=argprefix)
+    if produce:
+        ret.produce(':' + argprefix)
+    return ret
 
 
 def _package_key(name, version=None, prefix=None):
@@ -112,7 +120,8 @@ def install(pkg, prefix=None, update=True):
     return shell('{npm} {prefix} install {package}')\
         .use(package=pkg, prefix=cmdline_prefix)\
         .produce(package(pkg, prefix=prefix))\
-        .use(':nodejs/find-npm')
+        .use(':nodejs/find-npm')\
+        .require('npm')
 
 
 def _make_prefix(prefix):
