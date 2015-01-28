@@ -155,6 +155,9 @@ class Directory(Path):
             return File(path)
         return Path(path)
 
+    def create(self):
+        os.makedirs(self._path, exist_ok=True)
+
     def glob(self, pattern, exclude=None, dirs=True, recursive=True):
         """
         Finds all path names in the directory according to unix-shell rules. The exculde pattern

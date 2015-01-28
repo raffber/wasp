@@ -8,12 +8,6 @@ Current:
 
 Next
 -----
- * new command property: run_if_dependency: True / False
-    -> False for configure
-    -> True for pretty much everything else?!
-    -> can this be accomplished by triggers?!
-    -> run(as_dependency=True/False) <--- Best solution
- * FileNode: autocreate directories for target nodes?!
  * copy: allow destfile (not just destdir) autocreate = True
  * watch: allow watching multiple directories
  * automatically serialize/restore things in ctx.g if primitive or serializable

@@ -12,12 +12,12 @@ latex = tool('latex')
 nodejs = tool('nodejs')
 
 
-@wasp.command('configure')
-def configure():
-    yield nodejs.find_npm()
-    t = nodejs.install('jsmin')
-    yield t
-    yield nodejs.find_exe('jsmin').depends(t).produce(':jsmin')
+# @wasp.command('configure')
+# def configure():
+    # yield nodejs.find_npm()
+    # t = nodejs.install('jsmin')
+    # yield t
+    # yield nodejs.find_exe('jsmin').depends(t).produce(':jsmin')
     # npm = nodejs.find_npm()
     # with chain() as c:
     #     c += nodejs.install('jsmin')
@@ -60,7 +60,7 @@ def main():
     one = d.compile('one.d')
     two = d.compile('two.d')
     link = d.link(one, two)
-    yield group(one, two, link).use(dc)
+    yield group(one, two, link).use(':dc')
     yield dc
 
 

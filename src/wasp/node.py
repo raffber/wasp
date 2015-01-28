@@ -44,6 +44,12 @@ class Node(object):
     def invalidate(self, ns=None):
         ctx.signatures.invalidate_signature(self.key, ns=ns)
 
+    def before_run(self, target=False):
+        pass
+
+    def after_run(self, target=False):
+        pass
+
 
 class FileNode(Node):
     def __init__(self, path):
@@ -60,6 +66,10 @@ class FileNode(Node):
 
     def to_file(self):
         return self._path
+
+    def before_run(self, target=False):
+        if target:
+            self._path.directory().create()
 
 
 class SymbolicNode(Node):

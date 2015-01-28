@@ -160,9 +160,10 @@ class FileSignature(Signature):
         if os.path.isdir(self.path):
             # TODO: think about this.... maybe use all the content?!
             # that would be useful for example when packaging a .tgz
-            self._value = 'directory'
-            self._valid = True
-            return self._value
+            raise RuntimeError('FileSignature cannot be a directory')
+            # self._value = 'directory'
+            # self._valid = True
+            # return self._value
         with open(self.path, 'rb') as f:
             data = f.read()
         value = checksum(data)

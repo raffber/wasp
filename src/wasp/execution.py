@@ -260,7 +260,7 @@ class Executor(object):
         self._produced_nodes.extend(task.task.targets)
         for target in task.targets:
             sig = target.signature(ns=self._ns)
-            sig.refresh()
+            # sig.refresh() # <-- this already happend
             ctx.produced_signatures.update(sig, ns=self._ns)
         if start:
             self._start()
@@ -406,6 +406,10 @@ def run_task(task):
         return ret
     extensions.api.task_started(task)
     real_task = task.task
+    for target in task.targets:
+        target.before_run(target=True)
+    for source in task.sources:
+        source.before_run(target=False)
     try:
         real_task.prepare()
         real_task.run()
@@ -421,6 +425,10 @@ def run_task(task):
         real_task.success = False
     for node in real_task.targets:
         node.signature(task.ns).refresh()
+    for target in task.targets:
+        target.after_run(target=True)
+    for source in task.sources:
+        source.after_run(target=False)
     extensions.api.task_finished(task)
     return task.task.success
 
