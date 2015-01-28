@@ -1,5 +1,5 @@
 from .util import Serializable, FunctionDecorator
-from . import factory, decorators
+from . import factory, decorators, ctx
 
 from collections import OrderedDict
 
@@ -74,13 +74,15 @@ class OptionsCollection(OrderedDict):
         return ret
 
     def save(self):
-        # ctx.cache.prefix('options')[groupname]
-        raise NotImplementedError  # TODO: NotImplementedError
+        d = ctx.cache.prefix('options')[self.name]
+        for opt in self.values():
+            d[opt.name] = opt
 
-    def load(self):
-        # ctx.cache.prefix('options')[groupname]
-        raise NotImplementedError  # TODO: NotImplementedError
-
+    def load(self, override=False):
+        d = ctx.cache.prefix('options')[self.name]
+        for k, v in d.items():
+            if override or k not in self.keys() or self[k].empty():
+                self.add(v)
 
 def sanitize_name(name):
     return name.replace(' ', '_').lower()
@@ -103,6 +105,7 @@ class Option(Serializable):
         self._value = None
         self.value = value  # such that property.setter can be overridden
         self._prefix = []
+        self._default = value
         if isinstance(prefix, str):
             self._prefix = [prefix]
         elif isinstance(prefix, list):
@@ -155,6 +158,9 @@ class Option(Serializable):
             'value': self.value,
             'prefix': self._prefix})
         return ret
+
+    def empty(self):
+        return self._value == self._default
 
 
 class FlagOption(Option):
