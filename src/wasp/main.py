@@ -62,6 +62,7 @@ class OptionHandler(object):
             grp = ctx.options.group(name=name)
             grp.description = descriptions[name]
             grp.add(StringOption('target', 'Only produce the given target.', keys=['t', 'target']))
+        # TODO: add --define or -d options => howto parse?!
         # call option decorators
         for option_decorator in decorators.options:
             option_decorator(ctx.options)

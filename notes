@@ -4,18 +4,13 @@ Next Task
 Current:
 ---------
 
-
-Next
------
- * option remember?! how? -> retrieve option collection from cache
-    and override it with actually set options
-    ctx.options.group('asdf').remember(keys=[...])
-    during load time, after context load, make merge_keep() with loaded options
  * implement command line option to set ctx.arguments tasks:
     -d key=value
     --define key=value
     => accept " " or [" ", " ", " "] => how to parse?!
 
+Next
+-----
 
  * test, test, test, test and write doc
  * port to windows
@@ -26,6 +21,7 @@ Bugs
 
 Lower Priorieties/Questions
 ============================
+ * options: autoload?!
  * progress bar! -> extension?!
  * ShellTask: are arguments properly quoted?
  * somehow trigger find_npm() automatically?!
