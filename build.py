@@ -1,7 +1,7 @@
 import os
 import zlib
 import binascii
-from wasp import File, group, shell, tool, ctx
+from wasp import File, group, shell, tool, ctx, configure, chain
 from wasp.ext.watch import watch
 import wasp
 from wasp.fs import find_exe
@@ -12,23 +12,17 @@ latex = tool('latex')
 nodejs = tool('nodejs')
 
 
-# @wasp.command('configure')
-# def configure():
-    # yield nodejs.find_npm()
-    # t = nodejs.install('jsmin')
-    # yield t
-    # yield nodejs.find_exe('jsmin').depends(t).produce(':jsmin')
-    # npm = nodejs.find_npm()
-    # with chain() as c:
-    #     c += nodejs.install('jsmin')
-    #     c += nodejs.find_exe('jsmin').produce(':jsmin')
-    # yield c
-    # yield chain(nodejs.install('jsmin'), nodejs.find_exe('jsmin').produce(':jsmin'))
-
+@configure
+def configure():
+    c = chain()
+    c += nodejs.find_npm()
+    c += nodejs.install('jsmin')
+    c += nodejs.find_exe('jsmin').produce(':jsmin')
+    yield c
 
 @wasp.command('nodejs', depends='configure')
 def _nodejs():
-    for f in ctx.topdir.glob('.*?.js'):
+    for f in ctx.topdir.glob('.*?.js$', exclude='build/.*'):
         yield shell('{jsmin} {SRC} > {TGT}', sources=f, targets=f.to_builddir()).use(':jsmin')
 
 
@@ -107,5 +101,5 @@ def create_wasp():
     dest = ctx.builddir.join('wasp')
     yield wasp.copy('dist/wasp-prebuild', ctx.builddir).produce(':wasp-copy')
     yield wasp.Task(targets=dest,
-                  fun=lambda task: do_create_wasp(task, dest)
-                  ).use(':wasp-copy', file=dest)
+                    fun=lambda task: do_create_wasp(task, dest)
+                    ).use(':wasp-copy', file=dest)

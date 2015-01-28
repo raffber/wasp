@@ -10,4 +10,9 @@ class Environment(dict):
         self.update(dict(os.environ))
 
     def argument_collection(self):
-        raise NotImplementedError  # TODO: NotImplementedError
+        from . import ArgumentCollection, Argument
+        ret = ArgumentCollection()
+        for k, v in self:
+            ret.add(Argument(k, value=v))
+        return ret
+

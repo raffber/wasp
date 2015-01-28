@@ -159,7 +159,7 @@ class ExtensionCollection(dict):
         return self._search_packages
 
     def has(self, name):
-        raise NotImplementedError  # TODO: NotImplementedError
+        return name in self
 
     @property
     def api(self):

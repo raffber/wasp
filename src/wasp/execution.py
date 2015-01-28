@@ -214,7 +214,9 @@ class DAG(object):
         self._waiting_tasks.extend(tasks)
 
     def has_finished(self):
-        return len(self._runnable_tasks) == 0 and len(self._waiting_tasks) == 0 and len(self._executing_tasks) == 0
+        return (len(self._runnable_tasks) == 0
+                and len(self._waiting_tasks) == 0
+                and len(self._executing_tasks) == 0)
 
 
 class Executor(object):

@@ -6,7 +6,7 @@ from .commands import Command
 from . import log, decorators
 
 from functools import reduce
-from itertools import chain
+from itertools import chain as iter_chain
 import operator
 
 
@@ -22,7 +22,9 @@ class Task(object):
             always = True
         if children is None:
             children = []
-        assert isinstance(children, list)
+        assert is_iterable(children)
+        if not isinstance(children, list):
+            children = list(children)
         self.children = children
         self._has_run = False
         self._always = always
@@ -85,7 +87,7 @@ class Task(object):
             # retrieve all nodes
             if isinstance(node, SymbolicNode):
                 for arg in node.read().values():
-                    if arg.key not in self.arguments or self.arguments[arg.key].is_empty():
+                    if arg.key not in self.arguments or self.arguments[arg.key].is_empty:
                         self.use(arg)
         for arg in self._required_arguments:
             if arg.key not in self.arguments:
@@ -267,6 +269,14 @@ class Task(object):
 
 class TaskGroup(Task):
     def __init__(self, children):
+        assert is_iterable(children), 'chilren argument to TaskGroup() is expected to be iterable.'
+        grouped_sources, grouped_targets = self._prepare_tasks(children)
+        # TODO: wrong!
+        self._grouped_sources = grouped_sources
+        self._grouped_targets = grouped_targets
+        super().__init__(sources=self._grouped_sources, targets=self._grouped_targets, children=children, always=True)
+
+    def _prepare_tasks(self, children):
         # this should all be O(n+m) assuming n is the total number of sources
         # and m is the total number of targets
         # flatten sources and targets first
@@ -281,16 +291,17 @@ class TaskGroup(Task):
                 del sources[t.key]
             else:
                 targets_new.append(t)
-        self._grouped_sources = list(sources.values())
-        self._grouped_targets = targets_new
-        super().__init__(sources=self._grouped_sources, targets=self._grouped_targets, children=children, always=True)
+        return list(sources.values()), targets_new
+
 
     @property
     def grouped_targets(self):
+        raise NotImplementedError  # TODO: wrong!
         return self._grouped_targets
 
     @property
     def grouped_sources(self):
+        raise NotImplementedError  # TODO: wrong!
         return self._grouped_sources
 
     def _flatten(self, tasks, fun):
@@ -298,7 +309,7 @@ class TaskGroup(Task):
         if isinstance(tasks, Task):
             return {x.key: x for x in fun(tasks)}
         # get all task items
-        lst = list(chain(*[fun(task) for task in tasks]))
+        lst = list(iter_chain(*[fun(task) for task in tasks]))
         # create a dict from them
         ret = dict(zip([x.key for x in lst], lst))
         for task in tasks:
@@ -316,6 +327,21 @@ class TaskGroup(Task):
 
     def __repr__(self):
         return '[' + ', '.join([repr(c) for c in self.children]) + ']'
+
+    def __iadd__(self, other):
+        self.children.append(other)
+        sources = self._flatten(other, lambda x: x.sources)
+        targets = self._flatten(other, lambda x: x.targets)
+        for s in sources:
+            for t in self.targets:
+                if t.key == s:
+                    self.targets.remove(t)
+        for t in targets:
+            for s in self.sources:
+                if t == s.key:
+                    self.sources.remove(s)
+        self.targets.extend(targets.values())
+        return self
 
 
 def _flatten(args):
@@ -339,8 +365,27 @@ def group(*args, collapse=True):
     return TaskGroup(args)
 
 
-def sequential(*args):
-    raise NotImplementedError  # TODO: NotImplementedError
+class ChainingTaskGroup(TaskGroup):
+
+    def __init__(self, children):
+        super().__init__(children)
+        # create dependencies between the tasks
+        previous = None
+        for a in children:
+            if previous is None:
+                previous = a
+                continue
+            a.use(previous)
+            previous = a
+
+    def __iadd__(self, other):
+        if len(self.children) > 0:
+            other.use(self.children[-1])
+        return super().__iadd__(other)
+
+
+def chain(*args):
+    return ChainingTaskGroup(args)
 
 
 def fail():

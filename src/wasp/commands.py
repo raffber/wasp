@@ -35,7 +35,8 @@ class Command(object):
     :param option_alias: The name of another command, this command is an alias of.
     :param skip_as_depenency: Command is not rerun if it is a depenency of another task
     """
-    def __init__(self, name, fun, description=None, depends=None, produce=None, option_alias=None, skip_as_depenency=False):
+    def __init__(self, name, fun, description=None, depends=None
+                 , produce=None, option_alias=None, skip_as_depenency=False):
         self._depends = [] if depends is None else depends
         if isinstance(self._depends, str):
             self._depends = [self._depends]
@@ -45,7 +46,7 @@ class Command(object):
         self._description = description or name
         self._produce = produce
         self._option_alias = option_alias
-        self._skip_as_dependency = False
+        self._skip_as_dependency = skip_as_depenency
 
     @property
     def depends(self):

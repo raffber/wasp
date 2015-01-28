@@ -4,11 +4,6 @@ Next Task
 Current:
 ---------
 
- * implement command line option to set ctx.arguments tasks:
-    -d key=value
-    --define key=value
-    => accept " " or [" ", " ", " "] => how to parse?!
-
 Next
 -----
 
@@ -86,6 +81,7 @@ Lower Priorieties/Questions
  * find a way to name arguments using the symbolic node name
     -> namespace the arguments
  * benchmark --> make things faster
+ * egrep -rni NotImplementedError src/ | grep TODO
 
 Argument Refactor
 ==================

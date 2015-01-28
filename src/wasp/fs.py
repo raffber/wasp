@@ -158,14 +158,9 @@ class Directory(Path):
     def create(self):
         os.makedirs(self._path, exist_ok=True)
 
-    def glob(self, pattern, exclude=None, dirs=True, recursive=True):
+    def glob(self, pattern, exclude=None, dirs=False, recursive=True):
         """
-        Finds all path names in the directory according to unix-shell rules. The exculde pattern
-        is given in regular expressions. This method uses glob.glob() internally.
-        :param pattern: Regular expression pattern for including files.
-        :param dirs: Determines if directories are matched as well.
-        :param recursive: Match pattern recursively in directory.
-        :param exclude: Regular expression pattern for exculding files.
+
         """
         ret = []
         include_re = re.compile(pattern)
@@ -174,18 +169,20 @@ class Directory(Path):
         else:
             exclude_re = None
         if recursive:
+            abs_ = str(self.absolute())
             for dirpath, dirnames, filenames in os.walk(self._path):
                 if dirs:
                     it = chain(dirnames, filenames)
                 else:
                     it = filenames
                 for f in it:
-                    m = include_re.match(f)
+                    match_path = os.path.join(dirpath, f)
+                    match_path = os.path.relpath(match_path, abs_)
+                    m = include_re.match(match_path)
                     if m:
-                        if exclude_re is not None and exclude_re.match(f):
+                        if exclude_re is not None and exclude_re.match(match_path):
                             continue
-                        newpath = os.path.join(self._path, f)
-                        ret.append(newpath)
+                        ret.append(match_path)
         else:
             for f in os.listdir(self._path):
                 if not dirs and os.path.isdir(f):

@@ -141,9 +141,6 @@ class Config(object):
         for handler in self._handlers.values():
             handler.overwrite_merge(higher_priority)
 
-    def keep_merge(self, lower_priority):
-        raise NotImplementedError  # TODO: NotImplementedError
-
     def _parse_verbosity(self, value):
         value = value.lower().strip()
         ret = 3

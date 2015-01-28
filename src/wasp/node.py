@@ -7,7 +7,7 @@ from .argument import ArgumentCollection, collection
 class Node(object):
     def __init__(self, key=None, discard=False):
         if key is None:
-            key = generate_uuid()
+            key = str(generate_uuid())
         else:
             assert isinstance(key, str), 'Identifier for Node must be a string'
         self._key = key
