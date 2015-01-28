@@ -318,24 +318,33 @@ def files(*args, ignore=False):
     return ret
 
 
+def path(arg):
+    if isinstance(arg, FileNode):
+        return File(f.path)
+    elif isinstance(arg, str):
+        if Path(arg).isdir():
+            return Directory(arg)
+        else:
+            return File(arg)
+    elif isinstance(arg, File):
+        return arg
+    elif isinstance(arg, Directory):
+        return arg
+    raise ValueError('No compatible type given to `paths()`.')
+
+
 def paths(*args, ignore=False):
     ret = []
     for f in args:
-        if isinstance(f, FileNode):
-            ret.append(File(f.path))
-        elif isinstance(f, str):
-            if Path(f).isdir():
-                ret.append(Directory(f))
-            else:
-                ret.append(File(f))
-        elif isinstance(f, File):
-            ret.append(f)
-        elif isinstance(f, Directory):
-            ret.append(f)
-        elif is_iterable(f):
+        if is_iterable(f):
             ret.extend(paths(*f))
-        elif not ignore:
-            raise ValueError('No compatible type given to `paths()`.')
+        else:
+            try:
+                p = path(f)
+                ret.append(p)
+            except ValueError as e:
+                if not ignore:
+                    raise e
     return ret
 
 

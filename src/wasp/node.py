@@ -1,7 +1,7 @@
 from uuid import uuid4 as generate_uuid
 from . import ctx
 from .signature import FileSignature, CacheSignature, DummySignature
-from .argument import ArgumentCollection, Argument, collection
+from .argument import ArgumentCollection, collection
 
 
 class Node(object):
@@ -53,8 +53,9 @@ class Node(object):
 
 class FileNode(Node):
     def __init__(self, path):
-        from .fs import File
-        self._path = File(path)
+        from .fs import path as path_
+        self._path = path_(path
+        )
         super().__init__(path)
 
     def _make_signature(self):
@@ -68,7 +69,8 @@ class FileNode(Node):
         return self._path
 
     def before_run(self, target=False):
-        if target:
+        from .fs import File
+        if target and isinstance(self._path, File):
             self._path.directory().create()
 
 

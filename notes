@@ -44,6 +44,7 @@ Bugs
 
 Lower Priorieties/Questions
 ============================
+ * ShellTask: are arguments properly quoted?
  * somehow trigger find_npm() automatically?!
  * check this: is node refresh always parallelized?!
  * improve chaining support sth like nodejs.install('jsmin').find_exe('jsmin')
