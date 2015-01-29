@@ -7,7 +7,7 @@ def html(docdir):
                , always=True)
     sh.use(build_docdir=Directory(docdir).to_builddir(), docdir=docdir)
     sh.use(':sphinx/sphinx_build')
-    sh.require('sphinx_build')
+    sh.require(('sphinx_build', find))
     return sh
 
 

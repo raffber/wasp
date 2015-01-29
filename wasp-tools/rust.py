@@ -29,19 +29,22 @@ def compile(sources, release=False):
             s = File(s)
         assert isinstance(s, File), 'rust.compile() expects a string or File or a list thereof'
         t = s.to_builddir().append_extension('.o')
-        task = shell('{rustc} {SRC} -o {TGT}', sources=s, targets=t).use(':rust/rustc').require('rustc')
+        task = shell('{rustc} {SRC} -o {TGT}', sources=s, targets=t)\
+            .use(':rust/rustc').require(('rustc', find_rustc))
         tasks.append(task)
     return group(tasks)
 
 
 def link_executable(obj_files, name='main'):
     f = ctx.builddir.join(name)
-    return shell('{rustc} {SRC} {TGT}', sources=obj_files, targets=f).use(':rust/rustc').require('rustc')
+    return shell('{rustc} {SRC} {TGT}', sources=obj_files, targets=f)\
+        .use(':rust/rustc').require(('rustc', find_rustc))
 
 
 def link_shlib(obj_files, name='main'):
     f = ctx.builddir.join(name)
-    return shell('{rustc} {SRC} {TGT}', sources=obj_files, targets=f).use(':rust/rustc').require('rustc')
+    return shell('{rustc} {SRC} {TGT}', sources=obj_files, targets=f)\
+        .use(':rust/rustc').require(('rustc', find_rustc))
 
 
 def executable(sources, name='main', release=True):
@@ -54,7 +57,7 @@ def cargo_build(directory):
     if isinstance(directory, str):
         directory = Directory(directory)
     assert isinstance(directory, Directory), 'cargo_build() expects an argument of type str or Directory'
-    return shell('{cargo} build', always=True, cwd=directory)
+    return shell('{cargo} build', always=True, cwd=directory).use(':rust/cargo').require(('cargo', find_cargo))
 
 
 def shlib(sources, name='main', release=True):

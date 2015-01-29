@@ -121,7 +121,7 @@ def install(pkg, prefix=None, update=True):
         .use(package=pkg, prefix=cmdline_prefix)\
         .produce(package(pkg, prefix=prefix))\
         .use(':nodejs/find-npm')\
-        .require('npm')
+        .require(('npm', find_npm))
 
 
 def _make_prefix(prefix):

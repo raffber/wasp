@@ -10,8 +10,6 @@ Next
 
  * allow configuring log for tasks
  * autoconfigure log for tasks based on decorator config
- * allow check() to spawn tasks -> find_npm() can be triggered automatically
-    -> require(('npm', find_npm))
  * implement basic rust tool
     -> at least with rustc
     -> fetch packages?!
@@ -33,9 +31,6 @@ Lower Priorieties/Questions
  * allow ctx.g('subdir')? such that variables can be scoped => ctx.g(__file__)
  * check if relto is honored all the time str(path) should return standardized
     reperesentation
- * finding stuff is annoying sometimes => allow people skip find and provide
-    a default value for certain arguments
-    -> it should be possible to allow default
  * create a boolean node.... as in run_if(fun, task) -> TriggerNode
  * improve error output, somehow identify task if MissingArgumentError
  * remove the number of pitfalls
@@ -70,6 +65,13 @@ Lower Priorieties/Questions
  * remove nested ArgumentCollections?!
     -> evaluation order of handlers should be clearly defined
     -> evaluate handler by order of import
+
+
+Feature Removal Tour
+---------------------
+
+ * remove --target ?!
+ * remove hierarchical ArgumentCollection()
 
 
 Argument Refactor ?!

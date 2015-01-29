@@ -15,7 +15,6 @@ nodejs = tool('nodejs')
 @configure
 def configure():
     c = chain()
-    c += nodejs.find_npm()
     c += nodejs.install('jsmin')
     c += nodejs.find_exe('jsmin').produce(':jsmin')
     yield c
@@ -28,9 +27,7 @@ def _nodejs():
 
 @wasp.command('doc', description='Build project documentation.')
 def doc():
-    compiler = sphinx.find()
-    html = sphinx.html('doc')
-    return html, compiler
+    return sphinx.html('doc')
 
 
 @watch(dirs='doc', regexp='^[a-z-_]*\.rst$', command='watch-doc')
