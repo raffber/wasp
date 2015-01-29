@@ -24,6 +24,7 @@ class TaskContainer(object):
         self._has_run = None
         self._finished = False
         self._children = children
+        self._spawned = False
 
     @property
     def targets(self):
@@ -45,6 +46,15 @@ class TaskContainer(object):
         self._has_run = None
         self._runnable = None
         self._frozen = False
+
+
+    def get_spawned(self):
+        return self._spawned
+
+    def set_spawned(self, spawned):
+        self._spawned = spawned
+
+    spawned = property(get_spawned, set_spawned)
 
     @property
     def noop(self):
@@ -129,16 +139,28 @@ class TaskContainer(object):
 
 class DAG(object):
     def __init__(self, tasks, produce=None):
-        self._tasks = []
         self._waiting_tasks = []
         self._target_map = {}
-        self.insert(tasks)
         self._runnable_tasks = []
         self._executing_tasks = []
-        if produce is not None:
+        self._produce = produce
+        self.recompute(tasks)
+
+    def recompute(self, new_tasks):
+        tasks = []
+        tasks.extend(new_tasks)
+        if len(self._runnable_tasks) > 0:
+            tasks.extend(self._runnable_tasks)
+            self._runnable_tasks.clear()
+        if len(self._waiting_tasks) > 0:
+            tasks.extend(self._waiting_tasks)
+            self._waiting_tasks.clear()
+        self._target_map.clear()
+        self.insert(tasks)
+        if self._produce is not None:
             self._waiting_tasks.clear()
             limited_set = set()
-            produce_ids = [p.key for p in produce]
+            produce_ids = [p.key for p in self._produce]
             required = []
             for task in tasks:
                 if isinstance(task.task, TaskGroup):
@@ -198,7 +220,6 @@ class DAG(object):
         self._executing_tasks.remove(task)
 
     def insert(self, tasks):
-        self._tasks.extend(tasks)
         # n = number of tasks, m = average number of source nodes per task
         # p = average number of tasks producing a target
         # create map from target => task --> O(m*n)
@@ -343,6 +364,18 @@ class ParallelExecutor(Executor):
                 self._loop.cancel()
                 break
             self._executed_tasks.add(task.task)
+            # check task, and if it hadn't had the chance to spawn new tasks
+            # allow it to spawn.
+            spawn = task.task.check(spawn=not task.spawned)
+            assert not task.spawned or spawn is None, 'Task.check() may only spawn tasks if spawn=True.'
+            if spawn is not None:
+                assert isinstance(spawn, list)
+                spawn = make_containers(spawn, ns=self._ns)
+                spawn.append(task)
+                self._dag.recompute(spawn)
+                task.spawned = True
+                continue
+            self._dag.start_task(task)
             # TODO: use a thread-pool
 
             def _callable():
@@ -355,18 +388,8 @@ class ParallelExecutor(Executor):
                 except KeyboardInterrupt:
                     log.fatal(log.format_fail('Execution Interrupted!!'))
                     self._failed_event.fire(task)
+
             thread = Thread(target=_callable)
-            # insert the spawned tasks into the DAG
-            # insert the task into the DAG -> it will automatically be a dependency of
-            # the spawned tasks
-            # task should be inserted into DAG again, but only after the spawn
-            # TODO: if check() spawns tasks, execute them first
-            # create a special callable for this and execute these task,
-            # only then start the task at hand.
-            # raise MissingArgumentError('Missing argument for task:'
-            #                            ' Required argument "{1}" is empty.'.format(self.key, argkey))
-            task.task.check(spawn=False)
-            self._dag.start_task(task)
             thread.start()
             self._current_jobs += 1
 

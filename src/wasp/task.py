@@ -92,7 +92,9 @@ class Task(object):
                         raise MissingArgumentError(
                             'Missing argument for task: Required argument "{1}" is empty.'
                             .format(self.key, argkey))
-                    ret.append(spawner())
+                    t = spawner()
+                    self.use(t)
+                    ret.append(t)
                 self.arguments.add(arg)
         if not len(ret) == 0:
             return ret

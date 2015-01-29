@@ -9,7 +9,7 @@ class Compile(ShellTask):
 
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
-        self.require('dc')
+        self.require(('dc', find_dc))
 
     def use_arg(self, arg):
         if arg.key == 'dflags':
@@ -23,7 +23,7 @@ class Link(ShellTask):
 
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
-        self.require('dc')
+        self.require(('dc', find_dc))
 
     def use_arg(self, arg):
         if arg.key == 'ldflags':
