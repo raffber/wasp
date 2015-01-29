@@ -4,8 +4,17 @@ Next Task
 Current:
 ---------
 
+
 Next
 -----
+
+ * allow configuring log for tasks
+ * autoconfigure log for tasks based on decorator config
+ * allow check() to spawn tasks -> find_npm() can be triggered automatically
+    -> require(('npm', find_npm))
+ * implement basic rust tool
+    -> at least with rustc
+    -> fetch packages?!
 
  * test, test, test, test and write doc
  * port to windows
@@ -14,33 +23,13 @@ Next
 Bugs
 =======
 
+
 Lower Priorieties/Questions
 ============================
  * options: autoload?!
  * progress bar! -> extension?!
  * ShellTask: are arguments properly quoted?
- * somehow trigger find_npm() automatically?!
  * check this: is node refresh always parallelized?!
- * improve chaining support sth like nodejs.install('jsmin').find_exe('jsmin')
-    -> automatically insert dependencies
-    -> could be done with scope
-        with nodejs.chain() as n:
-            yield n.install('jsmin')
-            yield n.find_exe('jsmin').produce(':jsmin')
-        -> equates to: n.install('jsmin').produce(':asdf') and n.find_exe('jsmin').depends(':asdf')
-    -> nodejs can: import from wasp.task import make_chain -> chain = make_chain(install, finde_exe)
-    -> maybe chain can be generalized?
-    -> register TaskCreator (i.e. function returning a task)
-    -> chain() populates with all TaskCreators
-    or:
-    with chain() as c:
-        c += task
-        c += task
-    yield c <=== simplest and best solution
-    and:
-    with depends(task) as d:
-        d += task
-        d += task
  * allow ctx.g('subdir')? such that variables can be scoped => ctx.g(__file__)
  * check if relto is honored all the time str(path) should return standardized
     reperesentation
@@ -60,7 +49,6 @@ Lower Priorieties/Questions
  * tidy up imports
  * refactor realpath to abspath
  * set default verbosity to info?!
- * what is --verror used for?
  * binary json?! maybe implmented by myself?
  * yaml subset which can be translated to json (a.k.a yson)
  * invocation from recursive directory: how to deduce topdir?!
@@ -70,9 +58,6 @@ Lower Priorieties/Questions
  * util.Namespace class => inherit metadata, decoratorstore from it
  * escape : in filename (.replace('\:', ':') at str[0:1])
  * proper subproject handling (implemented as plugin to the recursion algorithm)
- * some way to make commands run again if specified implict as a dependency for another command and the former has already
-   completed successfully. Use case might be an updated git repo which gets pulled in by "./wasp fetch" and should be updated
-   regularly. => ctx.commands['configure'].invalidate(): REQUIRES: improved command api
  * could we integrate pip, easy_install? just install extensions as eggs? => test for import pip
    - if sth. is missing (e.g. templates, make it automatically installable)
    - install it to wasp temporary directory
@@ -82,13 +67,14 @@ Lower Priorieties/Questions
     -> namespace the arguments
  * benchmark --> make things faster
  * egrep -rni NotImplementedError src/ | grep TODO
-
-Argument Refactor
-==================
-
-=> remove nested ArgumentCollections?! --> yes, pass information with ctx.g.asdf = asdf
+ * remove nested ArgumentCollections?!
     -> evaluation order of handlers should be clearly defined
     -> evaluate handler by order of import
+
+
+Argument Refactor ?!
+--------------------
+
 => overrides: task.overrides.append(provider)
 => ArgumentProviderBase
     -> defines __getitem__ and __setitem__
@@ -122,14 +108,13 @@ Pitfalls
     i.e. if a task is used() but never added, this should somehow be detected
  * possibly make a pitfalls handler where information is collected
 
-NPM Extension
+Tools
 --------------
 
- * make sure there is a way to tap into npm
- * probably also maven...
- * ... and pip
- * and cargo
- => how to support out of tree builds? maybe just don't?
+ * cargo/rust
+ * cpp
+ * qt
+ * latex
 
 
 subproject Extension

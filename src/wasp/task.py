@@ -75,33 +75,28 @@ class Task(object):
     def __ne__(self, other):
         return not (other.identfier == self._key)
 
-    def check(self):
-        """
-        Called before task execution (also before prepare). This function
-        retrieves all information from dependency nodes and checks if all required arguments
-        were given. If not, it is attempted to retrieve the required information using :ref:Argument.retrieve_all().
-        This function is called in the main thread and may access the wasp-context.
-        If this fails as well, a :ref:MissingArgumentError is thrown.
-        """
-        for node in self._used_nodes:
+    def check(self, spawn=True):
+        for node in reversed(self._used_nodes):
             # retrieve all nodes
             if isinstance(node, SymbolicNode):
                 for arg in node.read().values():
                     if arg.key not in self.arguments or self.arguments[arg.key].is_empty:
                         self.use(arg)
-        for arg in self._required_arguments:
-            if arg.key not in self.arguments:
+        ret = []
+        for argkey, spawner in self._required_arguments:
+            if argkey not in self.arguments or self.arguments[argkey].is_empty:
                 # attempt to retrieve the argument from the common sources
-                arg = Argument(arg.key).retrieve_all()
+                arg = Argument(argkey).retrieve_all()
                 if arg.is_empty:
-                    raise MissingArgumentError('Missing argument for task:'
-                                               ' Required argument "{1}" is empty.'.format(self.key, arg.key))
+                    if spawner is None or not spawn:
+                        raise MissingArgumentError(
+                            'Missing argument for task: Required argument "{1}" is empty.'
+                            .format(self.key, argkey))
+                    ret.append(spawner())
                 self.arguments.add(arg)
-            elif self.arguments[arg.key].is_empty:
-                self.arguments[arg.key].retrieve_all()
-                if self.arguments[arg.key].is_empty():
-                    raise MissingArgumentError('Missing argument for task:'
-                                               ' Required argument "{1}" is empty.'.format(self.key, arg.key))
+        if not len(ret) == 0:
+            return ret
+        return None
 
     @property
     def prepare(self):
@@ -254,16 +249,22 @@ class Task(object):
 
     def require(self, *arguments):
         for arg in arguments:
+            spawner = None
             # add arguments to a list and check them before execution
             if arg is None:
                 continue
             if isinstance(arg, str):
-                ext = [Argument(arg)]
+                argkey = arg
             elif isinstance(arg, list):
-                ext = [Argument(x) if isinstance(x, str) else x for x in arg]
+                self.require(*arg)
+                continue
+            elif isinstance(arg, tuple):
+                argkey, spawner = arg
+                assert isinstance(argkey, str), 'Task.require() expects a tuple of (str, callable).'
+                assert callable(spawner), 'Task.require() expects a tuple of (str, callable).'
             else:
                 assert False, 'Unrecognized type in Task.require() arguments. Accepted are str or list thereof.'
-            self._required_arguments.extend(ext)
+            self._required_arguments.append((argkey, spawner))
         return self
 
 

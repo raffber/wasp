@@ -188,8 +188,10 @@ class DAG(object):
         if len(self._runnable_tasks) == 0:
             return None
         task = self._runnable_tasks.pop()
-        self._executing_tasks.append(task)
         return task
+
+    def start_task(self, task):
+        self._executing_tasks.append(task)
 
     def task_finished(self, task):
         task.task.has_run = True
@@ -337,17 +339,6 @@ class ParallelExecutor(Executor):
                 break
             # attempt to start new task
             task = self._dag.pop_runnable_task()
-            # run them without a separate thread
-            # due to overhead
-            while task is not None and task.noop:
-                self._current_jobs += 1
-                self._executed_tasks.add(task.task)
-                run_task(task)
-                if task.task.success:
-                    self.task_success(task, start=False)
-                else:
-                    self.task_failed(task)
-                task = self._dag.pop_runnable_task()
             if task is None:
                 self._loop.cancel()
                 break
@@ -365,7 +356,17 @@ class ParallelExecutor(Executor):
                     log.fatal(log.format_fail('Execution Interrupted!!'))
                     self._failed_event.fire(task)
             thread = Thread(target=_callable)
-            task.task.check()
+            # insert the spawned tasks into the DAG
+            # insert the task into the DAG -> it will automatically be a dependency of
+            # the spawned tasks
+            # task should be inserted into DAG again, but only after the spawn
+            # TODO: if check() spawns tasks, execute them first
+            # create a special callable for this and execute these task,
+            # only then start the task at hand.
+            # raise MissingArgumentError('Missing argument for task:'
+            #                            ' Required argument "{1}" is empty.'.format(self.key, argkey))
+            task.task.check(spawn=False)
+            self._dag.start_task(task)
             thread.start()
             self._current_jobs += 1
 
