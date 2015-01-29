@@ -45,7 +45,7 @@ class Task(object):
         self._postprocess_list.append(lambda x: self._postprocess())
         self._spawn_list = CallableList(arg=self).collect(lambda ret: reduce(operator.add, ret))
         self._spawn_list.append(lambda x: self._spawn())
-        self._logger = log.clone()
+        self._logger = None
         self._result = ArgumentCollection()
         self._used_nodes = []
         self._required_arguments = []
@@ -53,9 +53,13 @@ class Task(object):
     def _make_id(self):
         return str(uuid())
 
-    @property
-    def log(self):
+    def get_log(self):
         return self._logger
+
+    def set_log(self, logger):
+        self._logger = logger
+
+    log = property(get_log, set_log)
 
     def get_always(self):
         return self._always

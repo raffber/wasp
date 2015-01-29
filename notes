@@ -8,11 +8,8 @@ Current:
 Next
 -----
 
- * allow configuring log for tasks
- * autoconfigure log for tasks based on decorator config
  * implement basic rust tool
-    -> at least with rustc
-    -> fetch packages?!
+ * implement a thread pool (using EventLoop)
 
  * test, test, test, test and write doc
  * port to windows
@@ -24,6 +21,7 @@ Bugs
 
 Lower Priorieties/Questions
 ============================
+ * autoconfigure log for tasks based on decorator config
  * options: autoload?!
  * progress bar! -> extension?!
  * ShellTask: are arguments properly quoted?
@@ -72,6 +70,7 @@ Feature Removal Tour
 
  * remove --target ?!
  * remove hierarchical ArgumentCollection()
+ * all those task stages.
 
 
 Argument Refactor ?!

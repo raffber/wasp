@@ -25,6 +25,12 @@ class TaskContainer(object):
         self._finished = False
         self._children = children
         self._spawned = False
+        # if this would not be the case, the task would never be executed
+        if len(task.sources) == 0 and len(task.targets) == 0:
+            task.always = True
+        if task.log is None:
+            task.log = log.clone()
+
 
     @property
     def targets(self):
@@ -222,6 +228,7 @@ class DAG(object):
     def insert(self, tasks):
         # n = number of tasks, m = average number of source nodes per task
         # p = average number of tasks producing a target
+        # for a loosly coupled task set, the complexity is O(n)
         # create map from target => task --> O(m*n)
         for task in tasks:
             for target in task.targets:
@@ -231,7 +238,7 @@ class DAG(object):
         # add dependencies to every task, i.e. add all tasks producing each target --> O(m*n*p)
         for task in tasks:
             for source in task.task.sources:
-                if source.key in self._target_map.keys():
+                if source.key in self._target_map:
                     additional_deps = self._target_map[source.key]
                     task.dependencies.extend(additional_deps)
         self._waiting_tasks.extend(tasks)
@@ -404,20 +411,10 @@ class ParallelExecutor(Executor):
         self._cancel_loop = True
 
 
-def preprocess(tasks):
-    for task in tasks:
-        real_task = task.task
-        real_task.log.configure(verbosity=log.verbosity)
-        # if this would not be the case, the task would never be executed
-        if len(real_task.sources) == 0 and len(real_task.targets) == 0:
-            real_task.always = True
-
-
 def execute(tasks, executor, produce=None, ns=None):
     tasks = make_containers(tasks.values(), ns=ns)
     if len(tasks) == 0:
         return TaskCollection()
-    preprocess(tasks)
     dag = DAG(tasks, produce=produce)
     executor.setup(dag)
     extensions.api.tasks_execution_started(tasks, executor, dag)
