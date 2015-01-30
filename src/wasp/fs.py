@@ -182,7 +182,7 @@ class Directory(Path):
                     if m:
                         if exclude_re is not None and exclude_re.match(match_path):
                             continue
-                        ret.append(match_path)
+                        ret.append(os.path.join(self._path, match_path))
         else:
             for f in os.listdir(self._path):
                 if not dirs and os.path.isdir(f):

@@ -9,7 +9,6 @@ Next
 -----
 
  * implement basic rust tool
- * implement a thread pool (using EventLoop)
 
  * test, test, test, test and write doc
  * port to windows

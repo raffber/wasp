@@ -1,4 +1,4 @@
-from wasp import shell, find_exe, File, group, ctx, Directory
+from wasp import shell, find_exe, File, group, ctx, Directory, files
 
 
 RUST_BINARY_PATHS = ['/usr/bin', '/usr/local/bin']
@@ -19,17 +19,11 @@ def find_rustc(produce=True):
 
 
 def compile(sources, release=False):
-    if isinstance(sources, str):
-        sources = [sources]
-    elif isinstance(sources, File):
-        sources = [sources]
+    sources = files(sources)
     tasks = []
     for s in sources:
-        if isinstance(s, str):
-            s = File(s)
-        assert isinstance(s, File), 'rust.compile() expects a string or File or a list thereof'
         t = s.to_builddir().append_extension('.o')
-        task = shell('{rustc} {SRC} -o {TGT}', sources=s, targets=t)\
+        task = shell('{rustc} {SRC} -o {TGT} --emit obj', sources=s, targets=t)\
             .use(':rust/rustc').require(('rustc', find_rustc))
         tasks.append(task)
     return group(tasks)
@@ -37,13 +31,13 @@ def compile(sources, release=False):
 
 def link_executable(obj_files, name='main'):
     f = ctx.builddir.join(name)
-    return shell('{rustc} {SRC} {TGT}', sources=obj_files, targets=f)\
+    return shell('{rustc} {SRC} -o {TGT}', sources=obj_files, targets=f)\
         .use(':rust/rustc').require(('rustc', find_rustc))
 
 
 def link_shlib(obj_files, name='main'):
     f = ctx.builddir.join(name)
-    return shell('{rustc} {SRC} {TGT}', sources=obj_files, targets=f)\
+    return shell('{rustc} {SRC} -o {TGT}', sources=obj_files, targets=f)\
         .use(':rust/rustc').require(('rustc', find_rustc))
 
 

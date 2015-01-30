@@ -405,7 +405,7 @@ class ParallelExecutor(Executor):
 
     def task_failed(self, task):
         self._thread_pool.cancel()
-        if self._thread_pool.idle():
+        if self._thread_pool.idle:
             self._loop.cancel()
         super().task_failed(task)
 

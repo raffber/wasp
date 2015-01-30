@@ -1,7 +1,7 @@
 import os
 import zlib
 import binascii
-from wasp import File, group, shell, tool, ctx, configure, chain
+from wasp import File, group, shell, tool, ctx, configure, chain, Directory
 from wasp.ext.watch import watch
 import wasp
 from wasp.fs import find_exe
@@ -10,6 +10,7 @@ d = tool('d')
 sphinx = tool('sphinx')
 latex = tool('latex')
 nodejs = tool('nodejs')
+rust = tool('rust')
 
 
 @configure
@@ -18,6 +19,15 @@ def configure():
     c += nodejs.install('jsmin')
     c += nodejs.find_exe('jsmin').produce(':jsmin')
     yield c
+
+
+@wasp.command('rust')
+def _rust():
+    files = Directory('rust_test').glob('.*?.rs$')
+    comp = rust.compile(files)
+    link = rust.link_executable(comp)
+    return comp, link
+
 
 @wasp.command('nodejs', depends='configure')
 def _nodejs():
