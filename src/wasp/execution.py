@@ -333,20 +333,21 @@ class Executor(object):
 class ParallelExecutor(Executor):
 
     class TaskRunner(object):
-        def __init__(self, executor, task):
-            self._executor = executor
+        def __init__(self, task, on_success, on_fail):
+            self._on_success = on_success
+            self._on_fail = on_fail
             self._task = task
 
         def __call__(self):
             try:
                 succ = run_task(self._task)
                 if not succ:
-                    self._executor._failed_event.fire(self._task)
+                    self._on_fail.fire(self._task)
                     return
-                self._executor._success_event.fire(self._task)
+                self._on_success.fire(self._task)
             except KeyboardInterrupt:
                 log.fatal(log.format_fail('Execution Interrupted!!'))
-                self._executor._failed_event.fire(self._task)
+                self._on_fail.fire(self._task)
 
     def __init__(self, jobs=1, ns=None):
         super().__init__(ns=ns)
@@ -390,7 +391,8 @@ class ParallelExecutor(Executor):
                 continue
             self._dag.start_task(task)
             self._executed_tasks.add(task.task)
-            self._thread_pool.submit(ParallelExecutor.TaskRunner(self, task))
+            self._thread_pool.submit(
+                ParallelExecutor.TaskRunner(task, self._success_event, self._failed_event))
 
     def task_failed(self, task):
         self._thread_pool.cancel()
