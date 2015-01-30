@@ -18,35 +18,6 @@ def find_rustc(produce=True):
     return t
 
 
-def compile(sources, release=False):
-    sources = files(sources)
-    tasks = []
-    for s in sources:
-        t = s.to_builddir().append_extension('.o')
-        task = shell('{rustc} {SRC} -o {TGT} --emit obj', sources=s, targets=t)\
-            .use(':rust/rustc').require(('rustc', find_rustc))
-        tasks.append(task)
-    return group(tasks)
-
-
-def link_executable(obj_files, name='main'):
-    f = ctx.builddir.join(name)
-    return shell('{rustc} {SRC} -o {TGT}', sources=obj_files, targets=f)\
-        .use(':rust/rustc').require(('rustc', find_rustc))
-
-
-def link_shlib(obj_files, name='main'):
-    f = ctx.builddir.join(name)
-    return shell('{rustc} {SRC} -o {TGT}', sources=obj_files, targets=f)\
-        .use(':rust/rustc').require(('rustc', find_rustc))
-
-
-def executable(sources, name='main', release=True):
-    comp = compile(sources, release=release)
-    link = link_executable(comp.targets, name=name)
-    return group(comp, link)
-
-
 def cargo_build(directory):
     if isinstance(directory, str):
         directory = Directory(directory)
@@ -54,8 +25,7 @@ def cargo_build(directory):
     return shell('{cargo} build', always=True, cwd=directory).use(':rust/cargo').require(('cargo', find_cargo))
 
 
-def shlib(sources, name='main', release=True):
-    comp = compile(sources, release=release)
-    link = link_shlib(comp.targets, name=name)
-    return group(comp, link)
-
+def executable(source, target):
+    target = ctx.builddir.join(target)
+    return shell('{rustc} {SRC} -o {TGT}', sources=source, targets=target)\
+        .use(':rust/rustc').require(('rustc', find_rustc))

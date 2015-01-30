@@ -1,5 +1,5 @@
 
 
-fn foo() {
+pub fn foo() {
     println!("bar")
 }

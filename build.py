@@ -23,10 +23,7 @@ def configure():
 
 @wasp.command('rust')
 def _rust():
-    files = Directory('rust_test').glob('.*?.rs$')
-    comp = rust.compile(files)
-    link = rust.link_executable(comp)
-    return comp, link
+    return rust.executable('rust_test/main.rs', 'main')
 
 
 @wasp.command('nodejs', depends='configure')

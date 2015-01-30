@@ -228,13 +228,15 @@ class File(Path):
         """
         return Directory(os.path.dirname(self._path))
 
-    def replace_extension(self, new):
+    def replace_extension(self, new=None):
         """
         Returns a new File object, where the old extension is removed and replaced with the
         new extension
-        :param new: New extension. If an empty string is given, the extension will be removed.
+        :param new: New extension. If None is given, the extension will be removed.
         :return: A new File object with the processed files.
         """
+        if new is None:
+            new = ''
         root, ext = os.path.splitext(self._path)
         return File(root + '.' + new, make_absolute=self._absolute)
 

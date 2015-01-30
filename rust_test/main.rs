@@ -1,5 +1,8 @@
+mod sub;
 
+use sub::foo;
 
 fn main() {
-    println!("main")
+    println!("main");
+    foo();
 }
