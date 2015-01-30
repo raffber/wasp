@@ -154,10 +154,13 @@ class EventLoop(object):
         self._running = False
         self._started = False
         self._start_id = None
+        self._on_idle = None
+        self._lock = threading.Lock()
 
     def fire_event(self, evt, args, kw):
-        self._events.append((evt, args, kw))
-        self._threading_event.set()
+        with self._lock:
+            self._events.append((evt, args, kw))
+            self._threading_event.set()
 
     def cancel(self):
         self._cancel = True
@@ -171,6 +174,10 @@ class EventLoop(object):
     def started(self):
         return self._started
 
+    def on_idle(self, callable_):
+        assert callable(callable_)
+        self._on_idle = callable_
+
     def run(self):
         self._start_id = threading.current_thread().ident
         self._started = True
@@ -181,12 +188,13 @@ class EventLoop(object):
                 self._threading_event.clear()
                 if self._cancel:
                     break
-                for (evt, args, kw) in self._events:
+                with self._lock:
+                    events = list(self._events)
+                    self._events.clear()
+                for (evt, args, kw) in events:
                     evt.invoke(*args, **kw)
-                self._events.clear()
-                # TODO: thread save this; lock on self._events
-                # necessary? these things are atomic in python!
-                # but is clear as well?
+                if self._on_idle is not None and len(self._events) == 0:
+                    self._on_idle()
         except KeyboardInterrupt:
             self._running = False
             if self._interrupted is not None:
@@ -196,6 +204,56 @@ class EventLoop(object):
             self._start_id = None
         self._running = False
         return True
+
+
+class EventLoopThread(threading.Thread):
+
+    def __init__(self, idle_event, *args, **kw):
+        super().__init__(*args, **kw)
+        self._loop = EventLoop()
+        self._loop.on_idle(lambda: idle_event.fire())
+        self._submit_event = Event(self._loop)
+        self._submit_event.connect(lambda x: x())
+
+    @property
+    def loop(self):
+        return self._loop
+
+    def submit(self, callable_):
+        assert callable(callable_)
+        self._submit_event.fire(callable_)
+
+    def run(self):
+        self._loop.run()
+
+
+class ThreadPool(object):
+
+    def __init__(self, loop, num_threads, callback=None):
+        self._num_running_threads = 0
+        assert num_threads > 0
+        self._num_threads = num_threads
+        self._callback = callback
+        self._loop = loop
+        thread_idle_event = Event(self._loop)
+        thread_idle_event.connect(self._thread_idle)
+        self._threads = [EventLoopThread(thread_idle_event) for _ in range(num_threads)]
+        self._idle_threads = list(self._threads)
+
+    def _thread_idle(self, thread):
+        self._idle_threads.append(thread)
+
+    def num_running(self):
+        return self._num_running_threads
+
+    def submit(self, callable_):
+        assert callable(callable_), 'Argument to ThreadPool.submit() must be callable.'
+        thread = self._idle_threads.pop()
+        thread.submit(callable_)
+
+    def cancel(self):
+        for thread in self._threads:
+            thread.loop.cancel()
 
 
 def lock(f):
