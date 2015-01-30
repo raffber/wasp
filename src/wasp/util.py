@@ -122,7 +122,8 @@ class Event(object):
     # TODO: possibly use asyncio module, once its clear
     # that it stays in the standard library
     # also, this would require python3.4 at minimum
-    # one could also provide fallback options...
+    # so this should be delayed until at least the
+    # released version of RHEL has python3.4
     def __init__(self, loop=None):
         self._funs = []
         self._loop = loop
@@ -146,16 +147,19 @@ class Event(object):
 
 
 class EventLoop(object):
-    def __init__(self, interrupted=None):
+    def __init__(self):
         self._threading_event = ThreadingEvent()
         self._events = []
         self._cancel = False
-        self._interrupted = interrupted
+        self._interrupted = None
         self._running = False
         self._started = False
         self._start_id = None
         self._on_idle = None
         self._lock = threading.Lock()
+
+    def on_interrupt(self, interrupted):
+        self._interrupted = interrupted
 
     def fire_event(self, evt, args, kw):
         with self._lock:
@@ -193,6 +197,8 @@ class EventLoop(object):
                     self._events.clear()
                 for (evt, args, kw) in events:
                     evt.invoke(*args, **kw)
+                if self._cancel:
+                    break
                 if self._on_idle is not None and len(self._events) == 0:
                     self._on_idle()
         except KeyboardInterrupt:
@@ -211,7 +217,7 @@ class EventLoopThread(threading.Thread):
     def __init__(self, idle_event, *args, **kw):
         super().__init__(*args, **kw)
         self._loop = EventLoop()
-        self._loop.on_idle(lambda: idle_event.fire())
+        self._loop.on_idle(lambda: idle_event.fire(self))
         self._submit_event = Event(self._loop)
         self._submit_event.connect(lambda x: x())
 
@@ -229,29 +235,46 @@ class EventLoopThread(threading.Thread):
 
 class ThreadPool(object):
 
-    def __init__(self, loop, num_threads, callback=None):
-        self._num_running_threads = 0
+    def __init__(self, loop, num_threads):
         assert num_threads > 0
         self._num_threads = num_threads
-        self._callback = callback
         self._loop = loop
         thread_idle_event = Event(self._loop)
         thread_idle_event.connect(self._thread_idle)
         self._threads = [EventLoopThread(thread_idle_event) for _ in range(num_threads)]
         self._idle_threads = list(self._threads)
+        self._submits = []
+        self._canceled = False
+
+    @property
+    def idle(self):
+        return len(self._idle_threads) == len(self._threads)
 
     def _thread_idle(self, thread):
         self._idle_threads.append(thread)
-
-    def num_running(self):
-        return self._num_running_threads
+        self._start_tasks()
 
     def submit(self, callable_):
+        if self._canceled:
+            return
         assert callable(callable_), 'Argument to ThreadPool.submit() must be callable.'
-        thread = self._idle_threads.pop()
-        thread.submit(callable_)
+        self._submits.append(callable_)
+        self._start_tasks()
+
+    def _start_tasks(self):
+        if self._canceled:
+            return
+        while len(self._submits) > 0 and len(self._idle_threads) > 0:
+            task = self._submits.pop()
+            thread = self._idle_threads.pop()
+            thread.submit(task)
+
+    def start(self):
+        for thread in self._threads:
+            thread.start()
 
     def cancel(self):
+        self._canceled = True
         for thread in self._threads:
             thread.loop.cancel()
 

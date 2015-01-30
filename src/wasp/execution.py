@@ -1,6 +1,6 @@
 import traceback
 from .task import Task, TaskGroup
-from .util import EventLoop, Event, is_iterable
+from .util import EventLoop, Event, is_iterable, ThreadPool
 from . import log, ctx, extensions
 from .task_collection import TaskCollection
 
@@ -332,6 +332,22 @@ class Executor(object):
 
 class ParallelExecutor(Executor):
 
+    class TaskRunner(object):
+        def __init__(self, executor, task):
+            self._executor = executor
+            self._task = task
+
+        def __call__(self):
+            try:
+                succ = run_task(self._task)
+                if not succ:
+                    self._executor._failed_event.fire(self._task)
+                    return
+                self._executor._success_event.fire(self._task)
+            except KeyboardInterrupt:
+                log.fatal(log.format_fail('Execution Interrupted!!'))
+                self._executor._failed_event.fire(self._task)
+
     def __init__(self, jobs=1, ns=None):
         super().__init__(ns=ns)
         self._current_jobs = 0
@@ -340,18 +356,20 @@ class ParallelExecutor(Executor):
         self._cancel_loop = False
         self._success_event = Event(self._loop).connect(self.task_success)
         self._failed_event = Event(self._loop).connect(self.task_failed)
+        self._thread_pool = ThreadPool(self._loop, jobs)
+        self._loop.on_interrupt(lambda: self._thread_pool.cancel())
 
     def task_success(self, task, start=True):
-        self._current_jobs -= 1
         if self._cancel_loop:
-            if self._current_jobs == 0:
-                # no jobs running anymore, so quit the loop
+            self._thread_pool.cancel()
+            if self._thread_pool.idle():
                 self._loop.cancel()
             super().task_success(task, start=False)
             return
         super().task_success(task, start=start)
 
     def _execute_tasks(self):
+        self._thread_pool.start()
         self._start()
         if not self._loop.run():
             self._cancel = True
@@ -359,18 +377,17 @@ class ParallelExecutor(Executor):
 
     def _start(self):
         assert self._dag is not None, 'Call setup() first'
-        while self._current_jobs < self._jobs:
+        while True:
             if not self._loop.running and self._loop.started:
                 break
             if self._dag.has_finished():
                 self._loop.cancel()
+                self._thread_pool.cancel()
                 break
             # attempt to start new task
             task = self._dag.pop_runnable_task()
             if task is None:
-                self._loop.cancel()
                 break
-            self._executed_tasks.add(task.task)
             # check task, and if it hadn't had the chance to spawn new tasks
             # allow it to spawn.
             spawn = task.task.check(spawn=not task.spawned)
@@ -383,27 +400,12 @@ class ParallelExecutor(Executor):
                 task.spawned = True
                 continue
             self._dag.start_task(task)
-            # TODO: use a thread-pool
-
-            def _callable():
-                try:
-                    succ = run_task(task)
-                    if not succ:
-                        self._failed_event.fire(task)
-                        return
-                    self._success_event.fire(task)
-                except KeyboardInterrupt:
-                    log.fatal(log.format_fail('Execution Interrupted!!'))
-                    self._failed_event.fire(task)
-
-            thread = Thread(target=_callable)
-            thread.start()
-            self._current_jobs += 1
+            self._executed_tasks.add(task.task)
+            self._thread_pool.submit(ParallelExecutor.TaskRunner(self, task))
 
     def task_failed(self, task):
-        self._current_jobs -= 1
-        if self._current_jobs == 0:
-            # no jobs running anymore, so quit the loop
+        self._thread_pool.cancel()
+        if self._thread_pool.idle():
             self._loop.cancel()
         super().task_failed(task)
 
