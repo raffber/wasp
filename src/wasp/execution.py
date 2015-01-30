@@ -353,26 +353,16 @@ class ParallelExecutor(Executor):
         self._current_jobs = 0
         self._loop = EventLoop()
         self._jobs = jobs
-        self._cancel_loop = False
         self._success_event = Event(self._loop).connect(self.task_success)
         self._failed_event = Event(self._loop).connect(self.task_failed)
         self._thread_pool = ThreadPool(self._loop, jobs)
-        self._loop.on_interrupt(lambda: self._thread_pool.cancel())
-
-    def task_success(self, task, start=True):
-        if self._cancel_loop:
-            self._thread_pool.cancel()
-            if self._thread_pool.idle():
-                self._loop.cancel()
-            super().task_success(task, start=False)
-            return
-        super().task_success(task, start=start)
+        self._loop.on_interrupt(self._thread_pool.cancel)
+        self._thread_pool.on_finished(self._loop.cancel)
 
     def _execute_tasks(self):
         self._thread_pool.start()
         self._start()
         if not self._loop.run():
-            self._cancel = True
             log.fatal(log.format_fail('Execution Interrupted!!'))
 
     def _start(self):
@@ -381,7 +371,6 @@ class ParallelExecutor(Executor):
             if not self._loop.running and self._loop.started:
                 break
             if self._dag.has_finished():
-                self._loop.cancel()
                 self._thread_pool.cancel()
                 break
             # attempt to start new task
@@ -405,8 +394,6 @@ class ParallelExecutor(Executor):
 
     def task_failed(self, task):
         self._thread_pool.cancel()
-        if self._thread_pool.idle:
-            self._loop.cancel()
         super().task_failed(task)
 
     def _cancel(self):

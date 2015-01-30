@@ -118,6 +118,26 @@ class CallableList(list):
         return self._collect_returns_fun(ret)
 
 
+def lock(f):
+    class LockWrapper(object):
+        def __init__(self, f):
+            self._f = f
+
+        def __get__(self, instance, owner):
+            if instance is None:
+                raise TypeError('Function `{0}` cannot be used as class '
+                                'method with an @lock decorator.'.format(self._f.__name__))
+            if not hasattr(instance, '__lock__'):
+                object.__setattr__(instance, '__lock__', threading.Lock())
+
+            @functools.wraps(self._f)
+            def wrapper(*args, **kw):
+                with instance.__lock__:
+                    return f(instance, *args, **kw)
+            return wrapper
+    return LockWrapper(f)
+
+
 class Event(object):
     # TODO: possibly use asyncio module, once its clear
     # that it stays in the standard library
@@ -156,6 +176,7 @@ class EventLoop(object):
         self._started = False
         self._start_id = None
         self._on_idle = None
+        self._finished_handler = None
         self._lock = threading.Lock()
 
     def on_interrupt(self, interrupted):
@@ -182,6 +203,9 @@ class EventLoop(object):
         assert callable(callable_)
         self._on_idle = callable_
 
+    def on_finished(self, handler):
+        self._finished_handler = handler
+
     def run(self):
         self._start_id = threading.current_thread().ident
         self._started = True
@@ -205,10 +229,14 @@ class EventLoop(object):
             self._running = False
             if self._interrupted is not None:
                 self._interrupted()
+            if self._finished_handler is not None:
+                self._finished_handler()
             return False
         finally:
             self._start_id = None
         self._running = False
+        if self._finished_handler is not None:
+            self._finished_handler()
         return True
 
 
@@ -242,13 +270,23 @@ class ThreadPool(object):
         thread_idle_event = Event(self._loop)
         thread_idle_event.connect(self._thread_idle)
         self._threads = [EventLoopThread(thread_idle_event) for _ in range(num_threads)]
+        for th in self._threads:
+            th.loop.on_finished(lambda: self._thread_finshed(th))
         self._idle_threads = list(self._threads)
         self._submits = []
+        self._finished = Event(self._loop)
         self._canceled = False
+        self._num_finished = 0
 
     @property
     def idle(self):
         return len(self._idle_threads) == len(self._threads)
+
+    @lock
+    def _thread_finshed(self, thread):
+        self._num_finished += 1
+        if self._num_finished == self._num_threads:
+            self._finished.fire()
 
     def _thread_idle(self, thread):
         self._idle_threads.append(thread)
@@ -278,25 +316,8 @@ class ThreadPool(object):
         for thread in self._threads:
             thread.loop.cancel()
 
-
-def lock(f):
-    class LockWrapper(object):
-        def __init__(self, f):
-            self._f = f
-
-        def __get__(self, instance, owner):
-            if instance is None:
-                raise TypeError('Function `{0}` cannot be used as class '
-                                'method with an @lock decorator.'.format(self._f.__name__))
-            if not hasattr(instance, '__lock__'):
-                object.__setattr__(instance, '__lock__', threading.Lock())
-
-            @functools.wraps(self._f)
-            def wrapper(*args, **kw):
-                with instance.__lock__:
-                    return f(instance, *args, **kw)
-            return wrapper
-    return LockWrapper(f)
+    def on_finished(self, handler):
+        self._finished.connect(handler)
 
 
 # XXX: this can still be improved a lot
