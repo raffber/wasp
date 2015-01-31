@@ -5,6 +5,7 @@ Contents:
 
 .. toctree::
     api.rst
+    config.rst
 
 
 Indices and tables

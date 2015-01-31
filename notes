@@ -8,8 +8,6 @@ Current:
 Next
 -----
 
- * implement basic rust tool
-
  * test, test, test, test and write doc
  * port to windows
  * port to pypy

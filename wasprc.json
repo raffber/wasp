@@ -1,6 +1,6 @@
 {
   "metadata" : {
-    "project_name": "wasp"
+    "projectname": "wasp"
   },
   "verbosity": "info",
   "default_command": "rebuild",
