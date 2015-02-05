@@ -2,6 +2,9 @@ import os
 
 
 class Environment(dict):
+    """
+    
+    """
     def __init__(self):
         self.load_from_env()
 
@@ -15,4 +18,3 @@ class Environment(dict):
         for k, v in self:
             ret.add(Argument(k, value=v))
         return ret
-

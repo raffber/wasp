@@ -145,10 +145,18 @@ class Context(object):
 
     @property
     def arguments(self):
+        """
+        Returns an ArgumentCollection(). This property gives a global place
+        for accessing arguments.
+        """
         return self._arguments
 
     @property
     def options(self):
+        """
+        Returns an OptionsCollection(), which contains all options
+        given to ``wasp``.
+        """
         return self._options
 
     @property
@@ -156,6 +164,9 @@ class Context(object):
         return self._commands
 
     def save(self):
+        """
+        Saves the current state of the context to the cache.
+        """
         self.signatures.save(self._cache)
         self._cache.prefix('g')['last_run'] = self._g
         d = self.cache.prefix('generators')
@@ -164,6 +175,9 @@ class Context(object):
         self.cache.save()
 
     def load(self):
+        """
+        Loads the context from the cache.
+        """
         self._cache.load()
         self._g = self._cache.prefix('g').get('last_run', Namespace())
         self.produced_signatures.load(self._cache)
@@ -172,4 +186,7 @@ class Context(object):
 
     @property
     def cache(self):
+        """
+        Retruns the global cache object.
+        """
         return self._cache
