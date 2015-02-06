@@ -37,7 +37,7 @@ def doc():
     return sphinx.html('doc')
 
 
-@watch(dirs='doc', regexp='^[a-z-_]*\.rst$', command='watch-doc')
+@watch(dirs=['doc', 'src/wasp'], regexp='^[a-z-_]*\.(rst|py)$', command='watch-doc')
 def autorebuild_doc():
     return doc()
 

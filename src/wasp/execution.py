@@ -462,5 +462,9 @@ def _flatten(tasks, ns=None):
 
 
 def make_containers(tasks, ns=None):
+    """
+    Flattens the list of :class:`wasp.Task` in tasks
+    and returns a list of :class:`TaskContainer.`
+    """
     flattened, _ = _flatten(tasks, ns=ns)
     return flattened

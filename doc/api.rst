@@ -36,3 +36,22 @@ The wasp.context module
 
 .. automodule:: wasp.context
     :members:
+
+The wasp.decorator_store module
+-------------------------------
+
+.. automodule:: wasp.decorator_store
+    :members:
+
+The wasp.environment module
+---------------------------
+
+.. automodule:: wasp.environment
+    :members:
+
+
+The wasp.execution module
+---------------------------
+
+.. automodule:: wasp.execution
+    :members:
