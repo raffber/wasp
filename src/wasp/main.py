@@ -63,6 +63,7 @@ class OptionHandler(object):
             grp.description = descriptions[name]
             grp.add(StringOption('target', 'Only produce the given target.', keys=['t', 'target']))
         # call option decorators
+
         for option_decorator in decorators.options:
             option_decorator(ctx.options)
         # setup argument parser

@@ -8,6 +8,8 @@ Current:
 Next
 -----
 
+ * watch: run tasks at least once
+
  * test, test, test, test and write doc
  * port to windows
  * port to pypy

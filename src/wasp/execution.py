@@ -14,6 +14,16 @@ class DependencyCycleError(Exception):
 
 
 class TaskContainer(object):
+    """
+    Container object for a task. Allows caching several
+    properties using the :meth:`freeze()` and :meth:`thaw()` methods.
+    Once :meth:`freeze()` is called, the properties of the task are
+    evaluated at most oncea and return values are cached. Caching is
+    deactiavted again by calling :meth:`thaw()`.
+
+    Also, the :class:`TaskContainer` keeps track of all depenedencies of
+    a task.
+    """
     def __init__(self, task, children, ns=None):
         self._dependencies = []
         self._ns = ns
@@ -34,25 +44,41 @@ class TaskContainer(object):
 
     @property
     def targets(self):
+        """
+        Returns the nodes produced by the task.
+        """
         return self._task.targets
 
     @property
     def sources(self):
+        """
+        Returns the nodes consumed by the task.
+        """
         return self._task.sources
 
     @property
     def children(self):
+        """
+        Returns all child tasks.
+        """
         return self._children
 
     def freeze(self):
+        """
+        Activates caching of some task properties. While the
+        :class:`TaskContainer` is frozen, the properties are evaluated at
+        most once their return value is cached.
+        """
         self._frozen = True
 
     def thaw(self):
+        """
+        Deactivates caching.
+        """
         self._noop = None
         self._has_run = None
         self._runnable = None
         self._frozen = False
-
 
     def get_spawned(self):
         return self._spawned
@@ -61,9 +87,16 @@ class TaskContainer(object):
         self._spawned = spawned
 
     spawned = property(get_spawned, set_spawned)
+    """
+    Allows reading or writing a bool which determines, whether the task
+    already spawned new tasks during :meth:`Task.check()`
+    """
 
     @property
     def noop(self):
+        """
+        Returns True, if the task does not do anything (e.g. TaskGroup).
+        """
         if self._frozen and self._noop is not None:
             return self._noop
         elif self._frozen:
@@ -76,14 +109,24 @@ class TaskContainer(object):
 
     @property
     def dependencies(self):
+        """
+        Returns a list of tasks which must be run before this task.
+        """
         return self._dependencies
 
     @property
     def task(self):
+        """
+        Provides access to the actual :class:`Task` object.
+        """
         return self._task
 
     @property
     def has_run(self):
+        """
+        Returns True if the task has already run successfully and does not
+        need to be rerun again.
+        """
         if self._frozen and self._has_run is not None:
             return self._has_run
         elif self._frozen:
@@ -122,6 +165,10 @@ class TaskContainer(object):
 
     @property
     def runnable(self):
+        """
+        Returns True if the task can be run (i.e. all dependencies) completed
+        successfully.
+        """
         if self._frozen and self._runnable is not None:
             return self._runnable
         elif self._frozen:
@@ -140,15 +187,24 @@ class TaskContainer(object):
 
     @property
     def ns(self):
+        """
+        Returns the namespace in which the task is run. Usually this is the
+        name of the command. Signatures will be kept in this namespace.
+        """
         return self._ns
 
 
 class DAG(object):
+    """
+    Represents the direct acyclic graph of the task dependency tree.
+    It is initialized from a set of tasks and allows inserting new tasks using
+    the :meth:`insert()` function. Runnable tasks can be queried using
+    :meth:`pop_runnable_task()`.
+    """
     def __init__(self, tasks, produce=None):
         self._waiting_tasks = []
         self._target_map = {}
         self._runnable_tasks = []
-        self._executing_tasks = []
         self._produce = produce
         self.recompute(tasks)
 
@@ -206,24 +262,17 @@ class DAG(object):
         for task in self._runnable_tasks:
             task.thaw()
 
-    def pop_runnable_task(self):
+    def pop_runnable_task(self, tasks_executing=False):
         if len(self._runnable_tasks) == 0 and len(self._waiting_tasks) == 0:
             return None  # Done
         if len(self._runnable_tasks) == 0:
             self.update_runnable()
-            if len(self._runnable_tasks) == 0 and len(self._executing_tasks) == 0 and len(self._waiting_tasks) != 0:
+            if len(self._runnable_tasks) == 0 and not tasks_executing and len(self._waiting_tasks) != 0:
                 raise DependencyCycleError('The task graph is not a DAG: Dependency cycle found!')
         if len(self._runnable_tasks) == 0:
             return None
         task = self._runnable_tasks.pop()
         return task
-
-    def start_task(self, task):
-        self._executing_tasks.append(task)
-
-    def task_finished(self, task):
-        task.task.has_run = True
-        self._executing_tasks.remove(task)
 
     def insert(self, tasks):
         # n = number of tasks, m = average number of source nodes per task
@@ -245,8 +294,7 @@ class DAG(object):
 
     def has_finished(self):
         return (len(self._runnable_tasks) == 0
-                and len(self._waiting_tasks) == 0
-                and len(self._executing_tasks) == 0)
+                and len(self._waiting_tasks) == 0)
 
 
 class Executor(object):
@@ -256,6 +304,7 @@ class Executor(object):
         self._consumed_nodes = []
         self._produced_nodes = []
         self._executed_tasks = TaskCollection()
+        self._executing_tasks = []
 
     def setup(self, dag):
         self._dag = dag
@@ -265,12 +314,19 @@ class Executor(object):
         return self._executed_tasks
 
     @property
+    def executing_tasks(self):
+        return self._executing_tasks
+
+    @property
     def produced_nodes(self):
         return self._produced_nodes
 
     @property
     def consumed_nodes(self):
         return self._consumed_nodes
+
+    def task_start(self, task):
+        self._executing_tasks.append(task)
 
     def task_failed(self, task):
         self._cancel()
@@ -280,7 +336,9 @@ class Executor(object):
 
     def task_success(self, task, start=True):
         assert self._dag is not None, 'Call setup() first'
-        self._dag.task_finished(task)
+        self._executing_tasks.remove(task)
+        self._executed_tasks.add(task.task)
+        task.task.has_run = True
         spawned = task.task.spawn()
         if spawned is not None:
             if is_iterable(spawned):
@@ -371,11 +429,12 @@ class ParallelExecutor(Executor):
         while True:
             if not self._loop.running and self._loop.started:
                 break
-            if self._dag.has_finished():
+            tasks_executing = len(self._executing_tasks) != 0
+            if self._dag.has_finished() and not tasks_executing:
                 self._thread_pool.cancel()
                 break
             # attempt to start new task
-            task = self._dag.pop_runnable_task()
+            task = self._dag.pop_runnable_task(tasks_executing=tasks_executing)
             if task is None:
                 break
             # check task, and if it hadn't had the chance to spawn new tasks
@@ -389,8 +448,7 @@ class ParallelExecutor(Executor):
                 self._dag.recompute(spawn)
                 task.spawned = True
                 continue
-            self._dag.start_task(task)
-            self._executed_tasks.add(task.task)
+            self.task_start(task)
             self._thread_pool.submit(
                 ParallelExecutor.TaskRunner(task, self._success_event, self._failed_event))
 
