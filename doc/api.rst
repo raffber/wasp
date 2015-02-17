@@ -2,7 +2,7 @@ Core API Documentation
 ======================
 
 The wasp module
-----------------
+---------------
 
 .. automodule:: wasp
     :members:
@@ -14,13 +14,13 @@ The wasp.argument module
     :members:
 
 The wasp.builtin module
-------------------------
+-----------------------
 
 .. automodule:: wasp.builtin
     :members:
 
 The wasp.cache module
-------------------------
+---------------------
 
 .. automodule:: wasp.cache
     :members:
@@ -32,7 +32,7 @@ The wasp.commands module
     :members:
 
 The wasp.context module
-------------------------
+-----------------------
 
 .. automodule:: wasp.context
     :members:
@@ -51,7 +51,13 @@ The wasp.environment module
 
 
 The wasp.execution module
----------------------------
+-------------------------
 
 .. automodule:: wasp.execution
+    :members:
+
+The wasp.fs module
+------------------
+
+.. automodule:: wasp.fs
     :members:

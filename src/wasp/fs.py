@@ -5,6 +5,11 @@ It introduces an abstraction for paths and files specifically
 tailored to the usecases encountered in ``wasp``.
 Furthermore, filesystem manipulating tasks are provides, such as
 copy or remove functionality.
+
+By default, all paths below :func:`top_dir` are relative to :func:`top_dir`
+which is also the cwd of ``wasp``. All other paths are absolute. If a
+:class:`File`, :class:`Path` or :class:`Directory` object is created, the
+path is sanitized to this format using :func:`sanitize_path`.
 """
 from itertools import chain
 import os
@@ -21,8 +26,8 @@ from .argument import format_string, find_argumentkeys_in_string
 
 def sanitize_path(fpath):
     """
-    If the given path is a subdirectory of :func:`top_dir()`, the path is saved as relative path
-    otherwise, the path is kept as an absolute paths
+    If the given path is a subdirectory of :func:`top_dir()`, the path is returned
+    as relative path otherwise, the path is kept as an absolute paths
     :param fpath: path to a file
     :return: standardized path representation
     """
@@ -52,6 +57,14 @@ class DirectoryNotEmptyError(Exception):
 
 
 class Path(Serializable):
+    """
+    Base class representing an object in the file system.
+
+    :param path: Path refereing to the object.
+    :param make_absolute: If True, the path is converted into an absolute path.
+    :param relto: If a relative path is given in the ``path`` parameter the path is
+        considered to be relative to relto.
+    """
 
     def __init__(self, path, make_absolute=False, relto=None):
         if isinstance(path, Path) or isinstance(path, FileNode):
@@ -69,6 +82,12 @@ class Path(Serializable):
         self._absolute = make_absolute
 
     def relative(self, relto, skip_if_abs=False):
+        """
+        Returns a :class:`Path` object which is relative to ``relto``.
+
+        :param relto: Defines the base path of the relative path to be constructed.
+        :param skip_if_abs: If self is an absolute path, an absolute path is returned.
+        """
         if isinstance(relto, Path):
             relto = relto.path
         if skip_if_abs and self.isabs:
@@ -77,25 +96,42 @@ class Path(Serializable):
         return Path(os.path.relpath(abspath, start=relto), relto=relto)
 
     def absolute(self):
+        """
+        Returns an absolute version of the path.
+        """
         return Path(self._path, make_absolute=True)
 
     def relative_to(self):
+        """
+        Returns the path to which this path object is relative to.
+        """
         return self._relto
 
     @property
     def isabs(self):
+        """
+        Returns true if the object is given as an absolute path.
+        """
         return os.path.isabs(self._path)
 
     @property
     def path(self):
+        """
+        Returns the string the current path.
+        """
         return self._path
 
     @property
     def exists(self):
-        """Checks if the path exits"""
+        """
+        Returns true if the path exists.
+        """
         return os.path.exists(self._path)
 
     def __str__(self):
+        """
+        Equivalent to :func:`Path.path`.
+        """
         return self._path
 
     @classmethod
@@ -108,9 +144,21 @@ class Path(Serializable):
         return d
 
     def isdir(self):
+        """
+        Returns true if the path points to a directory.
+        """
         return os.path.isdir(self.path)
 
     def remove(self, recursive=True):
+        """
+        Removes the path in the file system. If the path points
+        to a directory and recursive is True, the whole directory tree
+        below the path is removed. Otherwise, if the directory is not empty,
+        a DirectoryNotEmptyError is raised.
+
+        :param recursive: Defines whether the path should be removed in a recursive way, i.e.
+            directories are removed including their content.
+        """
         if not self.isdir():
             os.remove(self.path)
             return
@@ -134,6 +182,10 @@ class Path(Serializable):
                 Path(total).remove()
 
     def to_builddir(self):
+        """
+        Returns a path object which is a subpath of the current build directory by
+        prepending the build directory path.
+        """
         return Path(ctx.builddir.join(self._path))
 
 
