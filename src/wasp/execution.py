@@ -200,6 +200,11 @@ class DAG(object):
     It is initialized from a set of tasks and allows inserting new tasks using
     the :meth:`insert()` function. Runnable tasks can be queried using
     :meth:`pop_runnable_task()`.
+
+    :param tasks: A list of TaskContainer produced using
+        the :meth:`make_containers()` function.
+    :param produce: A set of nodes. The tasks added to the DAG are limited
+        to the tasks required for producing the given set of nodes.
     """
     def __init__(self, tasks, produce=None):
         self._waiting_tasks = []
@@ -209,6 +214,12 @@ class DAG(object):
         self.recompute(tasks)
 
     def recompute(self, new_tasks):
+        """
+        Rebuilds the DAG, i.e. computes all dependencies between tasks.
+
+        :param new_tasks: Adds new tasks to the DAG.
+        """
+        # TODO: flatten the tasks here and clear dependencies upon recompute
         tasks = []
         tasks.extend(new_tasks)
         if len(self._runnable_tasks) > 0:
@@ -240,6 +251,9 @@ class DAG(object):
             self._waiting_tasks = [x for x in limited_set]
 
     def _limit_selection(self, required_task):
+        """
+        Returns a list of tasks required for executing the required task.
+        """
         required = []
         for dep in required_task.dependencies:
             required.append(dep)
@@ -247,6 +261,9 @@ class DAG(object):
         return required
 
     def update_runnable(self):
+        """
+        Updates the list of runnable tasks.
+        """
         for task in self._waiting_tasks:
             task.freeze()
         self._runnable_tasks = []
@@ -263,6 +280,8 @@ class DAG(object):
             task.thaw()
 
     def pop_runnable_task(self, tasks_executing=False):
+        """
+        """
         if len(self._runnable_tasks) == 0 and len(self._waiting_tasks) == 0:
             return None  # Done
         if len(self._runnable_tasks) == 0:
@@ -290,6 +309,9 @@ class DAG(object):
                 if source.key in self._target_map:
                     additional_deps = self._target_map[source.key]
                     task.dependencies.extend(additional_deps)
+                    deps = set(task.dependencies)
+                    task.dependencies.clear()
+                    task.dependencies.extend(list(deps))
         self._waiting_tasks.extend(tasks)
 
     def has_finished(self):
