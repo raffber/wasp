@@ -1,3 +1,11 @@
+"""
+This module collects filesystem related functionality.
+
+It introduces an abstraction for paths and files specifically
+tailored to the usecases encountered in ``wasp``.
+Furthermore, filesystem manipulating tasks are provides, such as
+copy or remove functionality.
+"""
 from itertools import chain
 import os
 import re
@@ -13,7 +21,7 @@ from .argument import format_string, find_argumentkeys_in_string
 
 def sanitize_path(fpath):
     """
-    If the given path is a subdirectory of TOP_DIR, the path is saved as relative path
+    If the given path is a subdirectory of :func:`top_dir()`, the path is saved as relative path
     otherwise, the path is kept as an absolute paths
     :param fpath: path to a file
     :return: standardized path representation
@@ -29,10 +37,17 @@ def sanitize_path(fpath):
 
 
 def top_dir():
+    """
+    Returns the top directory that wasp is currently processsing.
+    :return: os.getcwd()
+    """
     return os.getcwd()
 
 
 class DirectoryNotEmptyError(Exception):
+    """
+    Raised if a directory is expected to be empty but it is not.
+    """
     pass
 
 

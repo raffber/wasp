@@ -4,12 +4,12 @@ from .util import EventLoop, Event, is_iterable, ThreadPool
 from . import log, ctx, extensions
 from .task_collection import TaskCollection
 
-from threading import Thread
-
-
 # TODO: task timeouts -> kill hanging tasks
 
 class DependencyCycleError(Exception):
+    """
+    Raised if a dependency cycle between tasks is detected.
+    """
     pass
 
 
@@ -281,6 +281,9 @@ class DAG(object):
 
     def pop_runnable_task(self, tasks_executing=False):
         """
+        Pops a runnable task from the list of tasks and returns it.
+        None is returned if there are no runnable tasks left to be processed.
+        If the DAG contains a dependency cycle, a DependencyCycleError is raised.
         """
         if len(self._runnable_tasks) == 0 and len(self._waiting_tasks) == 0:
             return None  # Done
@@ -294,6 +297,10 @@ class DAG(object):
         return task
 
     def insert(self, tasks):
+        """
+        Inserts a new task into the DAG.
+        :param tasks: A list of TaskContainer to be added to the DAG.
+        """
         # n = number of tasks, m = average number of source nodes per task
         # p = average number of tasks producing a target
         # for a loosly coupled task set, the complexity is O(n)
@@ -320,6 +327,13 @@ class DAG(object):
 
 
 class Executor(object):
+    """
+    Abstract class which can be subclassed and handles the execution of
+    a DAG.
+
+    :param ns: The namespace in which the task set is run. See :class:`wasp.signature.Signature`
+        for more information on namespaces.
+    """
     def __init__(self, ns=None):
         self._ns = ns
         self._dag = None
@@ -329,34 +343,60 @@ class Executor(object):
         self._executing_tasks = []
 
     def setup(self, dag):
+        """
+        Initializes the Executor with a DAG.
+        """
         self._dag = dag
 
     @property
     def executed_tasks(self):
+        """
+        Returns a list of executed TaskContainers.
+        """
         return self._executed_tasks
 
     @property
     def executing_tasks(self):
+        """
+        Returns a list of currently executing TaskContainers.
+        """
         return self._executing_tasks
 
     @property
     def produced_nodes(self):
+        """
+        Returns a list of nodes that have been produced by
+        the executed tasks.
+        """
         return self._produced_nodes
 
     @property
     def consumed_nodes(self):
+        """
+        Returns a list of nodes that have been consumed by
+        the executed tasks.
+        """
         return self._consumed_nodes
 
     def task_start(self, task):
+        """
+        Must be called if a task is started.
+        """
         self._executing_tasks.append(task)
 
     def task_failed(self, task):
+        """
+        Must be called if a task has failed.
+        """
         self._cancel()
         # invalidate the sources, such that this task is rerun
         for source in task.task.sources:
             source.signature(ns=self._ns).invalidate()
 
     def task_success(self, task, start=True):
+        """
+        Must be called if a task has finished successfully.
+        """
         assert self._dag is not None, 'Call setup() first'
         self._executing_tasks.remove(task)
         self._executed_tasks.add(task.task)
@@ -378,23 +418,43 @@ class Executor(object):
             self._start()
 
     def _cancel(self):
+        """
+        Cancels the execution of DAG. Must be implemented in subclasses.
+        """
         raise NotImplementedError
 
     def _start(self):
+        """
+        Starts the exeuction of tasks. This function is called by :func:`task_success`
+        and must be reimplemented by the subclass.
+        """
         raise NotImplementedError
 
     def run(self):
+        """
+        Runs all tasks.
+        """
         self._pre_run()
         self._execute_tasks()
         self._post_run()
 
     def _execute_tasks(self):
+        """
+        Executes all tasks. This function must block until either all tasks
+        have been processed or the execution is canceled. Must be reimplemented by the subclass.
+        """
         raise NotImplementedError
 
     def _pre_run(self):
+        """
+        Called before :func:`_execute_tasks:.
+        """
         pass
 
     def _post_run(self):
+        """
+        Called after :func:`_execute_tasks:.
+        """
         # update everything that was not a target (targets were already updated)
         consumed = set(x.key for x in self.consumed_nodes)
         produced = set(x.key for x in self.produced_nodes)
@@ -411,8 +471,23 @@ class Executor(object):
 
 
 class ParallelExecutor(Executor):
+    """
+    Default executor for wasp. It parallelizes the execution of the DAG by
+    using a thread pool.
+
+    :param jobs: Number of jobs to be executed simultaneously, defaults to 1.
+    :param ns: The namespace in which the task set is run. See :class:`wasp.signature.Signature`
+        for more information on namespaces.
+    """
 
     class TaskRunner(object):
+        """
+        Callable class for executing a task.
+
+        :param task: The task to be executed.
+        :param on_success: An :class:`wasp.util.Event` object called upon success.
+        :param on_fail: A :class:`wasp.util.Event` object called upon failure.
+        """
         def __init__(self, task, on_success, on_fail):
             self._on_success = on_success
             self._on_fail = on_fail
@@ -483,10 +558,24 @@ class ParallelExecutor(Executor):
 
 
 def execute(tasks, executor, produce=None, ns=None):
+    """
+    Runs a list of tasks using an executor.
+
+    :param tasks: Dict like object containing the tasks to be executed.
+    :param executor: The executor object to be used. If None, a :class:`ParallelExecutor`
+        will be created.
+    :param produce: A list of nodes. The tasks to be executed are limited such that only the
+        the given nodes are produced (and all intermediate nodes).
+    :param ns: The namespace in which the tasks should be executed. See :class:`wasp.signature.Signature`
+        for more information on namespaces.
+    """
     tasks = make_containers(tasks.values(), ns=ns)
     if len(tasks) == 0:
         return TaskCollection()
     dag = DAG(tasks, produce=produce)
+    if executor is None:
+        executor = ParallelExecutor(ns=ns)
+    assert isinstance(executor, Executor)
     executor.setup(dag)
     extensions.api.tasks_execution_started(tasks, executor, dag)
     executor.run()
@@ -495,6 +584,11 @@ def execute(tasks, executor, produce=None, ns=None):
 
 
 def run_task(task):
+    """
+    Runs a task and logs its result.
+
+    :param task: A :class:`TaskContainer` to be executed.
+    """
     ret = extensions.api.run_task(task)
     if ret != NotImplemented:
         return ret
@@ -528,6 +622,15 @@ def run_task(task):
 
 
 def _flatten(tasks, ns=None):
+    """
+    Flattens a list of task and creates :class:`TaskContainer` objects.
+
+    :param tasks: The tasks to be flattened.
+    :param ns: The namespace in which the tasks are run.
+    :return: Returns a tuple containing a list of :class:`TaskContainer` of all
+        flattened tasks and a list of :class:`TaskContainer` created from the
+        children of the tasks.
+    """
     ret_flatten = []
     ret_containers = []
     for task in tasks:
@@ -544,7 +647,7 @@ def _flatten(tasks, ns=None):
 def make_containers(tasks, ns=None):
     """
     Flattens the list of :class:`wasp.Task` in tasks
-    and returns a list of :class:`TaskContainer.`
+    and returns a list of :class:`TaskContainer`.
     """
     flattened, _ = _flatten(tasks, ns=ns)
     return flattened
