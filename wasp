@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+# encoding: UTF-8
+"""
+This code is public domain.
+
+This script unpacks the wasp build tool and should be checked into vcs
+repositories.
+"""
+
+# PYTHON_ARGCOMPLETE_OK
+
+import sys
+import os
+import zlib
+import binascii
+
+UNPACK_DIR = 'src'
+
+
+class WaspInstallationError(RuntimeError):
+    def __init__(self, msg):
+        super().__init__(msg)
+
+
+def unpack(unpack_dir):
+    if os.path.exists(unpack_dir):
+        return
+    os.mkdir(unpack_dir)
+    for item in wasp_packed:
+        filename, content = item
+        dirname = os.path.dirname(filename)
+        if dirname != '':
+            dirname = os.path.join(unpack_dir, dirname)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname, exist_ok=True)
+        fname = os.path.join(unpack_dir, filename)
+        with open(fname, 'w') as f:
+            compressed = binascii.a2b_base64(content)
+            data = zlib.decompress(compressed)
+            s = data.decode('UTF-8')
+            f.write(s)
+
+def main():
+    script = sys.argv[0]
+    script = os.path.realpath(script)
+    cur_dir = os.path.dirname(script)
+    os.chdir(cur_dir)
+    unpack_dir = os.path.join(cur_dir, UNPACK_DIR)
+    unpack(unpack_dir)
+    sys.path.append(unpack_dir)
+    try:
+        wasp = __import__('wasp')
+    except ImportError:
+        raise WaspInstallationError('Something went wrong during the installation. Does {0} directory with all wasp files exist?'.format(UNPACK_DIR))
+    from wasp.main import run
+    success = run(cur_dir)
+    if success:
+        sys.exit(0)
+    else:
+        sys.exit(1)
+
+
+
+wasp_packed=[
+]
+
+
+if __name__ == '__main__':
+    main()
