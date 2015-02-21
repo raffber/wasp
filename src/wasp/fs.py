@@ -184,21 +184,34 @@ class Path(Serializable):
     def to_builddir(self):
         """
         Returns a path object which is a subpath of the current build directory by
-        prepending the build directory path.
+        prepending the build directory path to this path. For example,  if the build
+        direcotory were ``build/``:
+
+         * ``src/main.c`` becomes ``build/src/main.c``
+         * ``/usr/lib/libglibc.so`` becomes ``build/usr/lib/libglibc.so``
+
+        This function is useful when new files are created which somehow relate to a source
+        file. E.g. when compiling ``src/main.c`` to an object file, the generated object file
+        should be called something like ``build/src/main.c.o`` such that the user can easily
+        find the generated files. This can be achieved with::
+
+            file('src/main.c').to_builddir().append_extension('.o')
         """
         return Path(ctx.builddir.join(self._path))
 
 
 class Directory(Path):
+    """
+    Creates a directory object of the given path.
+    If a path to a file is given, the directory name of the file is used.
+
+    :param path: Path refereing to the object.
+    :param make_absolute: If True, the path is converted into an absolute path.
+    :param relto: If a relative path is given in the ``path`` parameter the path is
+        considered to be relative to relto.
+    """
 
     def __init__(self, path, make_absolute=False, relto=None):
-        """
-        Creates a directory object of the given path.
-        If a path to a file is given, the directory name of the file is used.
-        :param path: Path to a directory or path to a file.
-        :param make_absolute: Defines whether the directory should be handleded
-            as an absolute directory or a relative one.
-        """
         if isinstance(path, Path) or isinstance(path, FileNode):
             path = path.path
         if os.path.isfile(path):
@@ -206,7 +219,11 @@ class Directory(Path):
         super().__init__(path, make_absolute=make_absolute, relto=relto)
 
     def join(self, *args, append=''):
-        """Joins the positional arguments as path and appends a string to them"""
+        """
+        Joins the positional arguments as path and appends a string to them.
+
+        :param append: String to append to path, e.g. a file extension.
+        """
         new_args = []
         for arg in args:
             if isinstance(arg, File) or isinstance(arg, FileNode):
@@ -223,11 +240,30 @@ class Directory(Path):
         return Path(path)
 
     def create(self):
+        """
+        Create the directory tree up to and including this directory.
+        """
         os.makedirs(self._path, exist_ok=True)
 
     def glob(self, pattern, exclude=None, dirs=False, recursive=True):
         """
+        Find files in this directory by using regex patterns. For example::
 
+            directory('src/').glob('.*\.c$')
+
+        finds all files ending in ``.c`` in the directory ``src`` but not in
+        its subdirectories. If subdirectories should be searched as well,
+        specify ``recursive=True``.
+
+        :param pattern: Inclusion pattern. File names matching the pattern
+            are included in the selection.
+        :param exclude: Exclusion pattern. File names matching the pattern
+            are excluded from the selection. Only files which match the
+            inclusion pattern are tested.
+        :param dirs: If True, directory names are considered as well.
+        :param recursive: If True, the directory tree is searched recursively.
+            Otherwise only this directory is searched.
+        :return: List of path objects that match the above criteria.
         """
         ret = []
         include_re = re.compile(pattern)
@@ -269,16 +305,24 @@ class Directory(Path):
         return new_ret
 
     def mkdir(self, name):
+        """
+        Create a child directory with ``name``.
+
+        :param name: Name of the directory to be created.
+        """
         fpath = os.path.join(self.path, name)
         d = Directory(fpath)
         d.ensure_exists()
         return d
 
     def ensure_exists(self):
-        try:
-            os.makedirs(self._path)
-        except FileExistsError:
-            pass
+        """
+        Create the directory tree up to and including this directory.
+        Equivalent to create().
+
+        **TODO:** remove!
+        """
+        os.makedirs(self._path, exist_ok=True)
 
     def to_builddir(self):
         return Directory(ctx.builddir.join(self._path))
@@ -288,6 +332,9 @@ factory.register(Directory)
 
 
 class File(Path):
+    """
+    asdf
+    """
 
     def directory(self):
         """
@@ -298,7 +345,8 @@ class File(Path):
     def replace_extension(self, new=None):
         """
         Returns a new File object, where the old extension is removed and replaced with the
-        new extension
+        new extension.
+
         :param new: New extension. If None is given, the extension will be removed.
         :return: A new File object with the processed files.
         """
