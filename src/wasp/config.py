@@ -115,6 +115,7 @@ class Config(object):
         and the resulting config objects are merged, where the last loaded
         file has precedence over the previously loaded files. Thus, config keys
         defined in wasprc.json can be overridden by wasprc.user.json.
+
         :param fpath: Path of the directory.
         :param fnames: List of file names to be loaded.
         """

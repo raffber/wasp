@@ -341,6 +341,11 @@ class Executor(object):
         self._produced_nodes = []
         self._executed_tasks = TaskCollection()
         self._executing_tasks = []
+        self._success = True
+
+    @property
+    def success(self):
+        return self._success
 
     def setup(self, dag):
         """
@@ -389,6 +394,7 @@ class Executor(object):
         Must be called if a task has failed.
         """
         self._cancel()
+        self._success = False
         # invalidate the sources, such that this task is rerun
         for source in task.task.sources:
             source.signature(ns=self._ns).invalidate()
@@ -549,12 +555,8 @@ class ParallelExecutor(Executor):
             self._thread_pool.submit(
                 ParallelExecutor.TaskRunner(task, self._success_event, self._failed_event))
 
-    def task_failed(self, task):
-        self._thread_pool.cancel()
-        super().task_failed(task)
-
     def _cancel(self):
-        self._cancel_loop = True
+        self._thread_pool.cancel()
 
 
 def execute(tasks, executor, produce=None, ns=None):

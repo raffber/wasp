@@ -185,13 +185,11 @@ def execute_tasks(name, tasks):
     executor = extensions.api.create_executor(name)
     if executor == NotImplemented:
         executor = ParallelExecutor(jobs=jobs, ns=name)
-    tasks = execute(tasks, executor, produce=produce, ns=name)
-    # check all tasks if successful
-    for key, task in tasks.items():
-        if not task.success:
-            log.fatal(log.format_fail() + 'Command `{0}` failed.'.format(name))
-            ctx.cache.prefix('commands')[name] = {'success': False}
-            return False
+    execute(tasks, executor, produce=produce, ns=name)
+    if not executor.success:
+        log.fatal(log.format_fail() + 'Command `{0}` failed.'.format(name))
+        ctx.cache.prefix('commands')[name] = {'success': False}
+        return False
     log.info(log.format_success() + 'Command: `{0}`'.format(name))
     ctx.cache.prefix('commands')[name] = {'success': True}
     return True
