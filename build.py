@@ -4,7 +4,7 @@ import binascii
 from wasp import File, group, shell, tool, ctx, configure, chain
 from wasp.ext.watch import watch
 import wasp
-from wasp.fs import find_exe
+from wasp.fs import find_exe, Directory
 
 d = tool('d')
 sphinx = tool('sphinx')
@@ -74,17 +74,14 @@ def recursive_list(dirname):
 
 def do_create_wasp(t):
     target = str(t.sources[0])
-    waspdir = 'src'
+    waspdir = Directory('src')
     v = wasp.version
     with open(target, 'a') as out:
         out.write('\n\nwasp_packed=[')
-        for fpath in recursive_list(waspdir):
-            ext = os.path.splitext(fpath)[1]
-            if ext != '.py':
-                continue
-            relpath = os.path.relpath(fpath, start=waspdir)
-            with open(fpath, 'rb') as f:
-                data = f.read()
+        for f in waspdir.glob('.*\.py$', recursive=True):
+            relpath = os.path.relpath(f.path, start=waspdir.path)
+            with open(f.path, 'rb') as inf:
+                data = inf.read()
                 data = zlib.compress(data)
                 data = binascii.b2a_base64(data)
                 out.write('\n("{0}", {1}),'.format(relpath, data))
