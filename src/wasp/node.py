@@ -73,6 +73,9 @@ class FileNode(Node):
         if target and isinstance(self._path, File):
             self._path.directory().create()
 
+    def __str__(self):
+        return self.path
+
 
 class SymbolicNode(Node):
     def __init__(self, key=None, discard=False):

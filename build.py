@@ -1,7 +1,7 @@
 import os
 import zlib
 import binascii
-from wasp import File, group, shell, tool, ctx, configure, chain, Directory
+from wasp import File, group, shell, tool, ctx, configure, chain
 from wasp.ext.watch import watch
 import wasp
 from wasp.fs import find_exe
@@ -72,8 +72,8 @@ def recursive_list(dirname):
     return ret
 
 
-def do_create_wasp(task, target):
-    target = str(target)
+def do_create_wasp(t):
+    target = str(t.sources[0])
     waspdir = 'src'
     v = wasp.version
     with open(target, 'a') as out:
@@ -96,12 +96,13 @@ if __name__ == '__main__':
 
 
 """.format(major=v.major, minor=v.minor, point=v.point))
+    t.log.info(t.log.format_success('Created wasp.'))
 
 
 @wasp.command('create-wasp', description='Builds the wasp redistributable')
 def create_wasp():
     dest = ctx.builddir.join('wasp')
-    yield wasp.copy('dist/wasp-prebuild', ctx.builddir).produce(':wasp-copy')
-    yield wasp.Task(targets=dest,
-                    fun=lambda task: do_create_wasp(task, dest)
-                    ).use(':wasp-copy', file=dest)
+    c = chain()
+    c += wasp.copy('dist/wasp-prebuild', dest)
+    c += wasp.Task(sources=dest, fun=do_create_wasp, always=True)
+    return c

@@ -608,10 +608,13 @@ class CopyTask(Task):
     def __init__(self, fs, destination, permissions=None, recursive=False):
         self._recursive = recursive
         self._permissions = permissions
-        if destination.endswith('/'):
-            self._destination = Directory(destination)
-        else:
-            self._destination = File(destination)
+        if isinstance(destination, str):
+            if destination.endswith('/'):
+                destination = Directory(destination)
+            else:
+                destination = File(destination)
+        assert isinstance(destination, Path)
+        self._destination = destination
         self._files = paths(fs, ignore=True)
         super().__init__(targets=fs, always=True)
 
