@@ -17,6 +17,8 @@ Next
 Bugs
 =======
 
+ * tasks spawned during check() are not returned from execute()... I guess??
+
 
 Lower Priorieties/Questions
 ============================
