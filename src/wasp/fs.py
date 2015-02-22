@@ -199,6 +199,20 @@ class Path(Serializable):
         """
         return Path(ctx.builddir.join(self._path))
 
+    def is_relative(self):
+        """
+        Returns True if this path is relative.
+        """
+        return not os.path.isabs(self._path)
+
+    def basename(self):
+        """
+        Returns the basename of the path, i.e. its last component.
+        For example ``src/main.c`` becomes ``main.c``.
+        """
+        return os.path.basename(self._path)
+
+
 
 class Directory(Path):
     """
@@ -333,7 +347,12 @@ factory.register(Directory)
 
 class File(Path):
     """
-    asdf
+    Creates a file object of the given path.
+
+    :param path: Path refereing to the object.
+    :param make_absolute: If True, the path is converted into an absolute path.
+    :param relto: If a relative path is given in the ``path`` parameter the path is
+        considered to be relative to relto.
     """
 
     def directory(self):
@@ -356,6 +375,13 @@ class File(Path):
         return File(root + '.' + new, make_absolute=self._absolute)
 
     def append_extension(self, append):
+        """
+        Appends a new extension to the file name.
+
+        :param append: String to be added to the file.
+            This function ensures that a '.' is inserted
+            between the file name and the extensions.
+        """
         if append[0] == '.' or self._path[-1] == '.':
             return File(self._path + append)
         return File(self._path + '.' + append)
@@ -363,20 +389,25 @@ class File(Path):
     def to_builddir(self):
         return File(ctx.builddir.join(self._path))
 
-    def is_relative(self):
-        return not os.path.isabs(self._path)
-
-    def basename(self):
-        return os.path.basename(self._path)
-
     @property
     def extension(self):
+        """
+        Returns the extension of the file name. E.g.::
+
+            File('src/main.c').extension
+
+        return ``c``.
+        """
         return os.path.splitext(self._path)[1]
 
 factory.register(File)
 
 
 class FileCollection(list):
+    """
+    Subclass of list which collects a objects of type :class:`File`.
+    Allows the manipulation of may :class:`File` objects with one call.
+    """
 
     def __init__(self, fs=None):
         super().__init__()
@@ -398,6 +429,7 @@ class FileCollection(list):
         """
         Returns a new FileCollection object with Files, where the old extension is removed and replaced with the
         new extension
+
         :param old: Extension to be processed. if None, all extensions are processd. Processed as regular expression.
         :param new: New extension. If an empty string is given, the extension will be removed.
         :return: A new FileCollection object with the processed files.
