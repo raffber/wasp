@@ -427,7 +427,7 @@ class FileCollection(list):
 
     def replace_extension(self, old=None, new=''):
         """
-        Returns a new FileCollection object with Files, where the old extension is removed and replaced with the
+        Returns a new :class:``FileCollection` object with Files, where the old extension is removed and replaced with the
         new extension
 
         :param old: Extension to be processed. if None, all extensions are processd. Processed as regular expression.
@@ -449,6 +449,18 @@ class FileCollection(list):
 
 
 def files(*args, ignore=False):
+    """
+    Returns a :class:``FileCollection` object based on the arguments. Accepts:
+
+     * :class:`FileNode` A file node. Constructs a :class:`File` with the same path.
+     * `str`: Uses the str as path.
+     * :class:`File`: Appends the object to the collection
+     * Iterable thereof.
+
+    :param args: Tuple of one of the above types.
+    :param ignore: Ignore invalid types. Can be used to squash all non-matching types.
+    :return: A :class:`FileCollection` object.
+    """
     ret = FileCollection()
     for f in args:
         if isinstance(f, FileNode):
@@ -465,6 +477,18 @@ def files(*args, ignore=False):
 
 
 def path(arg):
+    """
+    Returns a :class:`Path` object based on the argument. Accepts:
+
+     * :class:`FileNode` A file node. Constructs a :class:`File` with the same path.
+     * `str`: Uses the str as path.
+     * :class:`File` or :class:`Directory`: Appends the object to the collection.
+
+    :param arg: Tuple of one of the above types.
+    :return: An :class:`Path` object. If the path already exists and is a directory, a
+        :class:`Directory` object is returned. Otherwise a :class:`File` object is
+        returned.
+    """
     if isinstance(arg, FileNode):
         return File(f.path)
     elif isinstance(arg, str):
@@ -480,6 +504,19 @@ def path(arg):
 
 
 def paths(*args, ignore=False):
+    """
+    Returns a list of :class:`Path` objects by calling the :meth:`path()` function.
+    Accepts:
+
+     * :class:`FileNode` A file node. Constructs a :class:`File` with the same path.
+     * `str`: Uses the str as path.
+     * :class:`File` or :class:`Directory`: Appends the object to the collection.
+     * An iterable thereof.
+
+    :param args: Tuple of one of the above types.
+    :param ignore: Ignore invalid types. Can be used to squash all non-matching types.
+    :return: A list of :class:`Path` objects.
+    """
     ret = []
     for f in args:
         if is_iterable(f):
@@ -495,6 +532,20 @@ def paths(*args, ignore=False):
 
 
 def directories(*args, ignore=False):
+    """
+    Returns a list of :class:`Directory` objects.
+    Accepts:
+
+     * :class:`FileNode` A file node. Constructs a :class:`File` with the same path.
+     * `str`: Uses the str as path of the directory.
+     * :class:`File`: Uses the parent directory of the file.
+     * :class:`Directory`: Appends the object to the collection.
+     * An iterable thereof.
+
+    :param args: Tuple of one of the above types.
+    :param ignore: Ignore invalid types. Can be used to squash all non-matching types.
+    :return: A list of :class:`Directory` objects.
+    """
     ret = []
     for f in args:
         if isinstance(f, FileNode):
