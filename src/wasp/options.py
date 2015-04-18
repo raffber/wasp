@@ -7,6 +7,16 @@ from collections import OrderedDict
 
 
 class OptionsCollection(OrderedDict):
+    """
+    Ordered dictionary of options. It allows adding sub-collections
+    for grouping options. For examples, options for commands are grouped
+    by the command names, whereas there is one top-level :class:`OptionsCollection`.
+    Also, a name can be assigned to the options collection and description can be set.
+    This allows ``wasp`` to show useful information to the user.
+
+    :param name: Optional name of the collection. Will be printed to the user.
+    :param description: Description of the collection. Will be printed to the user.
+    """
 
     def __init__(self, name=None, description=None):
         super().__init__()
@@ -16,10 +26,17 @@ class OptionsCollection(OrderedDict):
         self._alias = {}
 
     def alias(self, from_, to_):
+        """
+        Allows specifying two sub-collection keys which map to the same
+        sub-collection. Thus, two commands may accept the same options.
+        """
         self._alias[from_] = to_
 
     @property
     def name(self):
+        """
+        Returns the name of this collection.
+        """
         return self._name
 
     def set_description(self, desc):
@@ -33,7 +50,13 @@ class OptionsCollection(OrderedDict):
     def add(self, option):
         self[option.name] = option
 
-    def add_to_argparse(self, args, default_command=None):
+    def add_to_argparse(self, args):
+        """
+        Adds all options and all sub-collections to the argparse
+        object ``args``.
+
+        :param args: argparse object to operated on.
+        """
         subparsers = None
         for option in self.values():
             option.add_to_argparse(args)
@@ -53,12 +76,23 @@ class OptionsCollection(OrderedDict):
                 groupargs.add_argument('other_commands', nargs="*", help='Other commands')
 
     def retrieve_from_dict(self, args):
+        """
+        Retrieves all options and all sub-collections from
+        the given dict.
+
+        :param args: The dict containing the option information.
+        """
         for option in self.values():
             option.retrieve_from_dict(args)
         for name, group in self._groups.items():
             group.retrieve_from_dict(args)
 
     def group(self, name):
+        """
+        Returns a sub-collection of this collection.
+
+        :param name: Determines which collection is to be returned.
+        """
         if name in self._alias:
             name = self._alias[name]
         if name not in self._groups.keys():
@@ -66,21 +100,39 @@ class OptionsCollection(OrderedDict):
         return self._groups[name]
 
     def remove_group(self, groupname):
+        """
+        Removes a sub-collection.
+        """
         if groupname in self._groups.keys():
             del self._groups[groupname]
 
     def all(self):
+        """
+        Returns a dict of all options of this collection
+        and all subcollections, recursively.
+        """
         ret = dict(self)
         for group in self._groups.values():
             ret.update(group.all())
         return ret
 
     def save(self):
+        """
+        Saves this collection to ``ctx.cache``.
+        """
+        # TODO: why does this not support subcollctions
         d = ctx.cache.prefix('options')[self.name]
         for opt in self.values():
             d[opt.name] = opt
 
     def load(self, override=False):
+        """
+        Loads this object from ``ctx.cache``.
+
+        :param override: Determines whether the options that are
+            already present should be overwritten.
+        """
+        # TODO: why does this not support subcollctions
         d = ctx.cache.prefix('options')[self.name]
         for k, v in d.items():
             if override or k not in self.keys() or self[k].empty():
@@ -88,10 +140,17 @@ class OptionsCollection(OrderedDict):
 
 
 def sanitize_name(name):
+    """
+    Sanitizes an option name, such that it gives
+    a reasonable argument name.
+    """
     return name.replace(' ', '_').lower()
 
 
 def name_to_key(name):
+    """
+    Attempts to standardize option names. (replacing '-' by '_' atm)
+    """
     return name.replace('-', '_')
 
 

@@ -9,9 +9,6 @@ Next
 -----
 
  * watch: run tasks at least once
- * add introspection for Task(fun=function) if function does not take any arguments,
-    don't call it with task
-
  * test, test, test, test and write doc
  * port to windows
  * port to pypy
@@ -24,6 +21,9 @@ Bugs
 
 Lower Priorieties/Questions
 ============================
+
+ * add introspection for Task(fun=function) if function does not take any arguments,
+    don't call it with task
  * autoconfigure log for tasks based on decorator config
  * options: autoload?!
  * progress bar! -> extension?!
