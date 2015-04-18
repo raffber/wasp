@@ -566,6 +566,20 @@ def directories(*args, ignore=False):
 
 
 class FindTask(Task):
+    """
+    Task to find files in the file system. It looks for different
+    combinations of file names and directories and once it
+    has found a matching path, it is saved into all targets of type :class:`wasp.node.SymbolicNode`.
+    By default, the following keys are written to the target nodes:
+
+        * argprefix + 'file`: The file path
+        * argprefix + 'dir': The directory path containing the file
+
+    :param *names: Tuple of str of acceptable file names
+    :param dirs: List of directories to search in. Accepts the same input as :func:`directories`
+    :param argprefix: str prefix to be added to the keys which are saved in the target nodes.
+    :param required: True if the task should fail if the file path is not found.
+    """
     def __init__(self, *names, dirs=None, argprefix=None, required=True):
         super().__init__(always=True)
         self._dirs = directories(dirs)
@@ -617,10 +631,20 @@ class FindTask(Task):
 
 
 def find(*names, dirs=None, argprefix=None, required=True):
+    """
+    See :class:`FindTask`. Accepts the same parameters.
+    """
     FindTask(*names, dirs=dirs, argprefix=argprefix, required=required)
 
 
 class FindExecutable(FindTask):
+    """
+    Looks for executables. If ``dirs`` is not specified, the all paths in the ``PATH`` variable
+    are searched. This tasks writes the following arguments to the target nodes:
+        * argprefix + 'file`: The file path
+        * argprefix + 'exe': The file path
+        * argprefix + 'dir': The directory path containing the file
+    """
     def __init__(self, *args, dirs=None, **kw):
         if dirs is None:
             dirs = os.getenv('PATH').split(':')
@@ -633,10 +657,20 @@ class FindExecutable(FindTask):
 
 
 def find_exe(*names, dirs=None, argprefix=None, required=True):
+    """
+    See :class:`FindExecutable`. Accepts the same parameters.
+    """
     return FindExecutable(*names, dirs=dirs, argprefix=argprefix, required=required)
 
 
 class FindLibrary(FindTask):
+    """
+    Looks for executables. If ``dirs`` is not specified, the all paths in the ``LD_LIBRARY_PATH`` variable
+    are searched. This tasks writes the following arguments to the target nodes:
+        * argprefix + 'lib`: The file path
+        * argprefix + 'exe': The file path
+        * argprefix + 'dir': The directory path containing the file
+    """
     def __init__(self, *args, dirs=None, **kw):
         if dirs is None:
             dirs = os.getenv('LD_LIBRARY_PATH').split(':')
@@ -649,6 +683,9 @@ class FindLibrary(FindTask):
 
 
 def find_lib(*names, dirs=None, argprefix=None, required=True):
+    """
+    See :class:`FindLibrary`. Accepts the same parameters.
+    """
     return FindLibrary(names, dirs=dirs, argprefix=argprefix, required=required)
 
 
