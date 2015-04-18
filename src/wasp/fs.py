@@ -690,6 +690,12 @@ def find_lib(*names, dirs=None, argprefix=None, required=True):
 
 
 class RemoveTask(Task):
+    """
+    Removes a list of paths from the file system.
+    :param fs: List of files to be removed. Accepts the same inputs as :func:`paths`.
+    :param recursive: Determines whether directories should be removed recursively or not.
+        If recursive is False and a directory is not empty, the task fails.
+    """
 
     def __init__(self, fs, recursive=False):
         self._recursive = recursive
@@ -715,6 +721,9 @@ class RemoveTask(Task):
 
 
 def remove(*args, recursive=False):
+    """
+    See :class:`RemoveTask`. Accepts the same parameters.
+    """
     return RemoveTask(args, recursive=recursive)
 
 
@@ -723,13 +732,22 @@ DEFAULT_PERMSSIONS = 0o644
 
 
 class CopyTask(Task):
+    """
+    Task to copy files.
+
+    :param fs: List of files to be copied. Accepts the same input as :func:`paths`.
+    :param destination: Destination path. If it ends with a '/' (or '\\') the destination
+        is considered a directory and a new file is created in the directory.
+    :param permsissions: UNIX style representation of permissions (typically given in octal).
+    :param recursive: Determines whether directories are to be copied recursively.
+    """
     # TODO: port to windows....
 
     def __init__(self, fs, destination, permissions=None, recursive=False):
         self._recursive = recursive
         self._permissions = permissions
         if isinstance(destination, str):
-            if destination.endswith('/'):
+            if destination.endswith('/') or destination.endswith('\\'):
                 destination = Directory(destination)
             else:
                 destination = File(destination)
@@ -760,6 +778,9 @@ class CopyTask(Task):
 
 
 def copy(source, destination, permissions=None, recursive=False):
+    """
+    See :class:`CopyTask`. Accepts the same parameters.
+    """
     return CopyTask(source, destination, permissions=permissions, recursive=recursive)
 
 
