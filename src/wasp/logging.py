@@ -57,6 +57,31 @@ class LogStr(object):
 
 
 class Logger(object):
+    """
+    Povides a high level logging interface which abstracts
+    away the low level formatting and printing from the
+    the log messages.
+
+    Log messages may be categorized in different log levels,
+    which are ordered as follows:
+
+        * ``fatal``: Messages which inevitably terminate the automation
+            process and lead to a failure.
+        * ``error``: Messages which show an error which is non-cirticl and
+            can be recovered from.
+        * ``warn``: Warnings should be printed on this log level (e.g. compiler
+            warnings)
+        * ``info``: Tools and components should print compact information on this log level.
+        * ``debug``: Print as much interesting information as possible.
+
+    The default log-level, which is shown to the user is ``warn`` (i.e. log level 3). Different
+    values can be customized using config keys. For more information refer to :mod:`wasp.config`.
+
+    :param prepend: String to be prepended to each log string.
+    :param verbosity: Defines the verbosity level (log level)
+    :param io: An io obect where the data should be printed to.
+    :param pretty: Defines whether the logger should use pretty printing.
+    """
     QUIET = 0
     FATAL = 1
     ERROR = 2
@@ -74,31 +99,56 @@ class Logger(object):
 
     @property
     def verbosity(self):
+        """
+        Returns the currently configured verbosity level.
+        """
         return self._verbosity
 
     @property
     def pretty(self):
+        """
+        Returns True if pretty printing is activated.
+        """
         return self._pretty
 
     def color(self, s, fg=None, style=None):
+        """
+        Returns a LogStr initialized with given parameters.
+        """
         return LogStr(s, fg=fg, style=style)
 
     def format_success(self, *args):
+        """
+        Formats a message which shows a success of some operation.
+        Takes the same arguments as :fun:`wasp.format_multiline_message`.
+        """
         if self._pretty:
             return self.format_multiline_message(*args, color='green', start='[SUCC]  ')
         return self.format_multiline_message(*args)
 
     def format_fail(self, *args):
+        """
+        Formats a message which shows a failure of some operation.
+        Takes the same arguments as :fun:`wasp.format_multiline_message`.
+        """
         if self._pretty:
             return self.format_multiline_message(*args, color='red', start='[FAIL]  ', multiline='    ~~  ')
         return self.format_multiline_message(*args)
 
     def format_warn(self, *args):
+        """
+        Formats a message which shows a waring.
+        Takes the same arguments as :fun:`wasp.format_multiline_message`.
+        """
         if self._pretty:
             return self.format_multiline_message(*args, color='magenta', start='[WARN]  ', multiline='    ~~  ')
         return self.format_multiline_message(*args)
 
     def format_info(self, *args):
+        """
+        Formats a message which delivers unstructured information to the user.
+        Takes the same arguments as :fun:`wasp.format_multiline_message`.
+        """
         if self._pretty:
             return self.format_multiline_message(*args, color='cyan', start='[INFO]  ', multiline='    ~~  ')
         return self.format_multiline_message(*args)

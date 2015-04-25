@@ -10,6 +10,8 @@ CONFIG_FILE_NAMES = ['wasprc.json', 'wasprc.user.json']
 Default file names for config files.
 """
 
+# TODO: document config keys and how they can be set
+
 
 class Config(object):
     """
