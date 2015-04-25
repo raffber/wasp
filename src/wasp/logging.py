@@ -3,6 +3,14 @@ import sys
 
 
 class LogStr(object):
+    """
+    Annotates strings with a style set and color for printing them
+    to a terminal (which supports colors).
+
+    :param strs: Tuple of strings or :class:`LogStr` which are to be printed.
+    :param fg: Foreground color. See :class:`wasp.terminal.Color` for more information.
+    :param style: Text style. see :class:`wasp.terminal.Style` for more information.
+    """
     def __init__(self, *strs, fg=None, style=None):
         self._strings = list(strs)
         self._fg = fg
@@ -18,6 +26,12 @@ class LogStr(object):
         return ret
 
     def write_to_terminal(self, term=None, endl=False):
+        """
+        Writes the string to a terminal.
+
+        :param term: Terminal to be written to. If None, a new terminal is created.
+        :param endl: Determines whether a newline should be appended after printing.
+        """
         if term is None:
             term = Terminal()
         for s in self._strings:
@@ -29,9 +43,15 @@ class LogStr(object):
             term.newline()
 
     def __add__(self, other):
+        """
+        Returns a new LogStr which is a concatenation of self and other.
+        """
         return LogStr(self, other)
 
     def __iadd__(self, other):
+        """
+        Appends other to self.
+        """
         self._strings.append(other)
         return self
 
