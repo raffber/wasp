@@ -31,12 +31,19 @@ class NoSuchCommandError(Exception):
 
 
 class OptionHandler(object):
+    """
+    Utility class for encapuslating the parsing of all
+    command line arguments.
+    """
     def __init__(self):
         self._commands = []
-        self._verbosity = 0
         self._argparse = argparse.ArgumentParser(description='Welcome to {0}'.format(ctx.meta.projectname))
 
     def parse(self):
+        """
+        Injects the argument parser, adds all options to it (by calling the respective handlers),
+        parses the command line and calls all ``@option_handler`` functions.
+        """
         # use description if it is not None
         descriptions = {}
         command_names = set(ctx.commands.keys())
@@ -97,20 +104,17 @@ class OptionHandler(object):
 
     @property
     def commands(self):
+        """
+        Returns an ordered list of all commands to be run.
+        """
         return self._commands
 
     @property
     def argparse(self):
+        """
+        Returns the ArgumentParser.
+        """
         return self._argparse
-
-    def set_verbosity(self, verbosity):
-        assert isinstance(verbosity, int) and 0 <= verbosity <= 5, 'Verbosity must be between 0 and 5'
-        self._verbosity = verbosity
-
-    def get_verbosity(self):
-        return self._verbosity
-
-    verbosity = property(get_verbosity, set_verbosity)
 
 
 def retrieve_command_tasks(name, as_dependency=False):
@@ -157,6 +161,12 @@ def retrieve_command_tasks(name, as_dependency=False):
 
 
 def run_command_dependencies(name, executed_commands=[]):
+    """
+    Runs all commands which are dependencies of the command with ``name``.
+
+    :param name: The command for which all dependencies should be executed.
+    :param executed_commands: All commands that have already been executed in this run.
+    """
     if executed_commands is None:
         executed_commands = []
     if name in executed_commands:
@@ -175,6 +185,12 @@ def run_command_dependencies(name, executed_commands=[]):
 
 
 def execute_tasks(name, tasks):
+    """
+    Runs all tasks given by ``tasks``.
+
+    :param name: Name of the command for which the tasks should be executed.
+    :param tasks: :class:`TaskCollection` of all tasks to be executed.
+    """
     ret = extensions.api.run_task_collection(tasks)
     if ret != NotImplemented:
         return ret
@@ -199,8 +215,10 @@ def run_command(name, executed_commands=None, as_dependency=False):
     """
     Runs a command specified by name. All dependencies of the command are
     executed, if they have not successfully executed before.
+
     :param name: The name of the command in question.
     :param executed_commands: List of commands that have already been executed.
+    :param as_dependency: Defines whether the command is run as a dependency of another command.
     :return: True if the executed is successful, False otherwise
     """
     ret = extensions.api.run_command(name)
@@ -212,7 +230,7 @@ def run_command(name, executed_commands=None, as_dependency=False):
         return False
     # now run the commands
     try:
-        tasks_col = retrieve_command_tasks(name, as_dependency=True)
+        tasks_col = retrieve_command_tasks(name, as_dependency=as_dependency)
         extensions.api.tasks_collected(tasks_col)
         # now execute all tasks
         ret = execute_tasks(name, tasks_col)
@@ -227,6 +245,7 @@ def handle_commands(options):
     """
     Runs all commands specified by the `options` parameter given.
     If a command fails, the method aborts.
+
     :param options: OptionsCollection(), the options given to wasp
     :return: True if the commands have been executed successfully.
     """
@@ -242,6 +261,7 @@ def load_recursive():
     """
     Loads all directorires which were defined as recursive, using
     wasp.recurse().
+
     :return: Returns a list of loaded files, [] if no file was loaded.
     """
     loaded = True
@@ -262,6 +282,7 @@ def load_directory(dir_path):
     """
     Loads a directory and imports the files as modules, which is the only thing that
     is necessary for executing commands.
+
     :param dir_path: The path to the directory which contains the build files.
     :return: Returns a list of loaded files, [] if no files were loaded
     """
@@ -275,6 +296,9 @@ def load_directory(dir_path):
 
 
 def load_files(fs):
+    """
+    Load a set of files as modules.
+    """
     for f in fs:
         if os.path.exists(f):
             load_module_by_path(f)
@@ -285,6 +309,7 @@ def retrieve_verbosity():
     Retrieves the verbosity level from the environment WASP_VERBOSITY="0" (up to 5)
     and the command line options -q/-v0 (quiet = 0) up to -vvvvv/-v5 (debug).
     default is -vvv (warn)
+
     :return: the verbosity level 0 <= verbosity <= 5
     """
     # retrieve from argv
@@ -323,6 +348,9 @@ def retrieve_verbosity():
 
 
 def retrieve_pretty_printing():
+    """
+    Retrieves whether pretty printing should be activated.
+    """
     argv = sys.argv
     if '-u' in argv or '--no-pretty' in argv or '--ugly' in argv:
         return False
@@ -330,6 +358,10 @@ def retrieve_pretty_printing():
 
 
 def load_extensions_from_config(config):
+    """
+    Loads extensions based on ``config`` (which may be parsed
+    from ``wasprc.json``).
+    """
     if config.extensions is None:
         return
     for ext_name in config.extensions:
@@ -337,6 +369,9 @@ def load_extensions_from_config(config):
 
 
 def load_tools():
+    """
+    Loads all tools which have so far been declared with :func:`wasp.tools.tool()`
+    """
     try:
         for proxy_name in tool_proxies:
             ctx.tools.load(proxy_name)
@@ -346,6 +381,9 @@ def load_tools():
 
 
 def load_decorator_config(config):
+    """
+    Load a :class:`wasp.config.Config` object based on decorator registered functions.
+    """
     # run all config decorators:
     for x in decorators.config:
         c = x()
@@ -367,6 +405,9 @@ def load_decorator_config(config):
 
 
 def init_context():
+    """
+    Initializes the global context :data:`wasp.ctx`.
+    """
     ctx.builddir = Directory('build')
     load_tools()  # this has to happen BEFORE! the context is loaded
     # because tools should be able to register themselves in factories
@@ -374,6 +415,15 @@ def init_context():
 
 
 def check_script_signatures(loaded_files):
+    """
+    Checks the signatures of all build scripts which have been loaded.
+    If the script signatures have changed since the last time ``wasp`` was
+    executed, the cache as well as all signatures are cleared. Consequently,
+    everything is built from scratch (since the build logic may have changed
+    completely).
+
+    :param loaded_files: List of file names of loaded files.
+    """
     changed = False
     d = ctx.cache.prefix('script-signatures')
     current_signatures = {}
@@ -405,6 +455,7 @@ def run(dir_path):
      * The current working directory is `dir_path`,
      * the current working directory is the TOPDIR of the project,
      * this function is executed once.
+
     :param dir_path: The directory from which is used as TOPDIR
     :return: True if a build file was found in `dir_path`, False otherwise
     """
@@ -456,8 +507,6 @@ def run(dir_path):
         extensions.api.retrieve_options(ctx.options)
         options.parse()
         extensions.api.options_parsed(ctx.options)
-        if options.verbosity != log.DEFAULT:
-            log.configure(options.verbosity)
         successs = handle_commands(options)
     except FatalError:
         successs = False
