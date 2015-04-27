@@ -11,9 +11,33 @@ Next
  * watch: run tasks at least once
  * find a way to collect multiple tasks during run-time and execute them
     in a special manner? i.e. collect gcc tasks and make a unity build
+ * a task must be able to state that a target was not touched during execution
+    (s.t. the execution eninge may optimize and not refresh the signature)
+ * a task must be able to find out why it is run (i.e. targets changed, sources changed)
+    s.t. it can decide on what to do.
  * test, test, test, test and write doc
  * port to windows
  * port to pypy
+
+Cpp Tool
+========
+
+ * Create a TargetChangedRecompile task for each source.c.o
+ * Create a dependency check task for each source
+ * This task has ':cpp/' + filename as target
+ * ':cpp/' + filename contains the list of all its dependencies
+ * in case the file changed, the dependencies are rescanned, else the task
+    is not executed.
+ * a task is spawned which maps from ':cpp/' + filename and all headers to source.c.o
+ * all source.c.o are linked to target
+
+ * Add standard compile task (s.t. runs if source changed and/or target changed)
+
+
+ * ':/cpp/source.c' => source.c.o (executed if target changed)
+ * source.c, all headers from ':/cpp/source.c' => ':/cpp/source.c'
+ * ':/cpp/source.c' contains combined checksum of source.c and all its headers
+
 
 Bugs
 =======
@@ -75,7 +99,9 @@ Feature Removal Tour
 
  * remove --target ?!
  * remove hierarchical ArgumentCollection()
- * all those task stages.
+ * maybe spawn isn't acutally required?!
+    -> think about what can be done with nodes
+    -> Spawn could only be used for checks()
 
 
 Argument Refactor ?!
