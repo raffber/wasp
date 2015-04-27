@@ -106,7 +106,6 @@ class ShellTask(Task):
         self._finished(exit_code, out.stdout, out.stderr)
         if self.success:
             self.log.info(self.log.format_success() + commandstring)
-        self.has_run = True
         self.printer.print(self.success, stdout=out.stdout, stderr=out.stderr,
                            exit_code=exit_code, commandstring=commandstring)
 

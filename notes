@@ -9,6 +9,8 @@ Next
 -----
 
  * watch: run tasks at least once
+ * find a way to collect multiple tasks during run-time and execute them
+    in a special manner? i.e. collect gcc tasks and make a unity build
  * test, test, test, test and write doc
  * port to windows
  * port to pypy
