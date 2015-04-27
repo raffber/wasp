@@ -154,6 +154,16 @@ class Logger(object):
         return self.format_multiline_message(*args)
 
     def format_multiline_message(self, *args, color=None, start='', multiline=''):
+        """
+        Formats a message which spans multiple lines. If the logger is configured
+        with ``pretty = False``, this function only joins the args with ``\\n``.
+
+        :param args: Tuple of :class:`LogStr` or ``str`` which each indentify a line of the output.
+        :param color: Color of the prepended text.
+        :param start: String to be prepended to the first line.
+        :param multiline: String to be prepended to all subsequent lines.
+        :return: A :class:`LogStr` with the message.
+        """
         start = self.color(start, fg=color, style='bright')
         if len(args) > 0:
             first = True
@@ -175,6 +185,13 @@ class Logger(object):
         return start
 
     def log(self, msg, level=None, stderr=False):
+        """
+        Write a message to the log.
+
+        :param msg: The message to be printed. Either of type ``str`` or :class:`LogStr`.
+        :param level: log level in which the message should be printed. Expects ``int``.
+        :param stderr: Defines whether the message should be printed to stderr.
+        """
         if level > self._verbosity:
             return
         msg = LogStr(self._prepend, msg)
@@ -193,26 +210,51 @@ class Logger(object):
                 print(str_msg, file=sys.stderr)
 
     def configure(self, verbosity=None, pretty=None):
+        """
+        Configures the :class:`Logger`.
+
+        :param verbosity: Defines the verbosity level (log level).
+        :param pretty: Defines whether pretty printing is activated or not.
+        """
         if verbosity is not None:
             self._verbosity = verbosity
         if pretty is not None:
             self._pretty = pretty
 
     def fatal(self, msg, stderr=True):
+        """
+        Prints the message with log level ``fatal``.
+        """
         self.log(msg, level=self.FATAL, stderr=stderr)
 
     def error(self, msg, stderr=True):
+        """
+        Prints the message with log level ``error``.
+        """
         self.log(msg, level=self.ERROR, stderr=stderr)
 
     def warn(self, msg, stderr=True):
+        """
+        Prints the message with log level ``warn``.
+        """
         self.log(msg, level=self.WARN, stderr=stderr)
 
     def info(self, msg, stderr=False):
+        """
+        Prints the message with log level ``info``.
+        """
         self.log(msg, level=self.INFO, stderr=stderr)
 
     def debug(self, msg, stderr=False):
+        """
+        Prints the message with log level ``debug``.
+        """
         self.log(msg, level=self.DEBUG, stderr=stderr)
 
     def clone(self):
+        """
+        Clones this logger and returns a new Logger with the
+        same configuration.
+        """
         # TODO: ensure that io is thread save
         return Logger(prepend=str(self._prepend), verbosity=self._verbosity, io=self._io, pretty=self._pretty)
