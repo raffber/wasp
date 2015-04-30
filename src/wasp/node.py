@@ -131,10 +131,12 @@ def nodes(arg):
     return [node(arg)]
 
 
-def node(arg):
+def node(arg=None):
     from .fs import Path
     from .task import Task
-    if isinstance(arg, str):
+    if arg is None:
+        return SymbolicNode(discard=True)
+    elif isinstance(arg, str):
         if is_symbolic_node_string(arg):
             return SymbolicNode(arg)
         else:

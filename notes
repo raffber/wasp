@@ -9,12 +9,23 @@ Next
 -----
 
  * watch: run tasks at least once
- * find a way to collect multiple tasks during run-time and execute them
-    in a special manner? i.e. collect gcc tasks and make a unity build
+ * create globalwasp which dispatches to local wasp script (walks up the tree until a wasp script is found)
+ * create ctx.ns -> currently executing command
  * a task must be able to state that a target was not touched during execution
     (s.t. the execution eninge may optimize and not refresh the signature)
+    => .touched() -> list of nodes (defaults to self._targets)
  * a task must be able to find out why it is run (i.e. targets changed, sources changed)
     s.t. it can decide on what to do.
+        => task should be able to ask nodes if changed()
+        => actually this already works....
+ * what happens if compile flags are changed?
+    -> task needs to have a .name() and a .hash() function
+    -> .name() must not change between invocations of ./wasp
+        -> default impl: hash(self.__class__.__name) + hash(self.sources) + hash(self.targets)
+        -> suclassed: super().name() + hash(self._privatevar)
+    -> .hash() must change if config is changed
+        -> default: self.name() + hash(self.arguments)
+        -> suclassed: super().hash() + hash(self._privatevar)
  * test, test, test, test and write doc
  * port to windows
  * port to pypy
