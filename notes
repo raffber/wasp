@@ -11,13 +11,6 @@ Next
  * watch: run tasks at least once
  * create globalwasp which dispatches to local wasp script (walks up the tree until a wasp script is found)
  * create ctx.ns -> currently executing command
- * a task must be able to state that a target was not touched during execution
-    (s.t. the execution eninge may optimize and not refresh the signature)
-    => .touched() -> list of nodes (defaults to self._targets)
- * a task must be able to find out why it is run (i.e. targets changed, sources changed)
-    s.t. it can decide on what to do.
-        => task should be able to ask nodes if changed()
-        => actually this already works....
  * what happens if compile flags are changed?
     -> task needs to have a .name() and a .hash() function
     -> .name() must not change between invocations of ./wasp
@@ -33,18 +26,6 @@ Next
 Cpp Tool
 ========
 
- * Create a TargetChangedRecompile task for each source.c.o
- * Create a dependency check task for each source
- * This task has ':cpp/' + filename as target
- * ':cpp/' + filename contains the list of all its dependencies
- * in case the file changed, the dependencies are rescanned, else the task
-    is not executed.
- * a task is spawned which maps from ':cpp/' + filename and all headers to source.c.o
- * all source.c.o are linked to target
-
- * Add standard compile task (s.t. runs if source changed and/or target changed)
-
-
  * ':/cpp/source.c' => source.c.o (executed if target changed)
  * source.c, all headers from ':/cpp/source.c' => ':/cpp/source.c'
  * ':/cpp/source.c' contains combined checksum of source.c and all its headers
@@ -59,6 +40,7 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * optmize on task.touched()
  * add introspection for Task(fun=function) if function does not take any arguments,
     don't call it with task
  * autoconfigure log for tasks based on decorator config

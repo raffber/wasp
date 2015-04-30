@@ -156,6 +156,9 @@ class Task(object):
     def _run(self):
         self.success = True
 
+    def touched(self):
+        return self._targets
+
     @property
     def targets(self):
         return self._targets

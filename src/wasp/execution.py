@@ -571,6 +571,8 @@ def execute(tasks, executor, produce=None, ns=None):
     :param ns: The namespace in which the tasks should be executed. See :class:`wasp.signature.Signature`
         for more information on namespaces.
     """
+    oldns = ctx.current_namespace
+    ctx.current_namespace = ns
     tasks = make_containers(tasks.values(), ns=ns)
     if len(tasks) == 0:
         return TaskCollection()
@@ -582,6 +584,7 @@ def execute(tasks, executor, produce=None, ns=None):
     extensions.api.tasks_execution_started(tasks, executor, dag)
     executor.run()
     extensions.api.tasks_execution_finished(tasks, executor, dag)
+    ctx.current_namespace = oldns
     return executor.executed_tasks
 
 

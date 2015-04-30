@@ -4,6 +4,12 @@ from . import factory, ctx
 import os
 
 
+def _get_ns(ns):
+    if ns is None:
+        return ctx.current_namespace or 'default'
+    return ns
+
+
 class SignatureProvider(object):
 
     def __init__(self):
@@ -11,16 +17,14 @@ class SignatureProvider(object):
 
     @lock
     def add(self, signature, ns=None):
-        if ns is None:
-            ns = 'default'
+        ns = _get_ns(ns)
         if ns not in self._d:
             self._d[ns] = {}
         self._d[ns][signature.key] = signature
 
     @lock
     def get(self, key, *default, ns=None):
-        if ns is None:
-            ns = 'default'
+        ns = _get_ns(ns)
         if len(default) > 1:
             raise TypeError('get expected at most 2 arguments, got {0}'.format(len(default)))
         if ns not in self._d:
@@ -32,8 +36,7 @@ class SignatureProvider(object):
 
     @lock
     def invalidate_signature(self, key, ns=None):
-        if ns is None:
-            ns = 'default'
+        ns = _get_ns(ns)
         if isinstance(key, Signature):
             key = key.key
         assert isinstance(key, str), 'The key must be given as either a subclass of signature or str'
@@ -64,8 +67,7 @@ class ProducedSignatures(object):
 
     @lock
     def get(self, key, ns=None):
-        if ns is None:
-            ns = 'default'
+        ns = _get_ns(ns)
         if ns not in self._signaturedb:
             self._signaturedb[ns] = {}
         ret = self._signaturedb[ns].get(key)
@@ -75,8 +77,7 @@ class ProducedSignatures(object):
 
     @lock
     def update(self, signature, ns=None):
-        if ns is None:
-            ns = 'default'
+        ns = _get_ns(ns)
         if ns not in self._signaturedb:
             self._signaturedb[ns] = {}
         self._signaturedb[ns][signature.key] = signature

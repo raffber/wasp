@@ -39,6 +39,7 @@ class Context(object):
         # create the cache
         self._cache = None
         self._g = Namespace()
+        self._current_ns = None
 
     @property
     def g(self):
@@ -48,6 +49,18 @@ class Context(object):
         data between different build modules.
         """
         return self._g
+
+    def get_current_namespace(self):
+        return self._current_ns
+
+    def set_current_namespace(self, ns=None):
+        self._current_ns = ns
+
+    current_namespace = property(get_current_namespace, set_current_namespace)
+    """
+    Gets or sets the namespace that is currently in use. E.g. during the execution of a
+    command, the namespace is set to the command name.
+    """
 
     @property
     def signatures(self):
