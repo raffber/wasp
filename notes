@@ -10,7 +10,6 @@ Next
 
  * watch: run tasks at least once
  * create globalwasp which dispatches to local wasp script (walks up the tree until a wasp script is found)
- * create ctx.ns -> currently executing command
  * what happens if compile flags are changed?
     -> task needs to have a .name() and a .hash() function
     -> .name() must not change between invocations of ./wasp
@@ -41,6 +40,7 @@ Lower Priorieties/Questions
 ============================
 
  * optmize on task.touched()
+ * make SymbolicNode dict-like
  * add introspection for Task(fun=function) if function does not take any arguments,
     don't call it with task
  * autoconfigure log for tasks based on decorator config

@@ -1,7 +1,8 @@
 from uuid import uuid4 as generate_uuid
-from . import ctx
+from . import ctx, Task
 from .signature import FileSignature, CacheSignature, DummySignature
 from .argument import ArgumentCollection, collection
+from .util import is_iterable
 
 
 class Node(object):
@@ -54,8 +55,7 @@ class Node(object):
 class FileNode(Node):
     def __init__(self, path):
         from .fs import path as path_
-        self._path = path_(path
-        )
+        self._path = path_(path)
         super().__init__(path)
 
     def _make_signature(self):
@@ -100,9 +100,17 @@ class SymbolicNode(Node):
         assert isinstance(arg_col, ArgumentCollection), 'Cache: Invalid datastructure for symblic node storage.'
         return arg_col
 
+    @property
+    def arguments(self):
+        """
+        Equivalent to self.read()
+        """
+        return self.read()
+
     def write(self, *args, **kw):
         """
-        Creates an argument collection from *args and **kw using :meth:`arguments.collection`.
+        Creates an argument collection from *args and **kw using :meth:`arguments.collection`
+        and writes it to the nodes storage.
         """
         col = collection(*args, **kw)
         if col.isempty():
@@ -112,26 +120,63 @@ class SymbolicNode(Node):
             return
         ctx.cache.prefix('symblic-nodes')[self.key] = col
 
+    def update(self, *args, **kw):
+        """
+        Creates an argument collection from *args and **kw using :meth:`arguments.collection`
+        and updates the argument collection of this node.
+        """
+        col = collection(*args, **kw)
+        if col.isempty():
+            return
+        current = self.read()
+        current.overwrite_merge(col)
+        self.write(col)
+
 
 def is_symbolic_node_string(arg):
+    """
+    Returns True if the argument string qualifies as a name
+    for a :class:`SymbolicNode`.
+    """
+    assert isinstance(arg, str)
     return len(arg) > 1 and arg[0] == ':'
 
 
-def nodes(arg):
-    if arg is None:
-        return []
-    from .task import Task
-    lst = []
-    if isinstance(arg, list) or isinstance(arg, tuple):
-        for item in arg:
-            lst.extend(nodes(item))
-        return lst
-    elif isinstance(arg, Task):
-        return list(arg.targets)
-    return [node(arg)]
+def nodes(*args):
+    """
+    Create a list of nodes based on nodes created for each arg in *args.
+    If *args contains a :class:`wasp.task.Task`, all targets
+    of this tasks are append to the return value. The following types
+    of arguments are accepted::
+
+        * Any subclass of Node is added as is
+        * A Path object is converted into a :class:`wasp.node.FileNode(path)`
+        * A string is converted to a :class:`wasp.node.SymbolicNode(path)` if it
+            starts with a ':'. Otherwise it is converted into a :class:`wasp.node.FileNode(path)`
+
+    :return: A list where is argument was processed as described above and added to the list.
+    """
+    ret = []
+    for arg in args:
+        if isinstance(arg, Task):
+            ret.extend(arg.targets)
+        if is_iterable(arg):
+            ret.extend(nodes(arg))
+        ret.append(node(arg))
+    return ret
 
 
 def node(arg=None):
+    """
+    Creates a node based on arg.
+    The following types of arguments are accepted::
+
+        * Any subclass of Node is returned as is
+        * A Path object is converted into a :class:`wasp.node.FileNode(path)`
+        * A string is converted to a :class:`wasp.node.SymbolicNode(path)` if it
+            starts with a ':'. Otherwise it is converted into a :class:`wasp.node.FileNode(path)`
+        * For a :class:`wasp.task.Task` object the first target node is returned.
+    """
     from .fs import Path
     from .task import Task
     if arg is None:
@@ -146,18 +191,8 @@ def node(arg=None):
     elif isinstance(arg, Node):
         return arg
     elif isinstance(arg, Task):
+        if len(arg.targets) == 0:
+            return None
         return arg.targets[0]
     raise TypeError('Invalid type passed to make_nodes, expected Node'
                     ', string, File or Task. Type was: {0}'.format(type(arg).__name__))
-
-
-def remove_duplicates(nodes):
-    d = {}
-    ret = []
-    for node in nodes:
-        existing = d.get(node.key, None)
-        if existing is None:
-            d[node.key] = node
-    for key, value in d.items():
-        ret.append(value)
-    return ret
