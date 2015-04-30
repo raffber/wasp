@@ -6,6 +6,28 @@ from .util import is_iterable
 
 
 class Node(object):
+    """
+    Abstract node class. A node is an entity which is either produced
+    (he node is a **target** of the task) or consumed by
+    a task (the node is a **source** of the task). Thus, a task maps
+    **source** nodes to **target** nodes.
+
+    A node points to information (such as a file on the filesystem) and
+    keeps track of changes that may happen to this information by means
+    of a :class:`wasp.signature.Signature`. Thus, based on the signatures
+    of the nodes, it can be determined if a task needs to executed or if
+    its sources or targets have not changed since the last run.
+
+    A node must contain a key, which ideally also serves as an
+    identifier to the information the node points to (e.g. a file path).
+    Multiple nodes may be created with the same key. If so, these objects
+    must behave exactly the same.
+
+    :param key: The key of the node. Expects ``str`` or ``None``. If ``None`` is
+        given, a key based on a uuid is generated.
+    :param discard: Bool which defines whether the node should only live during
+        the execution of ``wasp`` and be discareded afterwards.
+    """
     def __init__(self, key=None, discard=False):
         if key is None:
             key = str(generate_uuid())
@@ -16,16 +38,36 @@ class Node(object):
 
     @property
     def discard(self):
+        """
+        Defines whether the node should only live during
+        the execution of ``wasp`` and be discareded afterwards.
+        """
         return self._discard
 
     def _make_signature(self):
+        """
+        Must be overwritten by child classes. Should return an object
+        of type :class:`wasp.signature.Signature` which belongs to this
+        node.
+        """
         raise NotImplementedError
 
     @property
     def key(self):
+        """
+        Returns a key describing this node.
+        """
         return self._key
 
     def signature(self, ns=None):
+        """
+        Returns a :class:`wasp.signature.Signature` object which
+        defines the last seen version of the information this node
+        points to (within the given namespace). For more information
+        on namespaces see :class:`wasp.signature.Signature`.
+
+        :param ns: The namespace for which the signature should be returned.
+        """
         if self._discard:
             return DummySignature()
         signature = ctx.signatures.get(self.key, ns=ns)
@@ -35,6 +77,10 @@ class Node(object):
         return signature
 
     def has_changed(self, ns=None):
+        """
+        Returns True if the node has changed within the given namespace.
+        For more information on namespaces see :class:`wasp.signature.Signature`.
+        """
         sig = ctx.produced_signatures.get(self.key, ns=ns)
         if sig is None:
             return True
@@ -43,12 +89,26 @@ class Node(object):
         return False
 
     def invalidate(self, ns=None):
+        """
+        Invalidates the signature of this node. Thus, it must be reloaded
+        the next time its value is queried.
+
+        :param ns: he namespace for which the signature should be invalidated.
+        """
         ctx.signatures.invalidate_signature(self.key, ns=ns)
 
     def before_run(self, target=False):
+        """
+        Called before a task is run either consuming this node (target == False)
+        or producing this node (target == True).
+        """
         pass
 
     def after_run(self, target=False):
+        """
+        Called after a task is run either consuming this node (target == False)
+        or producing this node (target == True).
+        """
         pass
 
 
