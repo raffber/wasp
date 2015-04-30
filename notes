@@ -41,6 +41,7 @@ Lower Priorieties/Questions
 
  * optmize on task.touched()
  * make SymbolicNode dict-like
+ * figure out what projectid was for
  * add introspection for Task(fun=function) if function does not take any arguments,
     don't call it with task
  * autoconfigure log for tasks based on decorator config
