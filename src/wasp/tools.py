@@ -18,13 +18,12 @@ class ToolsCollection(dict):
         self._tooldir = tooldir
 
     def load(self, name, *args, path=None):
-        from . import Directory, File
+        from . import Directory
         if len(args) != 0:
             for arg in args:
                 self.load(arg, path=path)
         if name in self:
             return
-
         if path is None:
             path = self._tooldir.path
         tooldir = Directory(path)
@@ -72,6 +71,6 @@ def tool(name):
         return ctx.tools[name]
     except NoSuchToolError:
         pass
-    proxy = Proxy("Tools can only be accessed after they have been loaded.")
+    proxy = Proxy()
     proxies[name] = proxy
     return proxy

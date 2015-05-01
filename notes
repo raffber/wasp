@@ -40,6 +40,7 @@ Lower Priorieties/Questions
 ============================
 
  * do not allow ' ' for option names, apply the same rule as for argument names
+ * string and int option vs argumentoption?
  * does the reversed() in task.check() make sense, should this be different?
  * remove --target ?!
  * remove hierarchical ArgumentCollection()
