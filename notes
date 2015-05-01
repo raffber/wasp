@@ -39,6 +39,12 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * does the reversed() in task.check() make sense, should this be different?
+ * remove --target ?!
+ * remove hierarchical ArgumentCollection()
+ * maybe spawn isn't acutally required?!
+    -> think about what can be done with nodes
+    -> Spawn could only be used for checks()
  * optmize on task.touched()
  * make SymbolicNode dict-like
  * figure out what projectid was for
@@ -83,19 +89,6 @@ Lower Priorieties/Questions
     -> namespace the arguments
  * benchmark --> make things faster
  * egrep -rni NotImplementedError src/ | grep TODO
- * remove nested ArgumentCollections?!
-    -> evaluation order of handlers should be clearly defined
-    -> evaluate handler by order of import
-
-
-Feature Removal Tour
----------------------
-
- * remove --target ?!
- * remove hierarchical ArgumentCollection()
- * maybe spawn isn't acutally required?!
-    -> think about what can be done with nodes
-    -> Spawn could only be used for checks()
 
 
 Argument Refactor ?!

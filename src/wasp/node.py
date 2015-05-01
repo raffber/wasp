@@ -113,6 +113,11 @@ class Node(object):
 
 
 class FileNode(Node):
+    """
+    A node which points to a file in the filesystem.
+
+    :param path: Path of the file which the node points to.
+    """
     def __init__(self, path):
         from .fs import path as path_
         self._path = path_(path)
@@ -123,9 +128,16 @@ class FileNode(Node):
 
     @property
     def path(self):
+        """
+        Return the filesystem path of the node.
+        """
         return str(self._path)
 
     def to_file(self):
+        """
+        Return a :class:`wasp.fs.Path` object with the
+        path pointed to by this node.
+        """
         return self._path
 
     def before_run(self, target=False):
@@ -134,10 +146,27 @@ class FileNode(Node):
             self._path.directory().create()
 
     def __str__(self):
+        """
+        Equivalent to ``node.path``.
+        """
         return self.path
 
 
 class SymbolicNode(Node):
+    """
+    A SymbolicNode points to a location in the cache of wasp and
+    may be used to pass information between tasks, such as the location
+    of a compiler or information on how to run a task.
+    It can also be used to store information between runs.
+    SymbolicNodes have names which start with a colon (':') and can be
+    created using the :func:`wasp.node.node` function::
+
+        n = node(':cpp/compiler')
+
+    :param key: The name of the node.
+    :param discard: Defines whether the content of the node should be
+        discareded after each execution of ``wasp``.
+    """
     def __init__(self, key=None, discard=False):
         super().__init__(key=key, discard=discard)
         self._cache = None
@@ -148,7 +177,6 @@ class SymbolicNode(Node):
     def read(self):
         """
         Returns the content of the node in form of an ArgumentCollection.
-        :return: An ArgumentCollection with the contents of the node.
         """
         if self.discard:
             if self._cache is None:

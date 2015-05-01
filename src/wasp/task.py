@@ -256,9 +256,9 @@ class Task(object):
 
     result = property(get_result, set_result)
 
-    def require(self, *arguments):
+    def require(self, *arguments, spawn=None):
         for arg in arguments:
-            spawner = None
+            spawner = spawn
             # add arguments to a list and check them before execution
             if arg is None:
                 continue
@@ -279,7 +279,7 @@ class Task(object):
 
 class TaskGroup(Task):
     def __init__(self, children):
-        assert is_iterable(children), 'chilren argument to TaskGroup() is expected to be iterable.'
+        assert is_iterable(children), 'children argument to TaskGroup() is expected to be iterable.'
         # this should all be O(n+m) assuming n is the total number of sources
         # and m is the total number of targets
         # flatten sources and targets first
