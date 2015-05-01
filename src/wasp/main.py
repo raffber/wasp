@@ -3,7 +3,7 @@ from .config import Config
 from .task import Task, group
 from .task_collection import TaskCollection
 from .tools import proxies as tool_proxies, NoSuchToolError
-from .options import StringOption
+from .option import StringOption
 from .execution import execute, ParallelExecutor
 from .node import nodes
 from .argument import Argument

@@ -1,4 +1,4 @@
-from .options import OptionsCollection
+from .option import OptionsCollection
 from .cache import Cache, CACHE_FILE
 from .signature import SignatureProvider, ProducedSignatures
 from .argument import ArgumentCollection

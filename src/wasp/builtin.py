@@ -2,7 +2,7 @@ from . import options, ctx, CommandFailedError, decorators
 from .main import run_command
 from .util import FunctionDecorator
 from .commands import Command, command
-from .options import FlagOption, handle_options, ArgumentOption
+from .option import FlagOption, handle_options, ArgumentOption
 from .argument import Argument
 from .fs import remove
 

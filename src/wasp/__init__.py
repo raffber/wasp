@@ -157,7 +157,7 @@ A list of files which have been registered by :func:`recurse`
 
 from .context import Context
 from .config import config, Config
-from .options import options, handle_options, FlagOption, EnableOption, StringOption, IntOption
+from .option import options, handle_options, FlagOption, EnableOption, StringOption, IntOption
 from .argument import Argument, value, arg, format_string, find_argumentkeys_in_string, ArgumentCollection
 from .commands import command, Command, CommandFailedError
 from .fs import Directory, File, copy, remove, paths, path, defer_install, find, find_exe, find_lib

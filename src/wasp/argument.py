@@ -449,7 +449,7 @@ class Argument(Serializable):
         from .metadata import Metadata
         from .config import Config
         from .environment import Environment
-        from .options import OptionsCollection
+        from .option import OptionsCollection
 
         if isinstance(arg, Environment):
             # environment variable
