@@ -55,12 +55,9 @@ class ShellTask(Task):
         kw = {'SRC': src_str,
               'TGT': tgt_str}
         for key, arg in self.arguments.items():
-            if arg.type != str and arg.type != list:
+            if arg.type != str:
                 continue
-            val = arg.value
-            if is_iterable(val):
-                val = ' '.join([str(i) for i in list])
-            kw[arg.key.upper()] = str(val)
+            kw[arg.key.upper()] = str(arg.value)
         # assign upper and lower keys, s.t. it is up to the preference of
         # users how to format command strings.
         # typically, one uses upper case variable names, however, people
@@ -80,17 +77,16 @@ class ShellTask(Task):
         return self
 
     def use_catenate(self, arg):
-        name = arg.name
-        if name not in self.arguments:
-            item = Argument(name, value=[])
+        if arg.key not in self.arguments:
+            item = Argument(arg.key, value=[])
             self.arguments.add(item)
         else:
-            item = self.arguments[name]
+            item = self.arguments[arg.key]
         if is_iterable(arg.value):
             item.value.extend(list(arg.value))
         else:
             assert arg.type == str
-            item.value.append(arg)
+            item.value.append(arg.value)
         for c in self.children:
             c.use_arg(arg)
 

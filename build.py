@@ -29,7 +29,9 @@ def _rust():
 
 @wasp.command('cpp')
 def _cpp():
-    yield cpp.compile('buildtest/main.cpp')
+    t = cpp.compile('buildtest/main.cpp')
+    yield t
+    yield cpp.link(t)
 
 
 @wasp.command('nodejs', depends='configure')

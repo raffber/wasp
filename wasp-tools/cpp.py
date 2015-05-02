@@ -117,8 +117,8 @@ class Link(ShellTask):
 
     def _process_args(self):
         kw = super()._process_args()
-        libraries = self.arguments.get('libraries', [])
-        kw['LIBRARIES'] = ' -l'.join(libraries)
+        libraries = self.arguments.value('libraries')
+        kw['LIBRARIES'] = ' '.join(['-l' + l for l in libraries])
         return kw
 
 
@@ -143,7 +143,7 @@ def compile(sources, use_default=True):
 
 
 def link(obj_files, target='main', use_default=True):
-    t = Link(sources=files(obj_files), targets=file(target).to_builddir())
+    t = Link(sources=nodes(obj_files), targets=file(target).to_builddir())
     if use_default:
-        t.use(':cpp/ld')
+        t.use(':cpp/ld', libraries=['stdc++'])
     return t
