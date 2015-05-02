@@ -35,6 +35,7 @@ Bugs
 
  * tasks spawned during check() are not returned from execute()... I guess??
  * MissingArgumentError in check() must terminate programm.
+ * ./wasp rebuild is not working anymore.... nodejs modules do not get reinstalled.
 
 Lower Priorieties/Questions
 ============================

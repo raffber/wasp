@@ -249,10 +249,10 @@ def nodes(*args):
     for arg in args:
         if isinstance(arg, Task):
             ret.extend(arg.targets)
-        if is_iterable(arg):
+        elif is_iterable(arg):
             ret.extend(nodes(*arg))
-            continue
-        ret.append(node(arg))
+        else:
+            ret.append(node(arg))
     return ret
 
 
