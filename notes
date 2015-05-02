@@ -9,6 +9,7 @@ Next
 -----
 
  * API to trigger command rerun
+    -> maybe outgoing nodes of each command should be checked to determine if a command must be rerun
  * watch: run tasks at least once
  * create globalwasp which dispatches to local wasp script (walks up the tree until a wasp script is found)
  * what happens if compile flags are changed?
@@ -35,8 +36,7 @@ Bugs
 =======
 
  * tasks spawned during check() are not returned from execute()... I guess??
- * MissingArgumentError in check() must terminate programm.
- * ./wasp rebuild is not working anymore.... nodejs modules do not get reinstalled.
+
 
 Lower Priorieties/Questions
 ============================
