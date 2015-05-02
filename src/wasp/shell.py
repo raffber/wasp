@@ -60,7 +60,7 @@ class ShellTask(Task):
             val = arg.value
             if is_iterable(val):
                 val = ' '.join([str(i) for i in list])
-            kw[arg.upperkey] = str(val)
+            kw[arg.key.upper()] = str(val)
         # assign upper and lower keys, s.t. it is up to the preference of
         # users how to format command strings.
         # typically, one uses upper case variable names, however, people

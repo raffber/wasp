@@ -91,7 +91,7 @@ class CxxCompile(CompileTask):
 
     def _init(self):
         super()._init()
-        self.require('CXX', spawn=find_cxx)
+        self.require('cxx', spawn=find_cxx)
 
 
 class CCompile(CompileTask):
@@ -99,7 +99,7 @@ class CCompile(CompileTask):
 
     def _init(self):
         super()._init()
-        self.require('CC', spawn=find_cc)
+        self.require('cc', spawn=find_cc)
 
 
 class Link(ShellTask):
@@ -107,7 +107,7 @@ class Link(ShellTask):
 
     def _init(self):
         super()._init()
-        self.require('LD', spawn=find_ld)
+        self.require('ld', spawn=find_ld)
 
     def use_arg(self, arg):
         if arg.key in ['ldflags', 'libraries']:

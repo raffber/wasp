@@ -41,6 +41,7 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * think about all that argument.upperkey and argument.lowerkey again => remove those
  * task._init() which can be overwritten
  * do not allow ' ' for option names, apply the same rule as for argument names
  * string and int option vs argumentoption?
