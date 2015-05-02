@@ -1,5 +1,5 @@
 from uuid import uuid4 as generate_uuid
-from . import ctx, Task
+from . import ctx
 from .signature import FileSignature, CacheSignature, DummySignature
 from .argument import ArgumentCollection, collection
 from .util import is_iterable
@@ -244,12 +244,14 @@ def nodes(*args):
 
     :return: A list where is argument was processed as described above and added to the list.
     """
+    from . import Task
     ret = []
     for arg in args:
         if isinstance(arg, Task):
             ret.extend(arg.targets)
         if is_iterable(arg):
-            ret.extend(nodes(arg))
+            ret.extend(nodes(*arg))
+            continue
         ret.append(node(arg))
     return ret
 
@@ -282,5 +284,5 @@ def node(arg=None):
         if len(arg.targets) == 0:
             return None
         return arg.targets[0]
-    raise TypeError('Invalid type passed to make_nodes, expected Node'
+    raise TypeError('Invalid type passed to node, expected Node'
                     ', string, File or Task. Type was: {0}'.format(type(arg).__name__))

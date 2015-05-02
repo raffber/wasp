@@ -11,6 +11,7 @@ sphinx = tool('sphinx')
 latex = tool('latex')
 nodejs = tool('nodejs')
 rust = tool('rust')
+cpp = tool('cpp')
 
 
 @configure
@@ -23,7 +24,12 @@ def configure():
 
 @wasp.command('rust')
 def _rust():
-    return rust.executable('rust_test/main.rs', 'main')
+    return rust.executable('buildtest/main.rs', 'main')
+
+
+@wasp.command('cpp')
+def _cpp():
+    yield cpp.compile('buildtest/main.cpp')
 
 
 @wasp.command('nodejs', depends='configure')

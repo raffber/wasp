@@ -34,11 +34,12 @@ Bugs
 =======
 
  * tasks spawned during check() are not returned from execute()... I guess??
-
+ * MissingArgumentError in check() must terminate programm.
 
 Lower Priorieties/Questions
 ============================
 
+ * task._init() which can be overwritten
  * do not allow ' ' for option names, apply the same rule as for argument names
  * string and int option vs argumentoption?
  * does the reversed() in task.check() make sense, should this be different?

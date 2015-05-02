@@ -10,7 +10,7 @@ from subprocess import Popen, PIPE
 import shlex
 from time import sleep
 
-POLL_TIMEOUT = 0.05
+POLL_TIMEOUT = 0.05  # s
 
 
 class ShellTask(Task):

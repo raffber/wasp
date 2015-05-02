@@ -3,7 +3,7 @@ from uuid import uuid4 as uuid
 from .util import CallableList, is_iterable
 from .argument import Argument, ArgumentCollection
 from .commands import Command
-from . import log, decorators
+from . import decorators
 
 from functools import reduce
 from itertools import chain as iter_chain
@@ -49,6 +49,10 @@ class Task(object):
         self._result = ArgumentCollection()
         self._used_nodes = []
         self._required_arguments = []
+        self._init()
+
+    def _init(self):
+        pass
 
     def _make_id(self):
         return str(uuid())
