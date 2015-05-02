@@ -8,6 +8,7 @@ Current:
 Next
 -----
 
+ * API to trigger command rerun
  * watch: run tasks at least once
  * create globalwasp which dispatches to local wasp script (walks up the tree until a wasp script is found)
  * what happens if compile flags are changed?
