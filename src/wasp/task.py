@@ -94,17 +94,20 @@ class Task(object):
         ret = []
         for argkey, spawner in self._required_arguments:
             if argkey not in self.arguments or self.arguments[argkey].is_empty:
+                # NOTE: Think about this feature some more:
+                # I feel this leads to somewhat unpredictable behaviour,
+                # since some arguments are `magically` injected.
+                # it's better to have this more explicit.
                 # attempt to retrieve the argument from the common sources
-                arg = Argument(argkey).retrieve_all()
-                if arg.is_empty:
-                    if spawner is None or not spawn:
-                        raise MissingArgumentError(
-                            'Missing argument for task: Required argument "{1}" is empty.'
-                            .format(self.key, argkey))
-                    t = spawner()
-                    self.use(t)
-                    ret.append(t)
-                self.arguments.add(arg)
+                # arg = Argument(argkey).retrieve_all()
+                # if arg.is_empty:
+                if spawner is None or not spawn:
+                    raise MissingArgumentError(
+                        'Missing argument for task: Required argument "{1}" is empty.'
+                        .format(self.key, argkey))
+                t = spawner()
+                self.use(t)
+                ret.append(t)
         if not len(ret) == 0:
             return ret
         return None

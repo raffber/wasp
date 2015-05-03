@@ -145,5 +145,5 @@ def compile(sources, use_default=True):
 def link(obj_files, target='main', use_default=True):
     t = Link(sources=nodes(obj_files), targets=file(target).to_builddir())
     if use_default:
-        t.use(':cpp/ld', libraries=['stdc++'])
+        t.use(':cpp/ld', libraries=['stdc++', 'c'])
     return t
