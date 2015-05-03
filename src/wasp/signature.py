@@ -43,7 +43,7 @@ class SignatureProvider(object):
         ns = _get_ns(ns)
         if ns not in self._d:
             self._d[ns] = {}
-        return self._d[ns].get(key, *default)
+        return self._d[ns].get(key, default)
 
     def save(self, cache):
         """
