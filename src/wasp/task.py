@@ -3,7 +3,7 @@ from uuid import uuid4 as uuid
 from .util import CallableList, is_iterable
 from .argument import Argument, ArgumentCollection
 from .commands import Command
-from . import log, decorators
+from . import decorators
 
 from functools import reduce
 from itertools import chain as iter_chain
@@ -49,6 +49,10 @@ class Task(object):
         self._result = ArgumentCollection()
         self._used_nodes = []
         self._required_arguments = []
+        self._init()
+
+    def _init(self):
+        pass
 
     def _make_id(self):
         return str(uuid())
@@ -80,6 +84,7 @@ class Task(object):
         return not (other.identfier == self._key)
 
     def check(self, spawn=True):
+        # TODO: does reversed() actually make sense?!
         for node in reversed(self._used_nodes):
             # retrieve all nodes
             if isinstance(node, SymbolicNode):
@@ -89,17 +94,20 @@ class Task(object):
         ret = []
         for argkey, spawner in self._required_arguments:
             if argkey not in self.arguments or self.arguments[argkey].is_empty:
+                # NOTE: Think about this feature some more:
+                # I feel this leads to somewhat unpredictable behaviour,
+                # since some arguments are `magically` injected.
+                # it's better to have this more explicit.
                 # attempt to retrieve the argument from the common sources
-                arg = Argument(argkey).retrieve_all()
-                if arg.is_empty:
-                    if spawner is None or not spawn:
-                        raise MissingArgumentError(
-                            'Missing argument for task: Required argument "{1}" is empty.'
-                            .format(self.key, argkey))
-                    t = spawner()
-                    self.use(t)
-                    ret.append(t)
-                self.arguments.add(arg)
+                # arg = Argument(argkey).retrieve_all()
+                # if arg.is_empty:
+                if spawner is None or not spawn:
+                    raise MissingArgumentError(
+                        'Missing argument for task: Required argument "{1}" is empty.'
+                        .format(self.key, argkey))
+                t = spawner()
+                self.use(t)
+                ret.append(t)
         if not len(ret) == 0:
             return ret
         return None
@@ -155,6 +163,9 @@ class Task(object):
 
     def _run(self):
         self.success = True
+
+    def touched(self):
+        return self._targets
 
     @property
     def targets(self):
@@ -235,8 +246,6 @@ class Task(object):
             elif isinstance(a, list):
                 self.use(*a)
         for k, a in kw.items():
-            if not isinstance(a, str):
-                a = str(a)
             self.use_arg(Argument(k).assign(a))
         return self
 
@@ -253,9 +262,9 @@ class Task(object):
 
     result = property(get_result, set_result)
 
-    def require(self, *arguments):
+    def require(self, *arguments, spawn=None):
         for arg in arguments:
-            spawner = None
+            spawner = spawn
             # add arguments to a list and check them before execution
             if arg is None:
                 continue
@@ -276,7 +285,7 @@ class Task(object):
 
 class TaskGroup(Task):
     def __init__(self, children):
-        assert is_iterable(children), 'chilren argument to TaskGroup() is expected to be iterable.'
+        assert is_iterable(children), 'children argument to TaskGroup() is expected to be iterable.'
         # this should all be O(n+m) assuming n is the total number of sources
         # and m is the total number of targets
         # flatten sources and targets first

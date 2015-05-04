@@ -213,7 +213,6 @@ class Path(Serializable):
         return os.path.basename(self._path)
 
 
-
 class Directory(Path):
     """
     Creates a directory object of the given path.
@@ -481,7 +480,7 @@ def path(arg):
     Returns a :class:`Path` object based on the argument. Accepts:
 
      * :class:`FileNode` A file node. Constructs a :class:`File` with the same path.
-     * `str`: Uses the str as path.
+     * ``str``: Uses the ``str`` as path.
      * :class:`File` or :class:`Directory`: Appends the object to the collection.
 
     :param arg: Tuple of one of the above types.
@@ -490,7 +489,7 @@ def path(arg):
         returned.
     """
     if isinstance(arg, FileNode):
-        return File(f.path)
+        return File(arg.path)
     elif isinstance(arg, str):
         if Path(arg).isdir():
             return Directory(arg)
@@ -500,7 +499,27 @@ def path(arg):
         return arg
     elif isinstance(arg, Directory):
         return arg
-    raise ValueError('No compatible type given to `paths()`.')
+    raise ValueError('No compatible type given to `path()`.')
+
+
+def file(arg):
+    """
+    Returns a :class:`File` object base don the argument. Accepts:
+
+        * :class:`FileNode`. Constructs a :class:`File` object with the same path.
+        * ``str``: Uses the ``str`` as path.
+        * :class:`File`. Returns the same object.
+
+    :param arg: One of the above types.
+    :return: A :class:`File` object based on the argument.
+    """
+    if isinstance(arg, str):
+        return File(arg)
+    elif isinstance(arg, FileNode):
+        return File(arg.path)
+    elif isinstance(arg, File):
+        return arg
+    raise ValueError('No compatible type given to `file()`.')
 
 
 def paths(*args, ignore=False):
@@ -529,6 +548,27 @@ def paths(*args, ignore=False):
                 if not ignore:
                     raise e
     return ret
+
+
+def directory(arg):
+    """
+    Returns a :class:`Directory` object base don the argument. Accepts:
+
+        * :class:`FileNode`. Constructs a :class:`Directory` object with the path of the parent directory.
+        * ``str``: Uses the ``str`` as path.
+        * :class:`Directory`. Returns the same object.
+
+    :param arg: One of the above types.
+    :return: A :class:`Directory` object based on the argument.
+    """
+    if isinstance(arg, str):
+        return Directory(arg)
+    elif isinstance(arg, FileNode):
+        return Directory(arg.path)
+    elif isinstance(arg, Directory):
+        return arg
+    raise ValueError('No compatible type given to `directory()`.')
+
 
 
 def directories(*args, ignore=False):

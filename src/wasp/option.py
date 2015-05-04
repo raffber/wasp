@@ -155,6 +155,34 @@ def name_to_key(name):
 
 
 class Option(Serializable):
+    """
+    Abstract base class for representing command line options. It provides a more
+    object-oriented interface to argument parsing than the standard python argparse,
+    but the argparse module is used internally.
+
+    :class:`Option` objects are added during the startup of ``wasp`` using the
+    ``@options`` decorator. Options are added to :class:`OptionsCollection` objects
+    and can be grouped. For example, each command has its own group (named after
+    the command).
+
+    After the options are added, the command line is parsed and the :class:`OptionsCollection`
+    is filled with the values from the command line. It is then stored in ``ctx.options``, from
+    where it may be accessed at any later stage during the execution of ``wasp``. There
+    exists a special decorator called ``@handle_options`` which is called directly after
+    options parsing and can be used to post-process options.
+
+    Furthermore, :class:`Option` is a subclass of :class:`wasp.util.Serializable` and may thus
+    be saved to disk, such that the values can be stored accross multiple launches of ``wasp``.
+
+    :param name: Name of the option.
+    :param description: Description of this option. To be printed to the user.
+    :param keys: ``str`` or list of ``str`` which is used as the argument on the command line.
+        If None, the key is inferred from the name of the option.
+    :param value: Initial value (also default value) of the option.
+    :param prefix: Prefix on the command line. If None, '-' is used for single letter
+        keys and '--' for keys with multiple letters. If given as list, it must have
+        the same length as ``keys``.
+    """
     def __init__(self, name, description, keys=None, value=None, prefix=None):
         assert isinstance(name, str), 'name must be a string'
         assert isinstance(description, str), 'Description must be a string'
@@ -183,6 +211,10 @@ class Option(Serializable):
 
     @property
     def name(self):
+        """
+        Returns the name of the option. This name is also used as
+        the argument name when creating an argument from this option.
+        """
         return self._name
 
     def set_value(self, v):
@@ -192,19 +224,38 @@ class Option(Serializable):
         return self._value
 
     value = property(get_value, set_value)
+    """
+    Gets or sets the value of this option.
+    """
 
     @property
     def key(self):
+        """
+        Returns the keys which are used on the command line.
+        """
         return self._keys
 
     @property
     def description(self):
+        """
+        Returns the description of this option. This is printed as
+        help text to the user.
+        """
         return self._description
 
     def add_to_argparse(self, args):
+        """
+        Must be overwritten. Adds the option to an ``Argparse`` object.
+
+        :param args: ``Argparse`` object the option should use.
+        """
         raise NotImplementedError
 
     def retrieve_from_dict(self, args):
+        """
+        Must be overwritten. Retrives the value of this option
+        from the dict ``args`` as created by the ``argparse`` module.
+        """
         raise NotImplementedError
 
     @staticmethod
@@ -222,10 +273,20 @@ class Option(Serializable):
         return ret
 
     def empty(self):
+        """
+        Returns True if the currently set value is the same as the default value.
+        """
         return self._value == self._default
 
 
 class ArgumentOption(Option):
+    """
+    Option of the form ``--key argkey=argvalue``, where the key value pair
+    is converted into an :class:`wasp.argument.Argument` and returned as
+    an :class:`wasp.argument.ArgumentCollection`. If multiple key-value pairs are given
+    (e.g. ``--key argkey=argvalue  --key argkey2=argvalue2``) these values are all
+    added to the :class:`wasp.argument.ArgumentCollection`.
+    """
 
     KEY_VALUE_RE = re.compile('^(?P<arg_key>' + ARGUMENT_KEY_RE_STR + ')=[\"\']?(?P<arg_value>.*?)[\"\']?$')
 
@@ -263,6 +324,10 @@ class ArgumentOption(Option):
 
 
 class FlagOption(Option):
+    """
+    Option which is treated as a flag if it is specified on the command
+    line, i.e. True is stored if the option is given.
+    """
 
     def add_to_argparse(self, args):
         strings = []
@@ -285,6 +350,13 @@ factory.register(FlagOption)
 
 
 class EnableOption(Option):
+    """
+    Option which allows enabling or disabling a feature.
+
+    :param enable_prefix: Prefix to be added when the option should be turned on.
+        e.g. if 'enable-' is given, the option can be turend on with '--enable-keyname'
+    :param disable_prefix: Prefix to be added when the option should be turned off.
+    """
     def __init__(self, *args, enable_prefix='enable-', disable_prefix='disable-', **kw):
         super().__init__(*args, **kw)
         self._enable_prefix = enable_prefix
@@ -336,6 +408,9 @@ factory.register(EnableOption)
 
 
 class StringOption(Option):
+    """
+    Option which allows setting a string (e.g. ``--key value``)
+    """
 
     def add_to_argparse(self, args):
         strings = []
@@ -350,7 +425,7 @@ class StringOption(Option):
         if v is None:
             self._value = None
             return
-        assert isinstance(v, str), 'Value must be a bool'
+        assert isinstance(v, str), 'Value must be a str'
         self._value = v
 
 
@@ -358,6 +433,9 @@ factory.register(StringOption)
 
 
 class IntOption(Option):
+    """
+    Option which allows setting an int value (e.g. ``--key 3``)
+    """
 
     def add_to_argparse(self, args):
         strings = []
@@ -381,12 +459,25 @@ factory.register(IntOption)
 
 
 class options(FunctionDecorator):
+    """
+    Decorator for registring a function as source for
+    command line options. The function takes exactly one argument,
+    which is of type :class:`wasp.argument.OptionsCollection` and is
+    expected to fill it with :class:`Option` objects.
+    """
     def __init__(self, f):
+        super().__init__(f)
         decorators.options.append(f)
         self.f = f
 
 
 class handle_options(FunctionDecorator):
+    """
+    Decorator for registring a function as an options handler.
+    The function is called after the options have been parsed and
+    may be used to postprocess information gathered after command
+    line parsing.
+    """
     def __init__(self, f):
         super().__init__(f)
         decorators.handle_options.append(f)

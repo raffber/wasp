@@ -369,8 +369,6 @@ class Argument(Serializable):
         """
         self.key = key
         assert isinstance(key, str) and len(key) > 0
-        self._lowerkey = key.lower()
-        self._upperkey = key.upper()
         self._value = None
         self._required_type = None
         self.set_value(value)
@@ -385,20 +383,6 @@ class Argument(Serializable):
         d['value'] = factory.to_json(self._value)
         d['key'] = self.key
         return d
-
-    @property
-    def lowerkey(self):
-        """
-        same as self.key.lower()
-        """
-        return self._lowerkey
-
-    @property
-    def upperkey(self):
-        """
-        same as self.key.upper()
-        """
-        return self._upperkey
 
     @classmethod
     def from_json(cls, d):
@@ -449,13 +433,13 @@ class Argument(Serializable):
         from .metadata import Metadata
         from .config import Config
         from .environment import Environment
-        from .options import OptionsCollection
+        from .option import OptionsCollection
 
         if isinstance(arg, Environment):
             # environment variable
-            return arg.get(self.upperkey)
+            return arg.get(self.key.upper())
         elif isinstance(arg, OptionsCollection):
-            option = arg.all().get(self.lowerkey, None)
+            option = arg.all().get(self.key.lower(), None)
             if option:
                 return option.value
         elif isinstance(arg, dict):

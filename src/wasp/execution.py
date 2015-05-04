@@ -1,5 +1,5 @@
 import traceback
-from .task import Task, TaskGroup
+from .task import Task, TaskGroup, MissingArgumentError
 from .util import EventLoop, Event, is_iterable, ThreadPool
 from . import log, ctx, extensions
 from .task_collection import TaskCollection
@@ -542,7 +542,14 @@ class ParallelExecutor(Executor):
                 break
             # check task, and if it hadn't had the chance to spawn new tasks
             # allow it to spawn.
-            spawn = task.task.check(spawn=not task.spawned)
+            try:
+                spawn = task.task.check(spawn=not task.spawned)
+            except MissingArgumentError as e:
+                msg = log.format_fail(''.join(traceback.format_tb(e.__traceback__)),
+                    '{0}: {1}'.format(type(e).__name__,  str(e)))
+                log.fatal(msg)
+                self.task_failed(task)
+                break
             assert not task.spawned or spawn is None, 'Task.check() may only spawn tasks if spawn=True.'
             if spawn is not None:
                 assert isinstance(spawn, list)
@@ -571,6 +578,8 @@ def execute(tasks, executor, produce=None, ns=None):
     :param ns: The namespace in which the tasks should be executed. See :class:`wasp.signature.Signature`
         for more information on namespaces.
     """
+    oldns = ctx.current_namespace
+    ctx.current_namespace = ns
     tasks = make_containers(tasks.values(), ns=ns)
     if len(tasks) == 0:
         return TaskCollection()
@@ -582,6 +591,7 @@ def execute(tasks, executor, produce=None, ns=None):
     extensions.api.tasks_execution_started(tasks, executor, dag)
     executor.run()
     extensions.api.tasks_execution_finished(tasks, executor, dag)
+    ctx.current_namespace = oldns
     return executor.executed_tasks
 
 

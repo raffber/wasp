@@ -8,31 +8,24 @@ Current:
 Next
 -----
 
+ * API to trigger command rerun
+    -> maybe outgoing nodes of each command should be checked to determine if a command must be rerun
  * watch: run tasks at least once
- * find a way to collect multiple tasks during run-time and execute them
-    in a special manner? i.e. collect gcc tasks and make a unity build
- * a task must be able to state that a target was not touched during execution
-    (s.t. the execution eninge may optimize and not refresh the signature)
- * a task must be able to find out why it is run (i.e. targets changed, sources changed)
-    s.t. it can decide on what to do.
+ * create globalwasp which dispatches to local wasp script (walks up the tree until a wasp script is found)
+ * what happens if compile flags are changed?
+    -> task needs to have a .name() and a .hash() function
+    -> .name() must not change between invocations of ./wasp
+        -> default impl: hash(self.__class__.__name) + hash(self.sources) + hash(self.targets)
+        -> suclassed: super().name() + hash(self._privatevar)
+    -> .hash() must change if config is changed
+        -> default: self.name() + hash(self.arguments)
+        -> suclassed: super().hash() + hash(self._privatevar)
  * test, test, test, test and write doc
  * port to windows
  * port to pypy
 
 Cpp Tool
 ========
-
- * Create a TargetChangedRecompile task for each source.c.o
- * Create a dependency check task for each source
- * This task has ':cpp/' + filename as target
- * ':cpp/' + filename contains the list of all its dependencies
- * in case the file changed, the dependencies are rescanned, else the task
-    is not executed.
- * a task is spawned which maps from ':cpp/' + filename and all headers to source.c.o
- * all source.c.o are linked to target
-
- * Add standard compile task (s.t. runs if source changed and/or target changed)
-
 
  * ':/cpp/source.c' => source.c.o (executed if target changed)
  * source.c, all headers from ':/cpp/source.c' => ':/cpp/source.c'
@@ -48,6 +41,17 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * do not allow ' ' for option names, apply the same rule as for argument names
+ * string and int option vs argumentoption?
+ * does the reversed() in task.check() make sense, should this be different?
+ * remove --target ?!
+ * remove hierarchical ArgumentCollection()
+ * maybe spawn isn't acutally required?!
+    -> think about what can be done with nodes
+    -> Spawn could only be used for checks()
+ * optmize on task.touched()
+ * make SymbolicNode dict-like
+ * figure out what projectid was for
  * add introspection for Task(fun=function) if function does not take any arguments,
     don't call it with task
  * autoconfigure log for tasks based on decorator config
@@ -89,19 +93,6 @@ Lower Priorieties/Questions
     -> namespace the arguments
  * benchmark --> make things faster
  * egrep -rni NotImplementedError src/ | grep TODO
- * remove nested ArgumentCollections?!
-    -> evaluation order of handlers should be clearly defined
-    -> evaluate handler by order of import
-
-
-Feature Removal Tour
----------------------
-
- * remove --target ?!
- * remove hierarchical ArgumentCollection()
- * maybe spawn isn't acutally required?!
-    -> think about what can be done with nodes
-    -> Spawn could only be used for checks()
 
 
 Argument Refactor ?!
