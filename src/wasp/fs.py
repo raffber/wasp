@@ -585,7 +585,10 @@ class FindTask(Task):
         self._dirs = directories(dirs)
         self._names = list(names)
         if argprefix is None:
-            argprefix = first(self._names)
+            argprefix = list(self._names)
+        elif isinstance(argprefix, str):
+            argprefix = [argprefix]
+        assert isinstance(argprefix, list)
         self._argprefix = argprefix
         self._required = required
 
@@ -609,18 +612,14 @@ class FindTask(Task):
         else:
             self._print_success(result_file, result_dir)
             self._success = True
-        ap = self._argprefix
-        if ap is not None:
+        for ap in self._argprefix:
             self.result[ap] = result_file
-        if ap is None:
-            ap = ''
-        else:
-            ap += '_'
-        self._store_result(ap, result_file, result_dir)
+        self._store_result(result_file, result_dir)
 
-    def _store_result(self, prefix, file, dir):
-        self.result[prefix+'file'] = file
-        self.result[prefix+'dir'] = dir
+    def _store_result(self, file, dir):
+        for p in self._argprefix:
+            self.result[p+'file'] = file
+            self.result[p+'dir'] = dir
 
     def _print_fail(self):
         self.log.fatal(self.log.format_fail('Cannot find required file! Looking for: [{0}]'
@@ -650,10 +649,11 @@ class FindExecutable(FindTask):
             dirs = os.getenv('PATH').split(':')
         super().__init__(*args, dirs=dirs, **kw)
 
-    def _store_result(self, prefix, file, dir):
-        self.result[prefix+'exe'] = file
-        self.result[prefix+'file'] = file
-        self.result[prefix+'dir'] = dir
+    def _store_result(self, file, dir):
+        for p in self._argprefix:
+            self.result[p+'exe'] = file
+            self.result[p+'file'] = file
+            self.result[p+'dir'] = dir
 
 
 def find_exe(*names, dirs=None, argprefix=None, required=True):
@@ -676,10 +676,11 @@ class FindLibrary(FindTask):
             dirs = os.getenv('LD_LIBRARY_PATH').split(':')
         super().__init__(*args, dirs=dirs, **kw)
 
-    def _store_result(self, prefix, file, dir):
-        self.result[prefix+'lib'] = file
-        self.result[prefix+'file'] = file
-        self.result[prefix+'dir'] = dir
+    def _store_result(self, file, dir):
+        for p in self._argprefix:
+            self.result[p+'lib'] = file
+            self.result[p+'file'] = file
+            self.result[p+'dir'] = dir
 
 
 def find_lib(*names, dirs=None, argprefix=None, required=True):
