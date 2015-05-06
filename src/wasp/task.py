@@ -15,6 +15,13 @@ class MissingArgumentError(Exception):
 
 
 class Task(object):
+    """
+    ``Tasks`` are the central unit of execution of ``wasp``. A build process is formulated as
+    as a set of ``Tasks``, which consume ``Nodes`` (i.e. depend on, source nodes) and produce
+    ``Nodes`` (target nodes).
+
+    TODO: more
+    """
     def __init__(self, sources=None, targets=None, children=None, always=False, fun=None):
         self._sources = nodes(sources)
         self._targets = nodes(targets)
@@ -396,15 +403,6 @@ class ChainingTaskGroup(TaskGroup):
 
 def chain(*args):
     return ChainingTaskGroup(args)
-
-
-def fail():
-    t = Task(always=True)
-
-    def _fail():
-        t.success = False
-    t.run.append(_fail)
-    return task
 
 
 class task(object):
