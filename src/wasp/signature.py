@@ -126,6 +126,22 @@ class ProducedSignatures(object):
 
 
 class Signature(Serializable):
+    """
+    A signature is used to compare different versions of nodes.
+    For example each time a :class:`wasp.node.FileNode` is changed,
+    its signature changes. Thus, by comparing signatures of the same
+    nodes, it can be determined if the nodes was changed or not and it
+    can be determined if a task has to run again.
+
+    A signature is identified by its ``key`` (for storage), a ``value``
+    which is used to compare different versions of nodes and a ``valid``
+    flag (e.g. a node is no longer available and thus no value can be assigned
+    to its signature).
+
+    :param value: Value of the signature.
+    :param valid: Defines whether the signature has a meaningful value.
+    :param key: Key to identify the signature. If None, a uuid is assigned.
+    """
 
     def __init__(self, value=None, valid=False, key=None):
         self._value = value
@@ -137,17 +153,31 @@ class Signature(Serializable):
 
     @property
     def key(self):
+        """
+        Returns the key of the signature for identifying it in storage.
+        """
         return self._key
 
     @property
     def value(self):
+        """
+        Returns a value corresponding to the content of a node.
+        """
         return self._value
 
     @property
     def valid(self):
+        """
+        Returns True if the signature is valid and may be compared to
+        a previous signature. False otherwise (e.g. if the node is no longer
+        availeble).
+        """
         return self._valid
 
     def invalidate(self):
+        """
+        Sets ``valid`` to False.
+        """
         self._valid = False
 
     def __eq__(self, other):
@@ -166,12 +196,21 @@ class Signature(Serializable):
         return cls(value=d['value'], valid=d['valid'], key=d['key'])
 
     def refresh(self, value=None):
+        """
+        Changes the value of the singature.
+        """
         if value is not None:
             self._value = value
         return value
 
 
 class FileSignature(Signature):
+    """
+    ``FileSignature`` to be used with :class:`wasp.node.FileNode`.
+
+    :param path: Path of the :class:`wasp.node.FileNode`, which is
+        set as key.
+    """
     def __init__(self, path, value=None, valid=True):
         assert path is not None, 'Path must be given for file signature'
         if not os.path.exists(path):
@@ -219,6 +258,13 @@ factory.register(FileSignature)
 
 
 class CacheSignature(Signature):
+    """
+    Signature of a part of the ``wasp`` cache. It is used with SymbolicNodes, which
+    store their information in the cache.
+
+    :param key: Key for identifying the signature.
+    :param prefix: Cache prefix. See :class:`wasp.cache.Cache`.
+    """
     def __init__(self, key, prefix=None, cache_key=None, value=None, valid=True):
         super().__init__(value, valid=valid, key=key)
         self._cache = None
@@ -260,6 +306,10 @@ factory.register(CacheSignature)
 
 
 class DummySignature(Signature):
+    """
+    A dummy signature which never changes (i.e. comparing it
+    to another dummy signature for equality always returns True).
+    """
 
     def to_json(self):
         return None
