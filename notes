@@ -36,6 +36,7 @@ Bugs
 =======
 
  * tasks spawned during check() are not returned from execute()... I guess??
+ * clean does not delete all files in build/...
 
 
 Lower Priorieties/Questions
