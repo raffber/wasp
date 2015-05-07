@@ -35,6 +35,7 @@ class Cursor(object):
     def to_pos(self, x, y):
         pass
 
+
 class Terminal(object):
 
     def __init__(self):
