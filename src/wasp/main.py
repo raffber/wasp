@@ -1,7 +1,6 @@
 from .util import load_module_by_path
 from .config import Config
-from .task import Task, group
-from .task_collection import TaskCollection
+from .task import Task, group, TaskCollection
 from .tools import proxies as tool_proxies, NoSuchToolError
 from .option import StringOption
 from .execution import execute, ParallelExecutor

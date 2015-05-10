@@ -1,8 +1,7 @@
 import traceback
-from .task import Task, TaskGroup, MissingArgumentError
+from .task import Task, TaskGroup, MissingArgumentError, TaskCollection
 from .util import EventLoop, Event, is_iterable, ThreadPool
 from . import log, ctx, extensions
-from .task_collection import TaskCollection
 
 # TODO: task timeouts -> kill hanging tasks
 

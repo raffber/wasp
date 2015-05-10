@@ -304,6 +304,8 @@ class TaskGroup(object):
         for t in self._tasks:
             empty.use(t)
         empty.produce(*args)
+        self._tasks.append(empty)
+        return self
 
 
 def _flatten(args):
@@ -366,3 +368,25 @@ class task(object):
         com = Command(self._command, command_fun, description=self._description, depends=self._command_depends)
         decorators.commands.append(com)
         return f
+
+
+class TaskCollection(dict):
+
+    def __init__(self, *tasks):
+        super().__init__()
+        for task in tasks:
+            if task is None:
+                continue
+            if is_iterable(task):
+                for t in task:
+                    self.add(t)
+            else:
+                self.add(task)
+
+    def add(self, task):
+        if isinstance(task, TaskGroup):
+            for t in task.tasks:
+                self.add(t)
+            return
+        assert isinstance(task, Task)
+        self[task.key] = task
