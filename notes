@@ -8,6 +8,8 @@ Current:
 Next
 -----
 
+ * group() of findtask somehow must also produce the nodes.... otherwise find tasks cannot
+    be grouped.
  * API to trigger command rerun
     -> maybe outgoing nodes of each command should be checked to determine if a command must be rerun
  * watch: run tasks at least once

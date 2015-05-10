@@ -91,13 +91,10 @@ class Task(object):
         return not (other.identfier == self._key)
 
     def check(self, spawn=True):
-        # TODO: does reversed() actually make sense?!
-        for node in reversed(self._used_nodes):
+        for node in self._used_nodes:
             # retrieve all nodes
             if isinstance(node, SymbolicNode):
-                for arg in node.read().values():
-                    if arg.key not in self.arguments or self.arguments[arg.key].is_empty:
-                        self.use(arg)
+                self.use(node.read())
         ret = []
         for argkey, spawner in self._required_arguments:
             if argkey not in self.arguments or self.arguments[argkey].is_empty:
