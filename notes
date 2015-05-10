@@ -8,20 +8,10 @@ Current:
 Next
 -----
 
- * group() of findtask somehow must also produce the nodes.... otherwise find tasks cannot
-    be grouped.
- * API to trigger command rerun
-    -> maybe outgoing nodes of each command should be checked to determine if a command must be rerun
+ * remove hierarchical ArgumentCollection()
+ * remove child tasks, introduce TaskGroup() use(TaskGroup()) uses all its members
  * watch: run tasks at least once
  * create globalwasp which dispatches to local wasp script (walks up the tree until a wasp script is found)
- * what happens if compile flags are changed?
-    -> task needs to have a .name() and a .hash() function
-    -> .name() must not change between invocations of ./wasp
-        -> default impl: hash(self.__class__.__name) + hash(self.sources) + hash(self.targets)
-        -> suclassed: super().name() + hash(self._privatevar)
-    -> .hash() must change if config is changed
-        -> default: self.name() + hash(self.arguments)
-        -> suclassed: super().hash() + hash(self._privatevar)
  * test, test, test, test and write doc
  * port to windows
  * port to pypy
@@ -44,11 +34,12 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * API to trigger command rerun
+    -> maybe outgoing nodes of each command should be checked to determine if a command must be rerun
  * do not allow ' ' for option names, apply the same rule as for argument names
  * string and int option vs argumentoption?
  * does the reversed() in task.check() make sense, should this be different?
  * remove --target ?!
- * remove hierarchical ArgumentCollection()
  * maybe spawn isn't acutally required?!
     -> think about what can be done with nodes
     -> Spawn could only be used for checks()
@@ -98,17 +89,29 @@ Lower Priorieties/Questions
  * egrep -rni NotImplementedError src/ | grep TODO
 
 
-Argument Refactor ?!
---------------------
+Discared Ideas
+===============
 
-=> overrides: task.overrides.append(provider)
+ * what happens if compile flags are changed?
+    -> task needs to have a .name() and a .hash() function
+    -> .name() must not change between invocations of ./wasp
+        -> default impl: hash(self.__class__.__name) + hash(self.sources) + hash(self.targets)
+        -> suclassed: super().name() + hash(self._privatevar)
+    -> .hash() must change if config is changed
+        -> default: self.name() + hash(self.arguments)
+        -> suclassed: super().hash() + hash(self._privatevar)
+
+
 => ArgumentProviderBase
     -> defines __getitem__ and __setitem__
+=> overrides: task.overrides.append(provider)
 => ArgumentProvider(ArgumentProviderBase)
     -> .limit(keys) limits the keys available
     -> provider(..., keys=[]) creates an argumentprovider and limits with keys
 => what about not overriding arguments by default?!
     -> maybe don't override arg if already there? (in check())
+
+
 
 
 Global Installation and call from subdirectory
