@@ -8,6 +8,7 @@ from string import Formatter
 from uuid import uuid4 as uuid
 from zlib import adler32
 import functools
+import collections
 
 
 def a2b(s):
@@ -370,7 +371,8 @@ def load_module_by_name(name):
 
 def is_iterable(arg):
     # TODO: incorrect
-    return isinstance(arg, list) or isinstance(arg, tuple) or isinstance(arg, set)
+    return isinstance(arg, collections.Iterable) and not isinstance(arg, str)
+    #return isinstance(arg, list) or isinstance(arg, tuple) or isinstance(arg, set)
 
 
 def is_json_primitive(arg):

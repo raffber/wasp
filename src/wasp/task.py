@@ -6,7 +6,6 @@ from .commands import Command
 from . import decorators
 
 from functools import reduce
-from itertools import chain as iter_chain
 import operator
 
 
@@ -22,7 +21,7 @@ class Task(object):
 
     TODO: more
     """
-    def __init__(self, sources=None, targets=None, always=False, fun=None):
+    def __init__(self, sources=None, targets=None, always=False, fun=None, noop=False):
         self._sources = nodes(sources)
         self._targets = nodes(targets)
         if len(self._sources) == 0 and len(self._targets) == 0:
@@ -51,6 +50,12 @@ class Task(object):
         self._used_nodes = []
         self._required_arguments = []
         self._init()
+        assert isinstance(noop, bool)
+        self._noop = noop
+
+    @property
+    def noop(self):
+        return self._noop
 
     def _init(self):
         pass
@@ -291,6 +296,15 @@ class TaskGroup(object):
     def tasks(self):
         return self._tasks
 
+    def produce(self, *args):
+        def _fun(t):
+            t.result = t.arguments
+            t.success = True
+        empty = Task(noop=True, fun=_fun)
+        for t in self._tasks:
+            empty.use(t)
+        empty.produce(*args)
+
 
 def _flatten(args):
     if not is_iterable(args):
@@ -307,7 +321,7 @@ def _flatten(args):
 def group(*args, collapse=True):
     args = _flatten(args)
     for arg in args:
-        assert isinstance(arg, Task), '*args must be a list of Tasks, but was: {0}'.format(type(arg).__name__)
+        assert isinstance(arg, Task) or isinstance(arg, TaskGroup), '*args must be a list of Tasks, but was: {0}'.format(type(arg).__name__)
     if len(args) == 1 and collapse:
         return args[0]
     return TaskGroup(args)
@@ -329,6 +343,7 @@ class ChainingTaskGroup(TaskGroup):
     def __iadd__(self, other):
         if len(self.tasks) > 0:
             other.use(self.tasks[-1])
+        return self
 
 
 def chain(*args):

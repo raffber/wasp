@@ -1,7 +1,7 @@
 from wasp import ShellTask, find_exe, Task
 from wasp import group
 from wasp import nodes, FileNode, node
-from wasp import file, directory, files
+from wasp import file, directory
 import re
 
 

@@ -24,7 +24,7 @@ class TaskContainer(object):
     Also, the :class:`TaskContainer` keeps track of all depenedencies of
     a task.
     """
-    def __init__(self, task, children, ns=None):
+    def __init__(self, task, ns=None):
         self._dependencies = []
         self._ns = ns
         self._task = task
@@ -33,7 +33,6 @@ class TaskContainer(object):
         self._runnable = None
         self._has_run = None
         self._finished = False
-        self._children = children
         self._spawned = False
         # if this would not be the case, the task would never be executed
         if len(task.sources) == 0 and len(task.targets) == 0:
@@ -55,13 +54,6 @@ class TaskContainer(object):
         Returns the nodes consumed by the task.
         """
         return self._task.sources
-
-    @property
-    def children(self):
-        """
-        Returns all child tasks.
-        """
-        return self._children
 
     def freeze(self):
         """
@@ -149,9 +141,6 @@ class TaskContainer(object):
         if self._task.always:
             return False
         # check if all children have run
-        for task in self.children:
-            if not task.has_run:
-                return False
         for t in self.targets:
             if t.has_changed(ns=self._ns):
                 return False
@@ -236,11 +225,7 @@ class DAG(object):
             produce_ids = [p.key for p in self._produce]
             required = []
             for task in tasks:
-                if isinstance(task.task, TaskGroup):
-                    targets = set(task.task.targets) - set(task.task.grouped_targets)
-                else:
-                    targets = task.task.targets
-                for t in targets:
+                for t in task.task.targets:
                     if t.key in produce_ids:
                         required.append(task)
             for req in required:
@@ -409,11 +394,7 @@ class Executor(object):
         task.task.has_run = True
         spawned = task.task.spawn()
         if spawned is not None:
-            if is_iterable(spawned):
-                deps, containers = _flatten(spawned)
-            else:
-                deps, containers = _flatten([spawned])
-            self._dag.insert(containers)
+            self._dag.insert(_flatten(spawned))
         self._consumed_nodes.extend(task.task.sources)
         self._produced_nodes.extend(task.task.targets)
         for target in task.targets:
@@ -639,21 +620,18 @@ def _flatten(tasks, ns=None):
 
     :param tasks: The tasks to be flattened.
     :param ns: The namespace in which the tasks are run.
-    :return: Returns a tuple containing a list of :class:`TaskContainer` of all
-        flattened tasks and a list of :class:`TaskContainer` created from the
-        children of the tasks.
+    :return: Returns a flattened list of tasks, removing all TaskGroup() objects.
     """
-    ret_flatten = []
-    ret_containers = []
+    if not is_iterable(tasks):
+        tasks = [tasks]
+    ret = []
     for task in tasks:
-        dependencies, containers = _flatten(task.children, ns=ns)
-        if isinstance(task, Task):
-            task = TaskContainer(task, children=containers, ns=ns)
-        ret_containers.append(task)
-        task.dependencies.extend(dependencies)
-        ret_flatten.extend(dependencies)
-        ret_flatten.append(task)
-    return ret_flatten, ret_containers
+        if isinstance(task, TaskGroup):
+            ret.extend(_flatten(task.tasks, ns=ns))
+        else:
+            task = TaskContainer(task, ns=ns)
+            ret.append(task)
+    return ret
 
 
 def make_containers(tasks, ns=None):
@@ -661,5 +639,4 @@ def make_containers(tasks, ns=None):
     Flattens the list of :class:`wasp.Task` in tasks
     and returns a list of :class:`TaskContainer`.
     """
-    flattened, _ = _flatten(tasks, ns=ns)
-    return flattened
+    return _flatten(tasks, ns=ns)
