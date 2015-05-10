@@ -727,7 +727,7 @@ def find_lib(*names, dirs=None, argprefix=None, required=True):
     """
     See :class:`FindLibrary`. Accepts the same parameters.
     """
-    return FindLibrary(names, dirs=dirs, argprefix=argprefix, required=required)
+    return FindLibrary(*names, dirs=dirs, argprefix=argprefix, required=required)
 
 
 class RemoveTask(Task):
