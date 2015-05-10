@@ -22,17 +22,11 @@ class Task(object):
 
     TODO: more
     """
-    def __init__(self, sources=None, targets=None, children=None, always=False, fun=None):
+    def __init__(self, sources=None, targets=None, always=False, fun=None):
         self._sources = nodes(sources)
         self._targets = nodes(targets)
         if len(self._sources) == 0 and len(self._targets) == 0:
             always = True
-        if children is None:
-            children = []
-        assert is_iterable(children)
-        if not isinstance(children, list):
-            children = list(children)
-        self.children = children
         self._has_run = False
         self._always = always
         self._success = False
@@ -229,6 +223,9 @@ class Task(object):
             elif isinstance(a, ArgumentCollection):
                 for x in a.values():
                     self.use_arg(x)
+            elif isinstance(a, TaskGroup):
+                for t in a.tasks:
+                    self.use(t)
             elif isinstance(a, SymbolicNode):
                 self._used_nodes.append(a)
                 self.sources.append(a)
@@ -247,15 +244,13 @@ class Task(object):
                 else:
                     arg = Argument(a).retrieve_all()
                     self.use_arg(arg)
-            elif isinstance(a, list):
+            elif is_iterable(a):
                 self.use(*a)
         for k, a in kw.items():
             self.use_arg(Argument(k).assign(a))
         return self
 
     def use_arg(self, arg):
-        for c in self.children:
-            c.use_arg(arg)
         self.arguments.add(arg)
 
     def get_result(self):
@@ -287,75 +282,14 @@ class Task(object):
         return self
 
 
-class TaskGroup(Task):
-    def __init__(self, children):
-        assert is_iterable(children), 'children argument to TaskGroup() is expected to be iterable.'
-        # this should all be O(n+m) assuming n is the total number of sources
-        # and m is the total number of targets
-        # flatten sources and targets first
-        sources = self._flatten(children, lambda x: x.sources)
-        s_all = list(sources)
-        targets = self._flatten(children, lambda x: x.targets)
-        t_all = list(targets)
-        targets_new = []
-        for t in targets.values():
-            # remove source node if it is also a target
-            # otherwise, the target node in question is external
-            # and the source node is external as well.
-            if t.key in sources:
-                del sources[t.key]
-            else:
-                targets_new.append(t)
-        self._grouped_sources = s_all
-        self._grouped_targets = t_all
-        super().__init__(sources=list(sources.values()), targets=targets_new, children=children, always=True)
+class TaskGroup(object):
+    def __init__(self, tasks):
+        assert is_iterable(tasks), 'tasks argument to TaskGroup() is expected to be iterable.'
+        self._tasks = list(tasks)
 
     @property
-    def grouped_targets(self):
-        return self._grouped_targets
-
-    @property
-    def grouped_sources(self):
-        return self._grouped_sources
-
-    def _flatten(self, tasks, fun):
-        # base case if called with one task
-        if isinstance(tasks, Task):
-            return {x.key: x for x in fun(tasks)}
-        # get all task items
-        lst = list(iter_chain(*[fun(task) for task in tasks]))
-        # create a dict from them
-        ret = dict(zip([x.key for x in lst], lst))
-        for task in tasks:
-            for c in task.children:
-                ret.update(self._flatten(c, fun))
-        # recursively flatten all children... haskell style :P
-        # ret.update(dict(chain([self._flatten(c, fun).items() for task in tasks for c in task.children])))
-        return ret
-
-    def use(self, *args, **kw):
-        super().use(*args, **kw)
-        for child in self.children:
-            child.use(*args, **kw)
-        return self
-
-    def __repr__(self):
-        return '[' + ', '.join([repr(c) for c in self.children]) + ']'
-
-    def __iadd__(self, other):
-        self.children.append(other)
-        sources = self._flatten(other, lambda x: x.sources)
-        targets = self._flatten(other, lambda x: x.targets)
-        for s in sources:
-            for t in self.targets:
-                if t.key == s:
-                    self.targets.remove(t)
-        for t in targets:
-            for s in self.sources:
-                if t == s.key:
-                    self.sources.remove(s)
-        self.targets.extend(targets.values())
-        return self
+    def tasks(self):
+        return self._tasks
 
 
 def _flatten(args):
@@ -381,11 +315,11 @@ def group(*args, collapse=True):
 
 class ChainingTaskGroup(TaskGroup):
 
-    def __init__(self, children):
-        super().__init__(children)
+    def __init__(self, tasks):
+        super().__init__(tasks)
         # create dependencies between the tasks
         previous = None
-        for a in children:
+        for a in tasks:
             if previous is None:
                 previous = a
                 continue
@@ -393,9 +327,8 @@ class ChainingTaskGroup(TaskGroup):
             previous = a
 
     def __iadd__(self, other):
-        if len(self.children) > 0:
-            other.use(self.children[-1])
-        return super().__iadd__(other)
+        if len(self.tasks) > 0:
+            other.use(self.tasks[-1])
 
 
 def chain(*args):
