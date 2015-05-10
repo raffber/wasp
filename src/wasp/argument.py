@@ -22,39 +22,7 @@ class MissingArgumentError(Exception):
     pass
 
 
-class ArgumentCollection(Serializable):
-    """
-    Provides a dict-like interface for collecting multiple :class:`Argument`
-    objects. It also allows to define nested collections, such that a scope-like
-    interface can be created. Scopes can be accessed either using the
-    :meth:`__call__` method or using :meth:`subcollection` For example::
-
-        col = ArgumentCollection()
-        col.add(Argument('foo').assign('bar')   # creates a new argument with key
-                                                # "foo" and value "bar"
-        print(col['foo'].value)                 # prints "bar"
-        print(col('group')['foo'].value)        # prints "bar"
-        col('group')['foo'] = 'something-else'
-        print(col('group')['foo'].value)        # prints "something-else"
-        print(col['foo'].value)                 # prints "bar"
-
-    ``col('group')`` returns an :class:`ArgumentCollection` object with parent
-    set to ``col``. If an argument is looked up in ``col('group')`` and it is
-    missing therein, the argument is retrieved from the parent collection.
-    """
-    def __init__(self, *args, parent=None):
-        """
-        Creates an :class:`ArgumentCollection` object.
-        :param args: A tuple of (key, argument) tuples.
-        :param name: Allows this object to be named.
-        :param parent: Sets the parent of this object. Required if
-        collections should be nested.
-        """
-        self._d = dict(args)
-        self._subs = {}
-        self._parent = None
-        self.set_parent(parent)
-        self._key = None
+class ArgumentCollection(dict):
 
     @classmethod
     def from_dict(cls, d):
@@ -78,11 +46,6 @@ class ArgumentCollection(Serializable):
                 ret.add(v)
         return ret
 
-    def dict(self):
-        """
-        :return: A dict with ``{argument.key: argument.value}``
-        """
-        return {x.key: x.value for x in self.values()}
 
     def add(self, *args, **kw):
         """
@@ -118,171 +81,10 @@ class ArgumentCollection(Serializable):
         if is_json_primitive(value):
             value = Argument(key, value=value)
         assert isinstance(value, Argument), 'Can only set Argument in ArgumentCollection.__setitem__.'
-        self._d.__setitem__(key, value)
-
-    def to_json(self):
-        """
-        Overrides Serializable.to_json(). Returns a dict.
-        NOTE: The parent of self is not serialized. If a hierarchy should
-        be serialized, use the top-most object for serialization.
-        """
-        # if self.parent is not None:
-        #     # TODO: think about how this could be implemented and if its desirable to implement it
-        #     # to my understanding, parents should only be used for creating namespaces of ArgumentCollection.
-        #     raise CannotSerializeError('Only objects of type ArgumentCollection without parents nor '
-        #                                'subcollection can be serialized. Consider using shallowcopy(),'
-        #                                'which returns a new object of only the items in this collection.')
-        d = super().to_json()
-        # d.update(factory.to_json(self._d))
-        d['arguments'] = [arg.to_json() for arg in self._d.values()]
-        d_subs = {k: v.to_json() for k, v in self._subs.items()}
-        d['subcollections'] = d_subs
-        return d
-
-    @classmethod
-    def from_json(cls, d):
-        """
-        Restores an ArgumentCollection object from a json-dict.
-        """
-        self = cls()
-        for argjson in d['arguments']:
-            arg = factory.from_json(argjson)
-            self.add(arg)
-        for k, v in d['subcollections'].items():
-            self._subs[k] = factory.from_json(v)
-        return self
-
-    def __getitem__(self, key):
-        """
-        Returns the Argument associated with key.
-        If key is not found in self and self is assigned a parent, the
-        Argument is looked-up therein.
-        Otherwise, an empty argument is created and returned.
-        """
-        key = str(key)
-        if key not in self:
-            if self.parent is not None and key in self.parent:
-                return self.parent[key]
-            self[key] = Argument(key)
-        return self._d.__getitem__(key)
-
-    def subcollection(self, name):
-        """
-        Adds a child-collection to this ArgumentCollection and returns it.
-        """
-        if name not in self._subs:
-            self._subs[name] = ArgumentCollection(parent=self)
-        return self._subs[name]
-
-    def update(self, d):
-        """
-        Updates self with the key-value pairs found in d.
-        See :meth:`ArgumentCollection.__setitem__` for more details.
-        """
-        for k, v in d.items():
-            self[k] = v
-
-    def value(self, key):
-        """
-        Returns the value of the argument of self[key].
-        If key not in self, return None.
-        """
-        arg = self.get(key)
-        if arg is None:
-            return None
-        return arg.value
-
-    def __call__(self, name):
-        """Equivalent to self.subcollection(name)"""
-        return self.subcollection(name)
-
-    def set_parent(self, parent):
-        assert parent is None or isinstance(parent, ArgumentCollection), 'Parent must either be of type ' \
-                                                                         'ArgumentCollection or None'
-        self._parent = parent
-
-    def get_parent(self):
-        return self._parent
-
-    parent = property(get_parent, set_parent)
-
-    def copy(self):
-        """
-        Copy self, such that it can be modified without modifying the
-        original collection. The tree of subcollections is copied
-        recursively.
-        """
-        ret = ArgumentCollection(parent=self.parent)
-        ret.update(dict(self._d.items()))
-        for k, v in self._subs.items():
-            new_subcol = v.copy()
-            ret._subs[k] = new_subcol
-        return ret
-
-    def get(self, k, d=None):
-        """
-        :return: ``d`` if ``k`` not in self, self[k] otherwise.
-        """
-        if k not in self:
-            return d
-        return self.__getitem__(k)
-
-    def items(self):
-        """
-        :return: An iterator of (key, argument) which iterates over all arguments in self and self.parent.
-        """
-        for k, v in self._d.items():
-            yield k, v
-        if self.parent is not None:
-            for k, v in self.parent.items():
-                if k in self._d:
-                    continue
-                yield v
-
-    def values(self):
-        """
-        :return: An iterator of argument which iterates over all arguments in self and self.parent.
-        """
-        for x in self._d.values():
-            yield x
-        if self.parent is not None:
-            for k, v in self.parent.items():
-                if k in self._d:
-                    continue
-                yield v
-
-    def keys(self):
-        """
-        :return: An iterator of key which iterates over all arguments in self and self.parent.
-        """
-        for x in self._d.keys():
-            yield x
-        if self.parent is not None:
-            for k in self.parent:
-                if k in self._d:
-                    continue
-                yield k
-
-    def __contains__(self, key):
-        """
-        Checks if self or self.parent contains an argument identified
-        by ``key``.
-        """
-        if self.parent is None:
-            return self._d.__contains__(key)
-        return self._d.__contains__(key) or self.parent.__contains__(key)
-
-    def __iter__(self):
-        """Same as self.keys()"""
-        return iter(self.keys())
+        super().__setitem__(key, value)
 
     def isempty(self):
-        """
-        :return: True if self and self.parent is empty, i.e. no items can be accessed.
-        """
-        parent_empty = self._parent is None or len(self._parent) == 0
-        #subs_empty = self._subs is None or len(self._subs) == 0
-        return parent_empty and len(self._d) == 0  # and subs_empty
+        return len(self) == 0
 
     def overwrite_merge(self, higher_priority):
         """
@@ -312,7 +114,7 @@ class ArgumentCollection(Serializable):
         with open(fpath, 'r') as f:
             try:
                 d = json.load(f)
-            except ValueError as e:
+            except ValueError:
                 raise ValueError('Invalid json file `{0}`'.format(fpath))
         self = cls()
         parse_assert(isinstance(d, dict), 'json file for ArgumentCollection must start with at dictionary.')
@@ -343,9 +145,6 @@ def collection(*args, **kw):
             col.add(arg)
     col.overwrite_merge(ArgumentCollection.from_dict(kw))
     return col
-
-
-factory.register(ArgumentCollection)
 
 
 class Argument(Serializable):

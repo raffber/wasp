@@ -69,7 +69,6 @@ class Factory(object):
         return value
 
     def to_json(self, arg):
-        ret = None
         if isinstance(arg, Serializable):
             ret = arg.to_json()
         elif isinstance(arg, dict):  # recurse

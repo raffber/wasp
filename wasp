@@ -84,7 +84,7 @@ def main(major, minor, point):
         except:
             # something bad happend during import, maybe something
             # is corrupted => try unpacking again
-            unpack(unpack_dir)
+            # unpack(unpack_dir)
             # and reload
             wasp = __import__('wasp')
     except ImportError:
