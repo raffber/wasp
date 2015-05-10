@@ -65,28 +65,14 @@ def test_argument_retrieve():
 
 
 def test_argument_collection():
+    arg = Argument('foo').retrieve('bar')
     col = ArgumentCollection()
-    subcol = col('group')
-    subcol.add(Argument('foo', value='child-value'))
-    assert col.value('foo') is None
-    assert 'foo' not in col
-    assert subcol.value('foo') == 'child-value'
-    col.add(Argument('foo', value='parent-value'))
-    assert col['foo'].value == 'parent-value'
-    assert col('group').value('foo') == 'child-value'
-    for arg in col.values():
-        assert arg.value == 'parent-value'
-        assert arg.key == 'foo'
-    for arg in col('group').values():
-        assert arg.value == 'child-value'
-        assert arg.key == 'foo'
-    d = col.to_json()
-    col = ArgumentCollection.from_json(d)
-    assert col('group').value('foo') == 'child-value'
-    assert col.value('foo') == 'parent-value'
-    col = col.copy()
-    assert col('group').value('foo') == 'child-value'
-    assert col.value('foo') == 'parent-value'
+    assert col.isempty()
+    col.add(arg)
+    assert not col.isempty()
+    assert col['foo'] == arg
+    col = ArgumentCollection.from_dict({'test': 'ing'})
+    assert col['test'].value == 'ing'
 
 
 def test_format_string():
