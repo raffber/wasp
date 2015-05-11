@@ -46,20 +46,16 @@ def test_argument_retrieve():
     # test retrieval from meta
     arg = Argument('foo').retrieve(ctx.meta)
     assert arg.value == 'bar'
-
     col = OptionsCollection()
     col.add(FlagOption('foo', 'Enables foo for testing.', keys='somethingelse'))
     col.retrieve_from_dict({'foo': 'bar'})
     arg = Argument('foo').retrieve(col)
     assert arg.value == 'bar'
-
     arg = Argument('foo').retrieve({'foo': 'bar'})
     assert arg.value == 'bar'
-
     col = ArgumentCollection.from_dict({'foo': 'bar'})
     arg = Argument('foo').retrieve(col)
     assert arg.value == 'bar'
-
     arg = Argument('foo').retrieve('bar')
     assert arg.value == 'bar'
 
@@ -81,6 +77,13 @@ def test_argument_collection():
     assert col2.get('asdf') is None
     col1.overwrite_merge(col2)
     assert col1['foo'].value == 'test'
+    try:
+        _ = col.value('invalid')
+        failed = False
+    except KeyError:
+        failed = True
+    assert failed
+    assert col.value('test') == 'ing'
 
 
 def test_format_string():

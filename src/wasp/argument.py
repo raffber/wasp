@@ -46,6 +46,12 @@ class ArgumentCollection(dict):
                 ret.add(v)
         return ret
 
+    def value(self, key):
+        """
+        Returns the value of the argument associated with ``key``. If ``key`` is not in self,
+        raises a ``KeyError``.
+        """
+        return self[key].value
 
     def add(self, *args, **kw):
         """
