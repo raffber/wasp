@@ -215,7 +215,7 @@ class Argument(Serializable):
         if self._required_type is not None and value is not None:
             if not isinstance(value, self._required_type):
                 raise TypeError('Argument {0} must be of type {1}, but found type {2}!'.format(
-                    self.lowerkey, self._required_type.__name__, type(value).__name__))
+                    self.key, self._required_type.__name__, type(value).__name__))
             # self._value = (self._required_type)(value)
             self._value = value
             return
@@ -241,15 +241,15 @@ class Argument(Serializable):
             option = arg.all().get(self.key.lower(), None)
             if option:
                 return option.value
+        elif isinstance(arg, ArgumentCollection):
+            v = arg.get(self.key)
+            if v is not None:
+                return v.value
         elif isinstance(arg, dict):
             # keyword argument
             return arg.get(self.key, None)
         elif isinstance(arg, Metadata):
             return arg.get(self.key)
-        elif isinstance(arg, ArgumentCollection):
-            v = arg.get(self.key)
-            if v is not None:
-                return v.value
         elif isinstance(arg, Config):
             return self._retrieve_from_single(arg.arguments)
         elif isinstance(arg, Serializable) or isinstance(arg, list) or is_json_primitive(arg):

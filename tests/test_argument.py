@@ -73,6 +73,14 @@ def test_argument_collection():
     assert col['foo'] == arg
     col = ArgumentCollection.from_dict({'test': 'ing'})
     assert col['test'].value == 'ing'
+    col1 = ArgumentCollection()
+    col2 = ArgumentCollection()
+    col1['foo'] = 'bar'
+    col2['foo'] = 'test'
+    assert col1.get('foo').value == 'bar'
+    assert col2.get('asdf') is None
+    col1.overwrite_merge(col2)
+    assert col1['foo'].value == 'test'
 
 
 def test_format_string():
