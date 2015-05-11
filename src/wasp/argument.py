@@ -90,6 +90,9 @@ class ArgumentCollection(dict):
         super().__setitem__(key, value)
 
     def isempty(self):
+        """
+        Returns True if self has contains no items, False otherwise.
+        """
         return len(self) == 0
 
     def overwrite_merge(self, higher_priority):

@@ -8,9 +8,6 @@ Current:
 Next
 -----
 
- * remove hierarchical ArgumentCollection()
- * remove child tasks, introduce TaskGroup() use(TaskGroup()) uses all its members
- * watch: run tasks at least once
  * create globalwasp which dispatches to local wasp script (walks up the tree until a wasp script is found)
  * test, test, test, test and write doc
  * port to windows

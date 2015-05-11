@@ -81,6 +81,7 @@ try:
             execute_tasks(self._command, tasks)
 
         def command_fun(self):
+            self._callback()
             self._monitor.run()
 
 
