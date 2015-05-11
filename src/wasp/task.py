@@ -16,10 +16,37 @@ class MissingArgumentError(Exception):
 class Task(object):
     """
     ``Tasks`` are the central unit of execution of ``wasp``. A build process is formulated as
-    as a set of ``Tasks``, which consume ``Nodes`` (i.e. depend on, source nodes) and produce
-    ``Nodes`` (target nodes).
+    as a set of ``Tasks``, which consume ``Nodes`` (source nodes) and produce
+    ``Nodes`` (target nodes). Source nodes may either be specified in the constructor,
+    with the :func:`Task.use` or the :func:`Task.depends` function.
+    Target nodes are specified in the constructor or with the :func:`Task.produce` function.
+    Furthermore, information is passed to a task using  :class:`wasp.argument.Argument` objects,
+    which are key-value pairs. They may also be passed to the :class:`Task` using the :func:`Task.use`
+    function or using :class:`wasp.node.SymbolicNode` objects.
 
-    TODO: more
+    It is distinguished between **creation** and **execution** time of tasks. First, during
+    creation time, a set of tasks and the relation between the tasks is defined. Second,
+    during execution time, a directed-acyclic graph (DAG) is constructed, the executable tasks
+    are determined and executed until all tasks are finished (or a task has failed).
+
+    During execution time, the following functions are called in order:
+        #. :func:`Task.check`: TODO
+
+    Arguments may be passed to a task during creation time or they can be passed using
+    SymbolicNodes during execution time. It is important to note, that whether a task
+    is executed only depends on the signatures its source and target nodes and not on
+    the arguments passed to it during creation time. Thus, if an argument can change
+    between differnt runs of ``wasp``, the argument must be passed using a node. For example::
+
+      t = Task(fun=foo).use(':config')
+      node(':config').write(key=value)
+
+    Note, that the order of the above statements is not relevant, since the ':config' node is
+    only read at execution time.
+
+    By default, tasks are executed in parallel by separate threads using a subclass of
+    :class:`wasp.execution.ParallelExecutor`.
+
     """
     def __init__(self, sources=None, targets=None, always=False, fun=None, noop=False):
         self._sources = nodes(sources)

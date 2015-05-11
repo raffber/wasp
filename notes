@@ -8,7 +8,6 @@ Current:
 Next
 -----
 
- * create globalwasp which dispatches to local wasp script (walks up the tree until a wasp script is found)
  * test, test, test, test and write doc
  * port to windows
  * port to pypy
@@ -31,18 +30,18 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * create globalwasp which dispatches to local wasp script (walks up the tree until a wasp script is found)
+    -> automatically invokes --target . which builds all targets of current dir. can be disabled with -a/--all
  * API to trigger command rerun
     -> maybe outgoing nodes of each command should be checked to determine if a command must be rerun
  * do not allow ' ' for option names, apply the same rule as for argument names
- * string and int option vs argumentoption?
- * does the reversed() in task.check() make sense, should this be different?
- * remove --target ?!
+ * rename :def_main nodes to :def/main
  * maybe spawn isn't acutally required?!
     -> think about what can be done with nodes
     -> Spawn could only be used for checks()
  * optmize on task.touched()
- * make SymbolicNode dict-like
- * figure out what projectid was for
+ * optimize on task.noop()
+ * make SymbolicNode dict-like for retrieving arguments => inherit ArgumentCollection?
  * add introspection for Task(fun=function) if function does not take any arguments,
     don't call it with task
  * autoconfigure log for tasks based on decorator config
@@ -68,6 +67,7 @@ Lower Priorieties/Questions
  * set default verbosity to info?!
  * binary json?! maybe implmented by myself?
  * yaml subset which can be translated to json (a.k.a yson)
+    -> or CSON?! <- should be added to util library
  * invocation from recursive directory: how to deduce topdir?!
  * simplify global bashcompletion activation
  * verbosity per decorator (use command class, assign all tasks their logger just after calling a command)

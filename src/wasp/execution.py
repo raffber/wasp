@@ -5,6 +5,7 @@ from . import log, ctx, extensions
 
 # TODO: task timeouts -> kill hanging tasks
 
+
 class DependencyCycleError(Exception):
     """
     Raised if a dependency cycle between tasks is detected.
