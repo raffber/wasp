@@ -8,8 +8,6 @@ Current:
 Next
 -----
 
- * TaskGroup: keep the task which is added upon produce
- * Add empty to create a new task
  * test, test, test, test and write doc
  * port to windows
  * port to pypy
@@ -32,6 +30,8 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * Allow specifying different build directories (for different combinations of
+    build flags)
  * Possibly remove task.key and replace with id(task)
  * create globalwasp which dispatches to local wasp script (walks up the tree until a wasp script is found)
     -> automatically invokes --target . which builds all targets of current dir. can be disabled with -a/--all

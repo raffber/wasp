@@ -492,7 +492,7 @@ class TaskGroup(object):
             t.result = t.arguments
             t.success = True
         if self._produce_task is None:
-            self._produce_task = Task(noop=True, fun=_fun)
+            self._produce_task = Task(fun=_fun)
             self._tasks.append(self._produce_task)
         for t in self._tasks:
             if self._produce_task is not t:
@@ -603,6 +603,10 @@ class TaskCollection(dict):
     def add(self, task):
         if isinstance(task, TaskGroup):
             for t in task.tasks:
+                self.add(t)
+            return
+        if is_iterable(task):
+            for t in task:
                 self.add(t)
             return
         assert isinstance(task, Task)

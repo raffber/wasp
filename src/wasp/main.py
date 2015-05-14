@@ -1,6 +1,6 @@
 from .util import load_module_by_path
 from .config import Config
-from .task import Task, group, TaskCollection
+from .task import Task, group, TaskCollection, TaskGroup
 from .tools import proxies as tool_proxies, NoSuchToolError
 from .option import StringOption
 from .execution import execute, ParallelExecutor
@@ -141,6 +141,10 @@ def retrieve_command_tasks(name, as_dependency=False):
             if command.produce is not None:
                 tasks.produce(command.produce)
             tasks_col.add(tasks)
+        elif isinstance(tasks, TaskGroup):
+            if command.produce is not None:
+                tasks.produce(command.produce)
+            tasks_col.add(tasks.tasks)
         elif tasks is not None:
             assert False, 'Unrecognized return value from {0}'.format(name)
         # else tasks is None, thats fine

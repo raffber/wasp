@@ -185,6 +185,8 @@ class SymbolicNode(Node):
         arg_col = ctx.cache.prefix('symblic-nodes').get(self.key, None)
         if arg_col is None:
             return ArgumentCollection()
+        if isinstance(arg_col, dict):
+            arg_col = ArgumentCollection.from_dict(arg_col)
         assert isinstance(arg_col, ArgumentCollection), 'Cache: Invalid datastructure for symblic node storage.'
         return arg_col
 
