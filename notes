@@ -8,6 +8,9 @@ Current:
 Next
 -----
 
+ * create-wasp is bugged?!
+ * t.log.info(t.log.format_success('Created wasp.')) => t.log.success()
+
  * test, test, test, test and write doc
  * port to windows
  * port to pypy
