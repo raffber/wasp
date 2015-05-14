@@ -30,11 +30,22 @@ class Task(object):
     are determined and executed until all tasks are finished (or a task has failed).
 
     During execution time, the following functions are called in order:
-        #. :func:`Task.check`: TODO
+
+        #. :func:`Task.check`: Should retrieve all arguments the task requires and throw a MissingArgumentError()
+            in case an argument is not present. Additionaly, it may spawn tasks which are inserted into
+            the DAG to retrieve the missing arguments. A task may only spawn tasks once. This function
+            may be executed multiple times in the main thread.
+        #. :func:`Task.prepare`: May be used to prepare the task for execution.
+        #. :func:`Task.run`: This function should actually run the task and set ``task.success``.
+        #. :func:`Task.on_fail` or :func:`Task.on_success`: Called depending on whether task execution was successful.
+        #. :func:`Task.postprocess`: Allows the task to do some postprocessing.
+        #. :func:`Task.spawn`: May return new tasks which are added to the DAG. :func:`Task.spawn`
+            is called even if the task is not run (since it was determined that all source and
+            target nodes are still up-to-date)
 
     Arguments may be passed to a task during creation time or they can be passed using
     SymbolicNodes during execution time. It is important to note, that whether a task
-    is executed only depends on the signatures its source and target nodes and not on
+    is executed only depends on the signatures of its source and target nodes and not on
     the arguments passed to it during creation time. Thus, if an argument can change
     between differnt runs of ``wasp``, the argument must be passed using a node. For example::
 
@@ -44,9 +55,8 @@ class Task(object):
     Note, that the order of the above statements is not relevant, since the ':config' node is
     only read at execution time.
 
-    By default, tasks are executed in parallel by separate threads using a subclass of
+    By default, tasks are executed in parallel by separate threads using
     :class:`wasp.execution.ParallelExecutor`.
-
     """
     def __init__(self, sources=None, targets=None, always=False, fun=None, noop=False):
         self._sources = nodes(sources)
@@ -57,7 +67,7 @@ class Task(object):
         self._always = always
         self._success = False
         self._arguments = ArgumentCollection()
-        self._key = self._make_id()
+        self._key = str(uuid())
         self._run_list = CallableList(arg=self)
         self._run_list.append(lambda x: self._run())
         if fun is not None:
@@ -82,13 +92,18 @@ class Task(object):
 
     @property
     def noop(self):
+        """
+        Gives a preformance hint to the executor, saying that the task actually amounts
+        to a very simple operation. Note that the task is still executed using the
+        default sequence of method calls.
+        """
         return self._noop
 
     def _init(self):
+        """
+        May be overwritten for initializing the task.
+        """
         pass
-
-    def _make_id(self):
-        return str(uuid())
 
     def get_log(self):
         return self._logger
@@ -97,6 +112,10 @@ class Task(object):
         self._logger = logger
 
     log = property(get_log, set_log)
+    """
+    Gets or sets the :class:`wasp.logging.Logger` object the task should
+    use for output.
+    """
 
     def get_always(self):
         return self._always
@@ -105,10 +124,24 @@ class Task(object):
         self._always = value
 
     always = property(get_always, set_always)
+    """
+    Defines whether the task should be run regardless of the states of
+    the source and target nodes.
+    """
 
     @property
     def sources(self):
+        """
+        Returns a list of all source nodes of the task.
+        """
         return self._sources
+
+    @property
+    def targets(self):
+        """
+        Returns a list of all target nodes of the task.
+        """
+        return self._targets
 
     def __eq__(self, other):
         return other.identfier == self._key
@@ -195,10 +228,6 @@ class Task(object):
         self.success = True
 
     def touched(self):
-        return self._targets
-
-    @property
-    def targets(self):
         return self._targets
 
     def produce(self, *args):

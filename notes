@@ -8,6 +8,8 @@ Current:
 Next
 -----
 
+ * TaskGroup: keep the task which is added upon produce
+ * Add empty to create a new task
  * test, test, test, test and write doc
  * port to windows
  * port to pypy
