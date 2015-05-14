@@ -57,6 +57,17 @@ class Task(object):
 
     By default, tasks are executed in parallel by separate threads using
     :class:`wasp.execution.ParallelExecutor`.
+
+    Several methods (such as ``run()``) are implemented using :class:`wasp.util.CallableList`
+    objects. Thus, they allow adding multiple functions to be called, by default, only
+    ``task._run`` is called. For example::
+
+    task = Task()
+    custom_run = lambda task: task.log.info('Hello, World!')
+    task.run.append(custom_run)
+
+    If ``task.run()`` is called, the additional function ``custom_run`` is called as well (after
+    ``task._run()`` was called).
     """
     def __init__(self, sources=None, targets=None, always=False, fun=None, noop=False):
         self._sources = nodes(sources)
@@ -150,6 +161,12 @@ class Task(object):
         return not (other.identfier == self._key)
 
     def check(self, spawn=True):
+        """
+        Retrieves the required arguments of the task by reading all source nodes.
+        If the task requires more arguments (as set by :func:`Task.require`), the
+        function may spawn new tasks for retrieving those arguments.
+        If ``spawn`` is set to False, the function throws a ``MissingArgumentError``.
+        """
         for node in self._used_nodes:
             # retrieve all nodes
             if isinstance(node, SymbolicNode):
@@ -228,12 +245,20 @@ class Task(object):
         self.success = True
 
     def touched(self):
+        """
+        Allows the execution engine to optimize the execution of this
+        task, by only refreshing the signatures of the targets that
+        were actually modified by this task.
+
+        :return: All targets that have been modified. The default
+            implementation returns all targets.
+        """
         return self._targets
 
     def produce(self, *args):
         """
-        Adds targets to the task.
-        The function accepts the same positional arguments as :ref:make_nodes().
+        Adds target nodes to the task.
+        The function accepts the same positional arguments as :func:`wasp.node.nodes`.
         """
         ext = nodes(args)
         self.targets.extend(ext)
@@ -241,8 +266,11 @@ class Task(object):
 
     def depends(self, *args, use=True):
         """
-        Sets dependencies to the task.
-        The function accepts the same positional arguments as :ref:make_nodes().
+        Adds source nodes to the task.
+        The function accepts the same positional arguments as :func:`wasp.node.nodes`.
+
+        :param use: Defines whether the source nodes should also be used for retrieving
+            arguments (i.e. by calling ``task.use()``)
         """
         ext = nodes(args)
         self.sources.extend(ext)
@@ -250,7 +278,7 @@ class Task(object):
             return
         for node in ext:
             if isinstance(node, SymbolicNode):
-                self.use(node.read())
+                self.use(node)
         return self
 
     def set_has_run(self, has_run):
@@ -260,9 +288,16 @@ class Task(object):
         return self._has_run
 
     has_run = property(get_has_run, set_has_run)
+    """
+    This property is set by the execution engine and returns whether the
+    task was actually run.
+    """
 
     @property
     def key(self):
+        """
+        Returns the key for identifying this task.
+        """
         return self._key
 
     def set_success(self, suc):
@@ -272,12 +307,40 @@ class Task(object):
         return self._success
 
     success = property(get_success, set_success)
+    """
+    Gets or sets whether the task has run successfully. If the task
+    was not run, this property is set to True.
+    """
 
     @property
     def arguments(self):
+        """
+        Returns the :class:`wasp.argument.ArgumentCollection` object for
+        this task.
+        """
         return self._arguments
 
     def use(self, *args, **kw):
+        """
+        This function is used to pass information to a task, to define
+        information sources or dependencies between tasks. It accepts an
+        argument tuple of the following types:
+
+         * :class:`wasp.argument.Argument`
+         * :class:`wasp.argument.ArgumentCollection`: uses all its arguments
+         * :class:`TaskGroup`: Uses all tasks contained in the task group
+         * :class:`wasp.node.SymbolicNode`: Adds the node as a dependency and retrieves
+            arguments from it.
+         * :class:`wasp.node.Node`: Adds the node as a dependency.
+         * :class:`Task`: Adds the task as a dependency of ``self`` by creating an empty node.
+         * ``str``: If formatted as a valid identifier for a :class:`wasp.node.SymbolicNode`
+            uses the node. Otherwise, an empty argument is added and it is attempted to
+            fill it automatically (by calling ``Argument.retrieve_all()``).
+         * Also accepts an iterable objects of the above types.
+
+        :param *args: Tuple of object with the above types.
+        :param **kw: key-value pairs to be used as arguments.
+        """
         for a in args:
             if isinstance(a, Argument):
                 self.use_arg(a)
@@ -312,6 +375,9 @@ class Task(object):
         return self
 
     def use_arg(self, arg):
+        """
+        Adds an argument to ``self.arguments``.
+        """
         self.arguments.add(arg)
 
     def get_result(self):
@@ -321,8 +387,26 @@ class Task(object):
         self._result = result
 
     result = property(get_result, set_result)
+    """
+    Returns the result of the task. Expected to be of type ``wasp.argument.ArgumentCollection`.
+    This collection is then written to all target :class:`wasp.node.SymbolicNode` objects, s.t.
+    information can be passed between different tasks.
+    """
 
     def require(self, *arguments, spawn=None):
+        """
+        Defines that a certain argument is required for the execution of a task.
+        Furthermore, it allows specifying ``callable`` objects which are expected to
+        return a :class:`Task` or an iterable thereof. This object is called by the
+        :func:`Task.check` method in case the argument has not been specified before.
+        This function accepts the following types:
+
+         * ``str``: Used as argument key.
+         * ``(str, callable)``: ``str`` used as key and ``callable`` used to spawn
+            tasks in case the argument was not filled.
+         * An iterable of the above types.
+
+        """
         for arg in arguments:
             spawner = spawn
             # add arguments to a list and check them before execution
@@ -330,13 +414,13 @@ class Task(object):
                 continue
             if isinstance(arg, str):
                 argkey = arg
-            elif isinstance(arg, list):
-                self.require(*arg)
-                continue
             elif isinstance(arg, tuple):
                 argkey, spawner = arg
                 assert isinstance(argkey, str), 'Task.require() expects a tuple of (str, callable).'
                 assert callable(spawner), 'Task.require() expects a tuple of (str, callable).'
+            elif is_iterable(arg):
+                self.require(*arg)
+                continue
             else:
                 assert False, 'Unrecognized type in Task.require() arguments. Accepted are str or list thereof.'
             self._required_arguments.append((argkey, spawner))

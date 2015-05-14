@@ -32,6 +32,7 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * Possibly remove task.key and replace with id(task)
  * create globalwasp which dispatches to local wasp script (walks up the tree until a wasp script is found)
     -> automatically invokes --target . which builds all targets of current dir. can be disabled with -a/--all
  * API to trigger command rerun
