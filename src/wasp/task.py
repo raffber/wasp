@@ -68,8 +68,16 @@ class Task(object):
 
     If ``task.run()`` is called, the additional function ``custom_run`` is called as well (after
     ``task._run()`` was called).
+
+    :param sources: Defines the source nodes of this task. See :func:`wasp.node.nodes` for
+        all allowed types.
+    :param targets: Defines the target nodes of this task. See :func:`wasp.node.nodes` for
+        all allowed types.
+    :param always: Determines whether the task should always be executed regardless of the
+        state of its source and target node.
+    :param fun: A callable which (if not None) is added to ``task.run``.
     """
-    def __init__(self, sources=None, targets=None, always=False, fun=None, noop=False):
+    def __init__(self, sources=None, targets=None, always=False, fun=None):
         self._sources = nodes(sources)
         self._targets = nodes(targets)
         if len(self._sources) == 0 and len(self._targets) == 0:
@@ -98,17 +106,20 @@ class Task(object):
         self._used_nodes = []
         self._required_arguments = []
         self._init()
-        assert isinstance(noop, bool)
+        self._noop = False
+
+    def get_noop(self):
+        return self._noop
+
+    def set_noop(self, noop):
         self._noop = noop
 
-    @property
-    def noop(self):
-        """
-        Gives a preformance hint to the executor, saying that the task actually amounts
-        to a very simple operation. Note that the task is still executed using the
-        default sequence of method calls.
-        """
-        return self._noop
+    noop = property(get_noop, set_noop)
+    """
+    Provides a preformance hint to the executor, specifying that the task is actually
+    to a very simple operation. Note that the task is still executed using the
+    default sequence of method calls.
+    """
 
     def _init(self):
         """
@@ -194,6 +205,10 @@ class Task(object):
 
     @property
     def prepare(self):
+        """
+        Returns a :class:`wasp.util.CallableList`. ``prepare()`` is called before
+        ``run()``.
+        """
         return self._prepare_list
 
     def _prepare(self):
@@ -201,6 +216,10 @@ class Task(object):
 
     @property
     def on_success(self):
+        """
+        Returns a :class:`wasp.util.CallableList`. ``on_success()`` is called in
+        case the target succeeded.
+        """
         return self._success_list
 
     def _on_success(self):
@@ -210,6 +229,10 @@ class Task(object):
 
     @property
     def on_fail(self):
+        """
+        Returns a :class:`wasp.util.CallableList`. ``on_fail()`` is called in
+        case the target failed.
+        """
         return self._fail_list
 
     def _on_fail(self):
@@ -217,6 +240,10 @@ class Task(object):
 
     @property
     def postprocess(self):
+        """
+        Returns a :class:`wasp.util.CallableList`. ``postprocess()`` is called
+        after ``run()``.
+        """
         return self._postprocess_list
 
     def _postprocess(self):
@@ -226,10 +253,10 @@ class Task(object):
     def spawn(self):
         """
         Returns new tasks that should be added to the execution.
-
         spawn() is called after run() and is called even if run()
         was not called because it was determined that running the
         task was not necessary.
+
         :return: Returns a list of tasks to be added to the execution.
         """
         return self._spawn_list
@@ -239,6 +266,10 @@ class Task(object):
 
     @property
     def run(self):
+        """
+        Returns a :class:`wasp.util.CallableList`. This function
+        should actually run the task.
+        """
         return self._run_list
 
     def _run(self):
@@ -427,24 +458,46 @@ class Task(object):
         return self
 
 
+def empty():
+    """
+    Returns an empty task which does nothing.
+    """
+    return Task(noop=True)
+
+
 class TaskGroup(object):
+    """
+    A group of :class:`Task` objects.
+
+    :param tasks: iterable of :class:`Task` objects to be grouped.
+    """
     def __init__(self, tasks):
         assert is_iterable(tasks), 'tasks argument to TaskGroup() is expected to be iterable.'
         self._tasks = list(tasks)
+        self._produce_task = None
 
     @property
     def tasks(self):
+        """
+        Returns a list of tasks grouped by this object.
+        """
         return self._tasks
 
     def produce(self, *args):
+        """
+        Adds a node which is updated, once all tasks of this group have
+        finished.
+        """
         def _fun(t):
             t.result = t.arguments
             t.success = True
-        empty = Task(noop=True, fun=_fun)
+        if self._produce_task is None:
+            self._produce_task = Task(noop=True, fun=_fun)
+            self._tasks.append(self._produce_task)
         for t in self._tasks:
-            empty.use(t)
-        empty.produce(*args)
-        self._tasks.append(empty)
+            if self._produce_task is not t:
+                self._produce_task.use(t)
+        self._produce_task.produce(*args)
         return self
 
 
@@ -461,15 +514,21 @@ def _flatten(args):
 
 
 def group(*args, collapse=True):
+    """
+    Returns a :class:`TaskGroup` object based on the arguments.
+    """
     args = _flatten(args)
     for arg in args:
-        assert isinstance(arg, Task) or isinstance(arg, TaskGroup), '*args must be a list of Tasks, but was: {0}'.format(type(arg).__name__)
+        assert isinstance(arg, Task) or isinstance(arg, TaskGroup), '*args must be a tuple of Tasks, but was: {0}'.format(type(arg).__name__)
     if len(args) == 1 and collapse:
         return args[0]
     return TaskGroup(args)
 
 
 class ChainingTaskGroup(TaskGroup):
+    """
+    Group of tasks executed after each other.
+    """
 
     def __init__(self, tasks):
         super().__init__(tasks)
@@ -489,10 +548,25 @@ class ChainingTaskGroup(TaskGroup):
 
 
 def chain(*args):
+    """
+    Creates a :class:`ChainingTaskGroup` object using the arguments.
+    """
     return ChainingTaskGroup(args)
 
 
 class task(object):
+    """
+    Decorator for registring a function as a task.
+
+    :param command: The command for which the task is created.
+    :param sources: List of nodes as sources.
+    :param targets: List of nodes as targets.
+    :param always: Defines whether the task should be executed regardless of the state
+        of its source and target nodes.
+    :param description: Description of the task to be printed to the user.
+    :param command_depends: List of command names, which are executed before the command
+        for which this task is registered.
+    """
     def __init__(self, command, sources=None, targets=None, always=False, description=None, command_depends=None):
         self._command = command
         self._sources = sources
@@ -511,6 +585,9 @@ class task(object):
 
 
 class TaskCollection(dict):
+    """
+    dict-like object to store tasks.
+    """
 
     def __init__(self, *tasks):
         super().__init__()
