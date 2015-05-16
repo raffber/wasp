@@ -1,44 +1,14 @@
 import os
 import zlib
 import binascii
-from wasp import File, group, shell, tool, ctx, configure, chain
+from wasp import shell, tool, ctx, chain, recurse
 from wasp.ext.watch import watch
 import wasp
 from wasp.fs import find_exe, Directory
 
-d = tool('d')
 sphinx = tool('sphinx')
-latex = tool('latex')
-nodejs = tool('nodejs')
-rust = tool('rust')
-cpp = tool('cpp')
 
-
-@configure
-def configure():
-    c = chain()
-    c += nodejs.install('jsmin')
-    c += nodejs.find_exe('jsmin').produce(':jsmin')
-    yield c
-
-
-@wasp.command('rust')
-def _rust():
-    return rust.executable('buildtest/main.rs', 'main')
-
-
-@wasp.command('cpp')
-def _cpp():
-    t = cpp.compile('buildtest/main.cpp')
-    yield t
-    yield cpp.link(t)
-
-
-@wasp.command('nodejs', depends='configure')
-def _nodejs():
-    for f in ctx.topdir.glob('.*?.js$', exclude='build/.*'):
-        yield shell('{jsmin} {SRC} > {TGT}', sources=f, targets=f.to_builddir()).use(':jsmin')
-
+recurse('buildtest')
 
 @wasp.command('doc', description='Build project documentation.')
 def doc():
@@ -54,18 +24,6 @@ def autorebuild_doc():
 def test():
     yield find_exe('py.test', argprefix='pytest').produce(':pytest')
     yield shell('{pytest} tests').use(':pytest')
-
-
-@wasp.build
-def main():
-    f = File('notes')
-    yield shell('cp {CPFLAGS} {SRC} {TGT}',
-                sources=f, targets=f.to_builddir(), cwd='doc'
-                ).use(cpflags='-r')
-    one = d.compile('one.d')
-    two = d.compile('two.d')
-    link = d.link(one, two)
-    yield group(one, two, link)
 
 
 def recursive_list(dirname):

@@ -1,28 +1,21 @@
 from wasp import ShellTask, find_exe, Task
 from wasp import group
 from wasp import nodes, FileNode, node
-from wasp import file, directory
+from wasp import file, directory, files
 import re
 
 
 def find_cc(produce=True):
-    t = find_exe('gcc', argprefix='cc')
+    t = find_exe('gcc', argprefix=['cc', 'ld'])
     if produce:
         t.produce(':cpp/cc')
     return t
 
 
 def find_cxx(produce=True):
-    t = find_exe('g++', argprefix='cxx')
+    t = find_exe('g++', argprefix=['cxx', 'ld'])
     if produce:
         t.produce(':cpp/cxx')
-    return t
-
-
-def find_ld(produce=True):
-    t = find_exe('ld', argprefix='ld')
-    if produce:
-        t.produce(':cpp/ld')
     return t
 
 
@@ -105,10 +98,6 @@ class CCompile(CompileTask):
 class Link(ShellTask):
     cmd = '{LD} {LDFLAGS} {LIBRARIES} -o {TGT} {SRC}'
 
-    def _init(self):
-        super()._init()
-        self.require('ld', spawn=find_ld)
-
     def use_arg(self, arg):
         if arg.key in ['ldflags', 'libraries']:
             self.use_catenate(arg)
@@ -142,8 +131,10 @@ def compile(sources, use_default=True):
     return group(ret)
 
 
-def link(obj_files, target='main', use_default=True):
+def link(obj_files, target='main', use_default=True, cpp=True):
     t = Link(sources=nodes(obj_files), targets=file(target).to_builddir())
     if use_default:
-        t.use(':cpp/ld', libraries=['stdc++', 'c'])
+        ldnode = ':cpp/cxx' if cpp else ':cpp/cc'
+        spawner = find_cxx if cpp else find_cc
+        t.use(ldnode, libraries=['stdc++', 'c']).require('ld', spawn=spawner)
     return t

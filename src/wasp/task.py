@@ -462,7 +462,9 @@ def empty():
     """
     Returns an empty task which does nothing.
     """
-    return Task(noop=True)
+    t = Task()
+    t.noop = True
+    return t
 
 
 class TaskGroup(object):
@@ -482,6 +484,26 @@ class TaskGroup(object):
         Returns a list of tasks grouped by this object.
         """
         return self._tasks
+
+    @property
+    def targets(self):
+        """
+        Returns a ``set`` of all targets of the grouped tasks.
+        """
+        ts = []
+        for t in self._tasks:
+            ts.extend(t.targets)
+        return set(ts)
+
+    @property
+    def sources(self):
+        """
+        Returns a ``set`` of all sources of the grouped tasks.
+        """
+        ts = []
+        for t in self._tasks:
+            ts.extend(t.sources)
+        return set(ts)
 
     def produce(self, *args):
         """
