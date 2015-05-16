@@ -500,6 +500,10 @@ class TaskGroup(object):
         self._produce_task.produce(*args)
         return self
 
+    def __iadd__(self, other):
+        self._tasks.append(other)
+        return self
+
 
 def _flatten(args):
     if not is_iterable(args):
@@ -544,7 +548,7 @@ class ChainingTaskGroup(TaskGroup):
     def __iadd__(self, other):
         if len(self.tasks) > 0:
             other.use(self.tasks[-1])
-        return self
+        return super().__iadd__(other)
 
 
 def chain(*args):
