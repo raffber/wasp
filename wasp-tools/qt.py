@@ -12,13 +12,13 @@ def find_moc():
 
 
 
-class Components(object):
+class Modules(object):
     core = 'Core'
     gui = 'Gui'
 
 
 
-def find_libraries(keys = [Components.core, Components.gui]):
+def find_modules(keys = [Modules.core, Modules.gui]):
     ret = []
     for key in keys:
         lowerkey = key.lower()

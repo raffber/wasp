@@ -1,5 +1,5 @@
-from wasp import File, group, shell, tool, ctx, configure, chain
-from wasp import Directory
+from wasp import group, shell, tool, configure, chain
+from wasp import Directory, nodes
 import wasp
 
 
@@ -8,6 +8,8 @@ latex = tool('latex')
 nodejs = tool('nodejs')
 rust = tool('rust')
 cpp = tool('cpp')
+qt = tool('qt')
+
 
 dir = Directory(__file__)
 
@@ -44,4 +46,18 @@ def _cpp():
 def _nodejs():
     for f in dir.glob('.*?.js$', exclude='build/.*'):
         yield shell('{jsmin} {SRC} > {TGT}', sources=f, targets=f.to_builddir()).use(':jsmin')
+
+
+@wasp.command('qt')
+def _qt():
+    headers = ['qtmain.h']
+    sources = ['qtmain.cpp']
+    modules = qt.find_modules()
+    yield modules
+    mocs = qt.moc(headers)
+    yield mocs
+    srcs = nodes(sources.extend(mocs.targets))
+    objs = qt.compile(srcs)
+    yield objs
+    yield qt.link(objs, target=dir.join('qtmain')).use(modules)
 

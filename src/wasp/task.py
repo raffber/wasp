@@ -522,8 +522,21 @@ class TaskGroup(object):
         self._produce_task.produce(*args)
         return self
 
+    def append(self, task):
+        """
+        Appends a :class:`Task` or :class:`TaskGroup` to this
+        object.
+        """
+        if isinstance(task, Task):
+            self._tasks.append(task)
+            return
+        assert isinstance(task, TaskGroup), 'Expected a Task or a TaskGroup' \
+                ', got `{0}`'.format(task.__class__.__name__)
+        for t in task.tasks:
+            self.append(t)
+
     def __iadd__(self, other):
-        self._tasks.append(other)
+        self.append(other)
         return self
 
 
@@ -545,7 +558,8 @@ def group(*args, collapse=True):
     """
     args = _flatten(args)
     for arg in args:
-        assert isinstance(arg, Task) or isinstance(arg, TaskGroup), '*args must be a tuple of Tasks, but was: {0}'.format(type(arg).__name__)
+        assert isinstance(arg, Task) or isinstance(arg, TaskGroup), \
+            '*args must be a tuple of Tasks, but was: {0}'.format(type(arg).__name__)
     if len(args) == 1 and collapse:
         return args[0]
     return TaskGroup(args)
@@ -567,10 +581,16 @@ class ChainingTaskGroup(TaskGroup):
             a.use(previous)
             previous = a
 
-    def __iadd__(self, other):
-        if len(self.tasks) > 0:
-            other.use(self.tasks[-1])
-        return super().__iadd__(other)
+    def append(self, task):
+        if isinstance(task, Task):
+            self._tasks.append(task)
+            if len(self.tasks) > 0:
+                task.use(self.tasks[-1])
+            return
+        assert isinstance(task, TaskGroup), 'Expected a Task or a TaskGroup' \
+                ', got `{0}`'.format(task.__class__.__name__)
+        for t in task.tasks:
+            self.append(t)
 
 
 def chain(*args):
