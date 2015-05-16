@@ -24,7 +24,6 @@ class ShellTask(Task):
 
     :param sources: Source nodes consumed by the task.
     :param targets: Target nodes produced by the task.
-    :param children: Child tasks to be executed before this task.
     :param cmd: Command string. May also be set by overriding the ``cmd`` attribute.
     :param always: Determines whether the task should be executed regardless of whether targets
         or sources have changed.
@@ -134,8 +133,6 @@ class ShellTask(Task):
         else:
             assert arg.type == str
             item.value.append(arg.value)
-        for c in self.children:
-            c.use_arg(arg)
 
     def _format_cmd(self):
         """
