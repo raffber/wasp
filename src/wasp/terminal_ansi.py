@@ -2,11 +2,14 @@ from .terminal import Color, Style
 import os
 import sys
 
+
+# escape codes
 CSI = '\033['
 OSC = '\033]'
 BEL = '\007'
 
 
+# foreground color codes
 fgcolor_to_code = {
     None: 39,
     'black': 30,
@@ -19,6 +22,7 @@ fgcolor_to_code = {
     'white': 37
 }
 
+# background color codes
 bgcolor_to_code = {
     None: 49,
     'black': 40,
@@ -31,6 +35,7 @@ bgcolor_to_code = {
     'white': 47
 }
 
+# style color codes
 style_to_code = {
     None: 22,
     'bright': 1,
