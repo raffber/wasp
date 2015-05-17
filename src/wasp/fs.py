@@ -508,7 +508,7 @@ def file(arg):
 
         * :class:`FileNode`. Constructs a :class:`File` object with the same path.
         * ``str``: Uses the ``str`` as path.
-        * :class:`File`. Returns the same object.
+        * :class:`Path`. Returns a :class:`File` object with the same path.
 
     :param arg: One of the above types.
     :return: A :class:`File` object based on the argument.
@@ -517,9 +517,10 @@ def file(arg):
         return File(arg)
     elif isinstance(arg, FileNode):
         return File(arg.path)
-    elif isinstance(arg, File):
-        return arg
-    raise ValueError('No compatible type given to `file()`.')
+    elif isinstance(arg, Path):
+        return File(str(arg))
+    raise ValueError('No compatible type given to `file()`'
+                     ', type was `{0}`.'.format(arg.__class__.__name__))
 
 
 def paths(*args, ignore=False):
@@ -567,7 +568,8 @@ def directory(arg):
         return Directory(arg.path)
     elif isinstance(arg, Directory):
         return arg
-    raise ValueError('No compatible type given to `directory()`.')
+    raise ValueError('No compatible type given to `directory()`'
+                     ', type was `{0}`.'.format(arg.__class__.__name__))
 
 
 
@@ -601,7 +603,8 @@ def directories(*args, ignore=False):
         elif is_iterable(f):
             ret.extend(directories(*f))
         elif not ignore:
-            raise ValueError('No compatible type given to `directories()`.')
+            raise ValueError('No compatible type given to `directories()`'
+                             ', type was `{0}`.'.format(f.__class__.__name__))
     return ret
 
 

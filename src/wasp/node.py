@@ -243,13 +243,15 @@ def nodes(*args):
         * A Path object is converted into a :class:`wasp.node.FileNode(path)`
         * A string is converted to a :class:`wasp.node.SymbolicNode(path)` if it
             starts with a ':'. Otherwise it is converted into a :class:`wasp.node.FileNode(path)`
+        * For a :class:`wasp.task.Task` or :class:`wasp.task.TaskGroup` object the
+            target nodes are added.
 
     :return: A list where is argument was processed as described above and added to the list.
     """
-    from . import Task
+    from . import Task, TaskGroup
     ret = []
     for arg in args:
-        if isinstance(arg, Task):
+        if isinstance(arg, Task) or isinstance(arg, TaskGroup):
             ret.extend(arg.targets)
         elif is_iterable(arg):
             ret.extend(nodes(*arg))
@@ -270,7 +272,7 @@ def node(arg=None):
         * For a :class:`wasp.task.Task` object the first target node is returned.
     """
     from .fs import Path
-    from .task import Task
+    from .task import Task, TaskGroup
     if arg is None:
         return SymbolicNode(discard=True)
     elif isinstance(arg, str):
@@ -283,6 +285,10 @@ def node(arg=None):
     elif isinstance(arg, Node):
         return arg
     elif isinstance(arg, Task):
+        if len(arg.targets) == 0:
+            return None
+        return arg.targets[0]
+    elif isinstance(arg, TaskGroup):
         if len(arg.targets) == 0:
             return None
         return arg.targets[0]

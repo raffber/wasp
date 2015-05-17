@@ -1,7 +1,7 @@
-from wasp import ShellTask, find_exe, Task
+from wasp import ShellTask, find_exe, Task, quote
 from wasp import group
 from wasp import nodes, FileNode, node
-from wasp import file, directory, files
+from wasp import file, directory, osinfo
 import re
 
 
@@ -107,14 +107,27 @@ class Link(ShellTask):
     def _process_args(self):
         kw = super()._process_args()
         libraries = self.arguments.value('libraries')
-        kw['LIBRARIES'] = ' '.join(['-l' + l for l in libraries])
+        # libraries = [l[3:] if l.startswith('lib') else l for l in libraries]
+        libs_cmdline = []
+        if osinfo.linux:
+            for l in libraries:
+                if '/' in l or l.startswith('lib'):
+                    # use the file name directly
+                    libs_cmdline.append(l)
+                else:
+                    # file name is squashed already
+                    libs_cmdline.append('-l' + l)
+        else:
+            raise NotImplementedError  # TODO ...
+        kw['LIBRARIES'] = ' '.join([quote(l) for l in libs_cmdline])
         return kw
 
 
 def compile(sources, use_default=True):
     ret = []
     for source in nodes(sources):
-        assert isinstance(source, FileNode)
+        if not isinstance(source, FileNode):
+            continue
         target = source.to_file().to_builddir().append_extension('.o')
         if source.to_file().extension.lower() == 'c':
             task = CCompile(sources=source, targets=target)

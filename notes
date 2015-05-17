@@ -8,8 +8,10 @@ Current:
 Next
 -----
 
- * create-wasp is bugged?!
  * t.log.info(t.log.format_success('Created wasp.')) => t.log.success()
+ * unify taskgroup and taskcollection
+ * allow customizing build directory
+ * create global wasp script -> think about recursive call vs. call from custom build dir
 
  * test, test, test, test and write doc
  * port to windows
@@ -26,6 +28,10 @@ Cpp Tool
 Bugs
 =======
 
+ * Error message must be better: MissingArgumentError: Missing argument for task: Required argument ":qt/moc" is empty.
+    => task should keep trace of where it was created.
+ * searching only for 'moc' must not lead /usr/bin/qtchooser!!
+ * Found file `/usr/lib/qt/bin/moc` in `/usr/bin` ???
  * tasks spawned during check() are not returned from execute()... I guess??
  * clean does not delete all files in build/...
 
@@ -33,6 +39,8 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * enusre correct quote() of command line args
+ * add commandline options to tools
  * Allow specifying different build directories (for different combinations of
     build flags)
  * Possibly remove task.key and replace with id(task)

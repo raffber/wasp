@@ -50,8 +50,8 @@ def _nodejs():
 
 @wasp.command('qt')
 def _qt():
-    headers = ['qtmain.h']
-    sources = ['qtmain.cpp']
+    headers = [dir.join('qtmain.h')]
+    sources = [dir.join('qtmain.cpp')]
     modules = qt.find_modules()
     yield modules
     mocs = qt.moc(headers)
