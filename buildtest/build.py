@@ -53,11 +53,12 @@ def _qt():
     headers = [dir.join('qtmain.h')]
     sources = [dir.join('qtmain.cpp')]
     modules = qt.find_modules()
-    yield modules
     mocs = qt.moc(headers)
+    sources.extend(mocs.targets)
+    srcs = nodes(sources)
+    objs = qt.compile(srcs).use(modules)
+    yield modules
     yield mocs
-    srcs = nodes(sources.extend(mocs.targets))
-    objs = qt.compile(srcs)
     yield objs
     yield qt.link(objs, target=dir.join('qtmain')).use(modules)
 

@@ -81,6 +81,12 @@ class Path(Serializable):
             self._relto = os.getcwd()
         self._absolute = make_absolute
 
+    def copy(self):
+        """
+        Returns a copy of ``self``.
+        """
+        return Path(self.path, relto=self._relto, make_absolute=self._absolute)
+
     def relative(self, relto, skip_if_abs=False):
         """
         Returns a :class:`Path` object which is relative to ``relto``.
@@ -181,10 +187,18 @@ class Path(Serializable):
             else:
                 Path(total).remove()
 
+    def is_subpath(self, pth):
+        # ensure that there is a `/` or whatever in the end
+        pth = directory(pth)
+        abspth = os.path.join(os.path.abspath(pth.path), '')
+        absself = os.path.abspath(self.path)
+        return absself.startswith(abspth)
+
     def to_builddir(self):
         """
         Returns a path object which is a subpath of the current build directory by
-        prepending the build directory path to this path. For example,  if the build
+        prepending the build directory path to this path. If the path is already a subpath
+        of the build directory, the copy of ``self`` is returned. For example,  if the build
         direcotory were ``build/``:
 
          * ``src/main.c`` becomes ``build/src/main.c``
@@ -197,6 +211,8 @@ class Path(Serializable):
 
             file('src/main.c').to_builddir().append_extension('.o')
         """
+        if self.is_subpath(ctx.builddir):
+            return self.copy()
         return Path(ctx.builddir.join(self._path))
 
     def is_relative(self):
@@ -230,6 +246,12 @@ class Directory(Path):
         if os.path.isfile(path):
             path = os.path.dirname(path)
         super().__init__(path, make_absolute=make_absolute, relto=relto)
+
+    def copy(self):
+        """
+        Returns a copy of ``self``.
+        """
+        return Directory(self.path, relto=self._relto, make_absolute=self._absolute)
 
     def join(self, *args, append=''):
         """
@@ -338,6 +360,8 @@ class Directory(Path):
         os.makedirs(self._path, exist_ok=True)
 
     def to_builddir(self):
+        if self.is_subpath(ctx.builddir):
+            return self.copy()
         return Directory(ctx.builddir.join(self._path))
 
 
@@ -353,6 +377,12 @@ class File(Path):
     :param relto: If a relative path is given in the ``path`` parameter the path is
         considered to be relative to relto.
     """
+
+    def copy(self):
+        """
+        Returns a copy of ``self``.
+        """
+        return File(self.path, relto=self._relto, make_absolute=self._absolute)
 
     def directory(self):
         """
@@ -386,6 +416,8 @@ class File(Path):
         return File(self._path + '.' + append)
 
     def to_builddir(self):
+        if self.is_subpath(ctx.builddir):
+            return self.copy()
         return File(ctx.builddir.join(self._path))
 
     @property
@@ -660,16 +692,13 @@ class FindTask(Task):
         self._store_result(result_file, result_dir)
 
     def _store_result(self, file, dir):
-        for p in self._argprefix:
-            self.result[p+'file'] = file
-            self.result[p+'dir'] = dir
+        pass
 
     def _print_fail(self):
-        self.log.fatal(self.log.format_fail('Cannot find required file! Looking for: [{0}]'
-                        .format(', '.join(self._names))))
+        self.log.log_fail('Cannot find required file! Looking for: [{0}]'.format(', '.join(self._names)))
 
     def _print_success(self, file, dir):
-        self.log.info(self.log.format_success('Found file `{0}` in `{1}`'.format(file, dir)))
+        self.log.log_success('Found file `{0}` in `{1}`'.format(file, dir))
 
 
 def find(*names, dirs=None, argprefix=None, required=True):
@@ -693,10 +722,7 @@ class FindExecutable(FindTask):
         super().__init__(*args, dirs=dirs, **kw)
 
     def _store_result(self, file, dir):
-        for p in self._argprefix:
-            self.result[p+'exe'] = file
-            self.result[p+'file'] = file
-            self.result[p+'dir'] = dir
+        pass
 
 
 def find_exe(*names, dirs=None, argprefix=None, required=True):
@@ -720,10 +746,7 @@ class FindLibrary(FindTask):
         super().__init__(*args, dirs=dirs, **kw)
 
     def _store_result(self, file, dir):
-        for p in self._argprefix:
-            self.result[p+'lib'] = file
-            self.result[p+'file'] = file
-            self.result[p+'dir'] = dir
+        pass
 
 
 def find_lib(*names, dirs=None, argprefix=None, required=True):

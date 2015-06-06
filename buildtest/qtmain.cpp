@@ -5,8 +5,8 @@
 TestObject::TestObject() : QObject(0) {
 }
 
-int main() {
-    QApplication app();
-    stuff = TestObject();
+int main(int argc, char** argv) {
+    QApplication app(argc, argv);
+    TestObject stuff;
     app.exec();
 }

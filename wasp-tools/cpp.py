@@ -64,23 +64,24 @@ class DependencyScan(Task):
 
 class CompileTask(ShellTask):
     def use_arg(self, arg):
-        if arg.key in ['cflags', 'include']:
+        if arg.key in ['cflags', 'includes']:
             self.use_catenate(arg)
             return
         super().use_arg(arg)
 
     def _process_args(self):
         kw = super()._process_args()
-        include = self.arguments.get('include', [])
+        include = self.arguments.value('includes', [])
         # relative directories must be mapped relative to self._cwd
         # unless they are given as an absolute path
-        include = [directory(x).relative(self._cwd, skip_if_abs=True) for x in include]
-        kw['INCLUDE'] = ' -I'.join(include)
+        include = ['-I' + directory(x).relative(self._cwd, skip_if_abs=True).path for x in include]
+        kw['INCLUDES'] = ' '.join(set(include))
+        kw['CFLAGS'] = ''.join(set(self.arguments.value('cflags', [])))
         return kw
 
 
 class CxxCompile(CompileTask):
-    cmd = '{CXX} {CFLAGS} {INCLUDE} -c -o {TGT} {SRC}'
+    cmd = '{CXX} {CFLAGS} {INCLUDES} -c -o {TGT} {SRC}'
 
     def _init(self):
         super()._init()
@@ -88,7 +89,7 @@ class CxxCompile(CompileTask):
 
 
 class CCompile(CompileTask):
-    cmd = '{CC} {CFLAGS} {INCLUDE} -c -o {TGT} {SRC}'
+    cmd = '{CC} {CFLAGS} {INCLUDES} -c -o {TGT} {SRC}'
 
     def _init(self):
         super()._init()

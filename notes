@@ -8,7 +8,6 @@ Current:
 Next
 -----
 
- * t.log.info(t.log.format_success('Created wasp.')) => t.log.success()
  * allow customizing build directory
 
  * test, test, test, test and write doc

@@ -273,6 +273,7 @@ class Task(object):
         return self._run_list
 
     def _run(self):
+        self.result = self.arguments
         self.success = True
 
     def touched(self):
@@ -462,7 +463,7 @@ def empty():
     """
     Returns an empty task which does nothing.
     """
-    t = Task()
+    t = Task(always=True)
     t.noop = True
     return t
 
@@ -509,6 +510,8 @@ class TaskGroup(object):
         """
         Adds a node which is updated, once all tasks of this group have
         finished.
+
+        :return: self
         """
         def _fun(t):
             t.result = t.arguments
@@ -534,6 +537,17 @@ class TaskGroup(object):
                 ', got `{0}`'.format(task.__class__.__name__)
         for t in task.tasks:
             self.append(t)
+
+    def use(self, *args, **kw):
+        """
+        Calls ``task.use`` for every task in ``self``.
+        Accepts the same arguments as :func:`Task.use`.
+
+        :return: self
+        """
+        for task in self._tasks:
+            task.use(*args, **kw)
+        return self
 
     def __iadd__(self, other):
         self.append(other)
