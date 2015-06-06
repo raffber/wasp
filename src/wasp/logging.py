@@ -151,7 +151,7 @@ class Logger(object):
         return self.format_multiline_message(*args)
 
     def log_warn(self, *args):
-        self.fatal(self.format_warn(*args))
+        self.warn(self.format_warn(*args))
 
     def format_info(self, *args):
         """
@@ -163,7 +163,7 @@ class Logger(object):
         return self.format_multiline_message(*args)
 
     def log_info(self, *args):
-        self.fatal(self.format_info(*args))
+        self.info(self.format_info(*args))
 
     def format_multiline_message(self, *args, color=None, start='', multiline=''):
         """
