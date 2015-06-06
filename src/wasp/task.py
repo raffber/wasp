@@ -583,9 +583,9 @@ class ChainingTaskGroup(TaskGroup):
 
     def append(self, task):
         if isinstance(task, Task):
-            self._tasks.append(task)
             if len(self.tasks) > 0:
                 task.use(self.tasks[-1])
+            self._tasks.append(task)
             return
         assert isinstance(task, TaskGroup), 'Expected a Task or a TaskGroup' \
                 ', got `{0}`'.format(task.__class__.__name__)
