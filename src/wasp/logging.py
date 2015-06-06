@@ -126,6 +126,9 @@ class Logger(object):
             return self.format_multiline_message(*args, color='green', start='[SUCC]  ')
         return self.format_multiline_message(*args)
 
+    def log_success(self, *args):
+        self.info(self.format_success(*args))
+
     def format_fail(self, *args):
         """
         Formats a message which shows a failure of some operation.
@@ -134,6 +137,9 @@ class Logger(object):
         if self._pretty:
             return self.format_multiline_message(*args, color='red', start='[FAIL]  ', multiline='    ~~  ')
         return self.format_multiline_message(*args)
+
+    def log_fail(self, *args):
+        self.fatal(self.format_fail(*args))
 
     def format_warn(self, *args):
         """
@@ -144,6 +150,9 @@ class Logger(object):
             return self.format_multiline_message(*args, color='magenta', start='[WARN]  ', multiline='    ~~  ')
         return self.format_multiline_message(*args)
 
+    def log_warn(self, *args):
+        self.fatal(self.format_warn(*args))
+
     def format_info(self, *args):
         """
         Formats a message which delivers unstructured information to the user.
@@ -152,6 +161,9 @@ class Logger(object):
         if self._pretty:
             return self.format_multiline_message(*args, color='cyan', start='[INFO]  ', multiline='    ~~  ')
         return self.format_multiline_message(*args)
+
+    def log_info(self, *args):
+        self.fatal(self.format_info(*args))
 
     def format_multiline_message(self, *args, color=None, start='', multiline=''):
         """
