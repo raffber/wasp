@@ -5,6 +5,7 @@ from .commands import Command, command
 from .option import FlagOption, handle_options, ArgumentOption
 from .argument import Argument
 from .fs import remove
+from .cache import CACHE_FILE
 
 
 class init(object):
@@ -190,7 +191,7 @@ def _clean():
     Default implementation of the `clean` command.
     Delete everything within the `build` directory.
     """
-    cache_exculde = str(ctx.cachedir.relative(ctx.builddir))
+    cache_exculde = CACHE_FILE
     yield remove(ctx.builddir.glob('.*', exclude=cache_exculde, recursive=False), recursive=True)
     ctx.signatures.invalidate_all()
 

@@ -9,7 +9,6 @@ Next
 -----
 
  * t.log.info(t.log.format_success('Created wasp.')) => t.log.success()
- * unify taskgroup and taskcollection
  * allow customizing build directory
  * create global wasp script -> think about recursive call vs. call from custom build dir
 

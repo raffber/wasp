@@ -5,6 +5,5 @@ __pycache__
 build
 *.sw*
 *.egg-info
-dist
 env
 MANIFEST

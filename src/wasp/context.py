@@ -31,7 +31,6 @@ class Context(object):
         # create the directories
         self._topdir = Directory('.',  make_absolute=True)
         assert self._topdir.exists, 'The given topdir must exist!!'
-        self._cachedir = None
         self._builddir = None
         self._config = Config()
         self._produced_signatures = ProducedSignatures()
@@ -130,8 +129,8 @@ class Context(object):
         assert isinstance(builddir, Directory)
         builddir.ensure_exists()
         self._builddir = builddir
-        self._cachedir = Directory(self._builddir.join('c4che'))
-        self._cache = Cache(File(self._cachedir.join(CACHE_FILE)))
+        self._cache = Cache(File(self._builddir.join(CACHE_FILE)))
+        self._cache.prefix('ctx')['topdir'] = self.topdir.path
 
     builddir = property(get_builddir, set_builddir)
     """
@@ -140,13 +139,6 @@ class Context(object):
     they write to this directory and leave the topdir clean.
     Furthermore, the cache directory can be found in <builddir>/c4che/
     """
-
-    @property
-    def cachedir(self):
-        """
-        Returns the cache directory.
-        """
-        return self._cachedir
 
     @property
     def env(self):
