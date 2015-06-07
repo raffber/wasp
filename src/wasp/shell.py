@@ -294,7 +294,7 @@ def run(cmd, timeout=100, cwd=None, print=False):
 
     :param cmd: The command to be executed.
     :param timeout: The maximum time the command can take before it is interrupted.
-    :param cwd: THe working directory from which the command should be executed.
+    :param cwd: The working directory from which the command should be executed.
     :param print: Determines if the output of the command should be printed directly to
         stderr and stdout.
     :return: Tuple of ``exit_code`` and :class:`ProcessOut`.
