@@ -192,7 +192,7 @@ def _clean():
     Delete everything within the `build` directory.
     """
     cache_exculde = CACHE_FILE
-    yield remove(ctx.builddir.glob('.*', exclude=cache_exculde, recursive=False), recursive=True)
+    yield remove(ctx.builddir.glob('.*', exclude=cache_exculde, recursive=False, dirs=True), recursive=True)
     ctx.signatures.invalidate_all()
     ctx.cache.clear()
 

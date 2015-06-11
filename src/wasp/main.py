@@ -443,8 +443,10 @@ def check_script_signatures(loaded_files):
     if changed:
         ctx.cache.clear()
         ctx.produced_signatures.clear()
-        log.info(log.format_info('Build scripts have changed since last execution!',
-                   'All previous configurations have been cleared!'))
+        if len(d) != 0:
+            # don't issue warning if wasp was never run before
+            log.info(log.format_info('Build scripts have changed since last execution!',
+                       'All previous configurations have been cleared!'))
     d.clear()
     # fetch dict again in case cache was cleared => this would lead to d not
     # being bound to ctx.cache.prefix('script-signatures') anymore

@@ -186,6 +186,7 @@ class Path(Serializable):
                     pass
             else:
                 Path(total).remove()
+        os.rmdir(self.path)
 
     def is_subpath(self, pth):
         # ensure that there is a `/` or whatever in the end

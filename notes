@@ -25,15 +25,12 @@ Cpp Tool
 Bugs
 =======
 
- * node is called ':def-_qt' instead of ':def/qt'
- * `./wasp clean` leads to "build scripts have changed" don't issue message
-    if there are no signatures anyway
+ * ./wasp clean is not working properly
  * Error message must be better: MissingArgumentError: Missing argument for task: Required argument ":qt/moc" is empty.
     => task should keep trace of where it was created.
  * searching only for 'moc' must not lead /usr/bin/qtchooser!!
  * Found file `/usr/lib/qt/bin/moc` in `/usr/bin` ???
  * tasks spawned during check() are not returned from execute()... I guess??
- * clean does not delete all files in build/...
 
 
 Lower Priorieties/Questions
