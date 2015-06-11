@@ -519,7 +519,8 @@ class ParallelExecutor(Executor):
             # attempt to start new task
             task = self._dag.pop_runnable_task(tasks_executing=tasks_executing)
             if task is None:
-                self._thread_pool.cancel()
+                if self._dag.has_finished() and not tasks_executing:
+                    self._thread_pool.cancel()
                 break
             # check task, and if it hadn't had the chance to spawn new tasks
             # allow it to spawn.
