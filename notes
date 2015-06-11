@@ -25,8 +25,9 @@ Cpp Tool
 Bugs
 =======
 
- * ./wasp qt does not terminate
  * node is called ':def-_qt' instead of ':def/qt'
+ * `./wasp clean` leads to "build scripts have changed" don't issue message
+    if there are no signatures anyway
  * Error message must be better: MissingArgumentError: Missing argument for task: Required argument ":qt/moc" is empty.
     => task should keep trace of where it was created.
  * searching only for 'moc' must not lead /usr/bin/qtchooser!!

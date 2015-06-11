@@ -194,6 +194,7 @@ def _clean():
     cache_exculde = CACHE_FILE
     yield remove(ctx.builddir.glob('.*', exclude=cache_exculde, recursive=False), recursive=True)
     ctx.signatures.invalidate_all()
+    ctx.cache.clear()
 
 
 def alias(from_, to_):
