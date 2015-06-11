@@ -49,7 +49,7 @@ class Cache(dict):
         # return cc.executable('main.c').use(ctx.cache['my-subproject-name'])
         return self.prefix(prefix)
 
-    def save(self, debug=False):
+    def save(self, debug=True):
         """
         Save the content of the cache to the file given in the constructor.
         :param debug: Format the file such that it is human readable.

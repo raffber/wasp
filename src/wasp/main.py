@@ -16,6 +16,7 @@ import sys
 import types
 
 
+BUILD_DIR = 'build'
 FILE_NAMES = ['build.py', 'build.user.py', 'BUILD', 'BUILD.user']
 
 has_argcomplete = True
@@ -350,6 +351,24 @@ def retrieve_verbosity():
     return log.DEFAULT
 
 
+def retrieve_builddir():
+    """
+    Retrieves and returns the build directory based on the command
+    line options or based on the environment.
+    """
+    next = False
+    builddir = BUILD_DIR
+    for arg in sys.argv:
+        if arg == '-b' or arg == '--builddir':
+            next = True
+            continue
+        if next:
+            return arg
+    if 'BUILDDIR' in os.environ:
+        return os.environ['BUILDDIR']
+    return builddir
+
+
 def retrieve_pretty_printing():
     """
     Retrieves whether pretty printing should be activated.
@@ -407,11 +426,11 @@ def load_decorator_config(config):
     return config
 
 
-def init_context():
+def init_context(builddir):
     """
     Initializes the global context :data:`wasp.ctx`.
     """
-    ctx.builddir = Directory('build')
+    ctx.builddir = builddir
     load_tools()  # this has to happen BEFORE! the context is loaded
     # because tools should be able to register themselves in factories
     ctx.load()
@@ -465,6 +484,7 @@ def run(dir_path):
     :return: True if a build file was found in `dir_path`, False otherwise
     """
     try:
+        #
         # first and foremost, initialize logging
         log.configure(verbosity=retrieve_verbosity(), pretty=retrieve_pretty_printing())
         # load first part of extensions
@@ -494,7 +514,7 @@ def run(dir_path):
         # load/overwrite config from decorators
         load_decorator_config(config)
         # initialize the context
-        init_context()
+        init_context(Directory(retrieve_builddir()))
         extensions.api.context_created()
     except FatalError:
         return False

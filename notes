@@ -8,8 +8,6 @@ Current:
 Next
 -----
 
- * allow customizing build directory
-
  * test, test, test, test and write doc
  * port to windows
  * port to pypy
@@ -25,7 +23,7 @@ Cpp Tool
 Bugs
 =======
 
- * ./wasp clean is not working properly
+ * recursive remove still does not work
  * Error message must be better: MissingArgumentError: Missing argument for task: Required argument ":qt/moc" is empty.
     => task should keep trace of where it was created.
  * searching only for 'moc' must not lead /usr/bin/qtchooser!!

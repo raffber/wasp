@@ -130,7 +130,6 @@ class Context(object):
         builddir.ensure_exists()
         self._builddir = builddir
         self._cache = Cache(File(self._builddir.join(CACHE_FILE)))
-        self._cache.prefix('ctx')['topdir'] = self.topdir.path
 
     builddir = property(get_builddir, set_builddir)
     """
@@ -184,6 +183,7 @@ class Context(object):
         Loads the context from the cache.
         """
         self._cache.load()
+        self._cache.prefix('ctx')['topdir'] = self.topdir.path
         self._g = self._cache.prefix('g').get('last_run', Namespace())
         self.produced_signatures.load(self._cache)
         for key, generator_collection in self._cache.prefix('generators').items():

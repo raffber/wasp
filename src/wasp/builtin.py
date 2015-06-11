@@ -1,4 +1,4 @@
-from . import options, ctx, CommandFailedError, decorators
+from . import options, ctx, CommandFailedError, decorators, StringOption
 from .main import run_command
 from .util import FunctionDecorator
 from .commands import Command, command
@@ -54,6 +54,8 @@ def _add_log_options(col):
                        , description=desc_debug, prefix=['-', '-', '--']))
     col.add(FlagOption(name='no-pretty', description='Disable pretty printing'
                        , keys=['u', 'no-pretty', 'ugly']))
+    col.add(StringOption(name='builddir', keys=['b', 'builddir'], prefix=['-', '--']
+                         , description='Sets the build directory'))
 
 
 @handle_options
@@ -183,6 +185,8 @@ def _clear_cache():
     Clears all items in the cache.
     """
     ctx.cache.clear()
+    # make sure topdir is kept
+    ctx.cache.prefix('ctx')['topdir'] = ctx.topdir.path
 
 
 @clean
@@ -194,7 +198,7 @@ def _clean():
     cache_exculde = CACHE_FILE
     yield remove(ctx.builddir.glob('.*', exclude=cache_exculde, recursive=False, dirs=True), recursive=True)
     ctx.signatures.invalidate_all()
-    ctx.cache.clear()
+    _clear_cache()
 
 
 def alias(from_, to_):
