@@ -26,10 +26,7 @@ def find_modules(includedir=INCLUDE_DIR, libdir=LIB_DIR, keys=[Modules.core, Mod
         lowerkey = key.lower()
         lib = find_lib('libQt5'+key + '.so', dirs=libdir, argprefix='libraries')
         include_path = Directory(includedir).join('Qt' + key)
-
-        def _include(task):
-            task.result['includes'] = include_path.path
-        lib.run.append(_include)
+        lib.use(includes=include_path.path)
         lib.produce(':qt/lib/' + lowerkey)
         ret.append(lib)
     base_includes = empty().use(includes=includedir).produce(':qt/include')
