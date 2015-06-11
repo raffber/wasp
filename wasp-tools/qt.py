@@ -3,6 +3,9 @@ from wasp.task import empty
 
 _cpp = tool('cpp')
 
+INCLUDE_DIR = '/usr/include/qt/'
+LIB_DIR = '/usr/lib'
+
 
 def find_moc(produce=True):
     t = find_exe('moc-qt5', argprefix='moc')
@@ -17,18 +20,19 @@ class Modules(object):
     widgets = 'Widgets'
 
 
-def find_modules(keys=[Modules.core, Modules.widgets]):
+def find_modules(includedir=INCLUDE_DIR, libdir=LIB_DIR, keys=[Modules.core, Modules.widgets]):
     ret = []
     for key in keys:
         lowerkey = key.lower()
-        # TODO: postprocess library names and remove 'lib' s.t. they can be linked with -l
-        lib = find_lib('libQt5'+key + '.so', dirs='/usr/lib', argprefix='libraries')
+        lib = find_lib('libQt5'+key + '.so', dirs=libdir, argprefix='libraries')
+        include_path = Directory(includedir).join('Qt' + key)
+
+        def _include(task):
+            task.result['includes'] = include_path.path
+        lib.run.append(_include)
         lib.produce(':qt/lib/' + lowerkey)
-        include_path = Directory('/usr/include/qt/').join('Qt' + key)
-        include = empty().use(includes=include_path.path).produce(':qt/include/' + lowerkey)
-        ret.append(include)
         ret.append(lib)
-    base_includes = empty().use(includes='/usr/include/qt').produce(':qt/include/base')
+    base_includes = empty().use(includes=includedir).produce(':qt/include')
     ret.append(base_includes)
     return group(ret)
 

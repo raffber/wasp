@@ -40,7 +40,6 @@ class TaskContainer(object):
         if task.log is None:
             task.log = log.clone()
 
-
     @property
     def targets(self):
         """
@@ -87,7 +86,7 @@ class TaskContainer(object):
     @property
     def noop(self):
         """
-        Returns True, if the task does not do anything (e.g. TaskGroup).
+        Returns True, if the task does not do anything.
         """
         if self._frozen and self._noop is not None:
             return self._noop
@@ -97,7 +96,7 @@ class TaskContainer(object):
         return self._test_noop()
 
     def _test_noop(self):
-        return len(self._task.run) == 1 and type(self._task)._run == Task._run
+        return len(self._task.run) == 1 and type(self._task)._run == Task._run or self._task.noop
 
     @property
     def dependencies(self):
@@ -506,7 +505,7 @@ class ParallelExecutor(Executor):
         self._thread_pool.start()
         self._start()
         if not self._loop.run():
-            log.fatal(log.format_fail('Execution Interrupted!!'))
+            log.log_fail('Execution Interrupted!!')
 
     def _start(self):
         assert self._dag is not None, 'Call setup() first'
@@ -520,6 +519,7 @@ class ParallelExecutor(Executor):
             # attempt to start new task
             task = self._dag.pop_runnable_task(tasks_executing=tasks_executing)
             if task is None:
+                self._thread_pool.cancel()
                 break
             # check task, and if it hadn't had the chance to spawn new tasks
             # allow it to spawn.

@@ -25,6 +25,8 @@ Cpp Tool
 Bugs
 =======
 
+ * ./wasp qt does not terminate
+ * node is called ':def-_qt' instead of ':def/qt'
  * Error message must be better: MissingArgumentError: Missing argument for task: Required argument ":qt/moc" is empty.
     => task should keep trace of where it was created.
  * searching only for 'moc' must not lead /usr/bin/qtchooser!!

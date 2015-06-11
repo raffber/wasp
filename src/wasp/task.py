@@ -464,7 +464,6 @@ def empty():
     Returns an empty task which does nothing.
     """
     t = Task(always=True)
-    t.noop = True
     return t
 
 
