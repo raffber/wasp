@@ -273,7 +273,7 @@ class Task(object):
         return self._run_list
 
     def _run(self):
-        self.result = self.arguments
+        self.result.update(self.arguments)
         self.success = True
 
     def touched(self):

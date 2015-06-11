@@ -688,7 +688,7 @@ class FindTask(Task):
             self._print_success(result_file, result_dir)
             self._success = True
         # transmit all arguments to result
-        self.result = self.arguments
+        self.result.update(self.arguments)
         # augment the arguments
         for ap in self._argprefix:
             self.result[ap] = result_file
