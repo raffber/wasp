@@ -23,7 +23,6 @@ Cpp Tool
 Bugs
 =======
 
- * recursive remove still does not work
  * Error message must be better: MissingArgumentError: Missing argument for task: Required argument ":qt/moc" is empty.
     => task should keep trace of where it was created.
  * searching only for 'moc' must not lead /usr/bin/qtchooser!!

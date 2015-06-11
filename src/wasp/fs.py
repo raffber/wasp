@@ -171,22 +171,7 @@ class Path(Serializable):
         lst = os.listdir(self.path)
         if len(lst) != 0 and not recursive:
             raise DirectoryNotEmptyError('Directory not empty: `{0}`'.format(self.path))
-        for path in lst:
-            total = os.path.join(self.path, path)
-            if not os.path.exists(total):
-                continue  # we might have previously removed a symlink to this file
-                # in this case, the removal might fail
-            isdir = os.path.isdir(total)
-            if isdir and recursive:
-                Path(total).remove(recursive=True)
-            elif isdir:
-                try:
-                    os.rmdir(total)
-                except OSError:
-                    pass
-            else:
-                Path(total).remove()
-        os.rmdir(self.path)
+        shutil.rmtree(self.path)
 
     def is_subpath(self, pth):
         # ensure that there is a `/` or whatever in the end
