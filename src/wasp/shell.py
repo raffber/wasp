@@ -105,8 +105,9 @@ class ShellTask(Task):
         for k, v in kw.items():
             if '-' in k:
                 k = k.replace('-', '_')
-            kw_new[k] = v
-            kw_new[k.lower()] = v
+            vquoted = quote(v)
+            kw_new[k] = vquoted
+            kw_new[k.lower()] = vquoted
         return kw_new
 
     def require_all(self):
