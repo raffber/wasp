@@ -165,6 +165,8 @@ class Path(Serializable):
         :param recursive: Defines whether the path should be removed in a recursive way, i.e.
             directories are removed including their content.
         """
+        if not self.exists:
+            return
         if not self.isdir():
             os.remove(self.path)
             return

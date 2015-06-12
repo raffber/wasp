@@ -1,4 +1,7 @@
-
+from wasp.config import Config
 
 def test_config():
-    pass
+    Config({
+        'extensions': ['bla']
+    })
+    # TODO: ....

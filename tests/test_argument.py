@@ -77,12 +77,7 @@ def test_argument_collection():
     assert col2.get('asdf') is None
     col1.overwrite_merge(col2)
     assert col1['foo'].value == 'test'
-    try:
-        _ = col.value('invalid')
-        failed = False
-    except KeyError:
-        failed = True
-    assert failed
+    assert col.value('invalid') is None
     assert col.value('test') == 'ing'
 
 

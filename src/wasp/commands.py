@@ -1,4 +1,5 @@
 from . import decorators, ctx
+from wasp.node import node
 
 
 class CommandFailedError(Exception):
@@ -17,6 +18,7 @@ class CommandCollection(dict):
         """
         Adds the command to the collection.
         """
+        assert isinstance(com, Command)
         if com.name not in self:
             self[com.name] = []
         self[com.name].append(com)
@@ -30,7 +32,7 @@ class Command(object):
     :param fun: Handler function of the command. It should return a task or a list thereof.
     :param description: Description of the command which may be shown to the user.
     :param depends: List of command names which should run prior to this command.
-    :param produce: An argument to :func:``wasp.Node.make_node``. The resulting node is
+    :param produce: An argument to :func:``wasp.Node.node``. The resulting node is
         produced upon command completion.
     :param option_alias: The name of another command, this command is an alias of.
     :param skip_as_depenency: Command is not rerun if it is a depenency of another task
@@ -44,7 +46,7 @@ class Command(object):
         self._name = name
         self._fun = fun
         self._description = description or name
-        self._produce = produce
+        self._produce = node(produce)
         self._option_alias = option_alias
         self._skip_as_dependency = skip_as_depenency
 

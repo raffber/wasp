@@ -30,7 +30,7 @@ class Cache(dict):
         Returns a dict which is added of the cache if it does not exist yet.
         Same as :meth:`Cache.__getitem__`.
         """
-        if not prefix in self:
+        if prefix not in self:
             cache = {}
             self[prefix] = cache
             return cache
