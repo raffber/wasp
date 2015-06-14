@@ -8,9 +8,11 @@ Current:
 Next
 -----
 
- * test, test, test, test and write doc
- * port to windows
- * port to pypy
+ * Better unit testing
+ * More integration tests?
+ * Improve tools
+ * Documentation
+ * Publish on github
 
 Cpp Tool
 ========
