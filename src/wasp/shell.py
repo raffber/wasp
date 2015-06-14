@@ -88,27 +88,26 @@ class ShellTask(Task):
             if isinstance(t, FileNode):
                 tgt_path = t.to_file().relative(self._cwd, skip_if_abs=True).path
                 tgt_list.append(tgt_path)
-        src_str = ' '.join(src_list)
-        tgt_str = ' '.join(tgt_list)
+        src_str = ' '.join([quote(x) for x in src_list])
+        tgt_str = ' '.join([quote(x) for x in tgt_list])
         kw = {'SRC': src_str,
-              'TGT': tgt_str}
-        for key, arg in self.arguments.items():
-            if arg.type != str:
-                continue
-            kw[arg.key.upper()] = str(arg.value)
+              'src': src_str,
+              'TGT': tgt_str,
+              'tgt': tgt_str}
         # assign upper and lower keys, s.t. it is up to the preference of
         # users how to format command strings.
         # typically, one uses upper case variable names, however, people
         # who have not grown up with make, will probably use the less shouty version
         # and use lower-case strings.
-        kw_new = {}
-        for k, v in kw.items():
-            if '-' in k:
-                k = k.replace('-', '_')
-            vquoted = quote(v)
-            kw_new[k] = vquoted
-            kw_new[k.lower()] = vquoted
-        return kw_new
+        for key, arg in self.arguments.items():
+            if arg.type != str:
+                continue
+            if '-' in key:
+                key = key.replace('-', '_')
+            value = quote(str(arg.value))
+            kw[key.upper()] = value
+            kw[key.lower()] = value
+        return kw
 
     def require_all(self):
         """

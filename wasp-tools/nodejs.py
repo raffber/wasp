@@ -117,7 +117,7 @@ def install(pkg, prefix=None, update=True):
         prefix = str(prefix)
     Directory(prefix).mkdir('node_modules')
     cmdline_prefix = _make_prefix(prefix)
-    return shell('{npm} {prefix} install {package}')\
+    return shell('{npm} --prefix {prefix} install {package}')\
         .use(package=pkg, prefix=cmdline_prefix)\
         .produce(package(pkg, prefix=prefix))\
         .use(':nodejs/find-npm')\
@@ -126,7 +126,7 @@ def install(pkg, prefix=None, update=True):
 
 def _make_prefix(prefix):
     if str(prefix) == str(ctx.topdir):
-        prefix = ''
+        prefix = '.'
     else:
-        prefix = '--prefix ' + quote(prefix)
+        prefix = prefix
     return prefix
