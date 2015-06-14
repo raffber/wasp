@@ -293,7 +293,7 @@ def load_directory(dir_path):
     file_found = []
     for fname in FILE_NAMES:
         full_path = os.path.join(dir_path, fname)
-        if os.path.exists(full_path):
+        if os.path.exists(full_path) and not os.path.isdir(full_path):
             load_module_by_path(full_path)
             file_found.append(full_path)
     return file_found
