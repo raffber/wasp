@@ -1,5 +1,5 @@
 import sys
-from .terminal import Color
+from .terminal import Color, Style
 
 
 class Cursor(object):
