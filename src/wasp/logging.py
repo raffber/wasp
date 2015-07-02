@@ -232,6 +232,7 @@ class Logger(object):
             self._verbosity = verbosity
         if pretty is not None:
             self._pretty = pretty
+        return self
 
     def fatal(self, msg, stderr=True):
         """

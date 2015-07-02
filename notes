@@ -8,6 +8,10 @@ Current:
 Next
 -----
 
+ * shell task should have {TOPDIR} and {BUILDDIR} in keys by default
+    -> make sure they can be overwritten by arguments
+ * make sure that if a build fails, the tasks that were successful are not rebuilt
+
  * Better unit testing
  * More integration tests?
  * Improve tools
