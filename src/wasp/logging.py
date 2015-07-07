@@ -176,6 +176,8 @@ class Logger(object):
         :param multiline: String to be prepended to all subsequent lines.
         :return: A :class:`LogStr` with the message.
         """
+        if not self.pretty:
+            return '\n'.join(args)
         start = self.color(start, fg=color, style='bright')
         if len(args) > 0:
             first = True
