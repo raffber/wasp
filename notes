@@ -11,6 +11,7 @@ Next
  * shell task should have {TOPDIR} and {BUILDDIR} in keys by default
     -> make sure they can be overwritten by arguments
  * make sure that if a build fails, the tasks that were successful are not rebuilt
+ * logger of a task appears not to be reconfigurable -> overwritten (.configure(pretty=False)) does not work
 
  * Better unit testing
  * More integration tests?
