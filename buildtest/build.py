@@ -61,4 +61,3 @@ def _qt():
     yield mocs
     yield objs
     yield qt.link(objs, target=dir.join('qtmain')).use(modules)
-

@@ -222,6 +222,9 @@ class SymbolicNode(Node):
         current.overwrite_merge(col)
         self.write(col)
 
+    def __str__(self):
+        return self.key
+
 
 def is_symbolic_node_string(arg):
     """

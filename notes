@@ -12,6 +12,7 @@ Next
     -> make sure they can be overwritten by arguments
  * make sure that if a build fails, the tasks that were successful are not rebuilt
  * logger of a task appears not to be reconfigurable -> overwritten (.configure(pretty=False)) does not work
+ * signatures could be numbers instead of strings?
 
  * Better unit testing
  * More integration tests?

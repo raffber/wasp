@@ -396,10 +396,6 @@ class Executor(object):
             self._dag.insert(_flatten(spawned))
         self._consumed_nodes.extend(task.task.sources)
         self._produced_nodes.extend(task.task.targets)
-        for target in task.targets:
-            sig = target.signature(ns=self._ns)
-            # sig.refresh() # <-- this already happend
-            ctx.produced_signatures.update(sig, ns=self._ns)
         if start:
             self._start()
 
@@ -441,7 +437,9 @@ class Executor(object):
         """
         Called after :func:`_execute_tasks:.
         """
-        # update everything that was not a target (targets were already updated)
+        # update all signatures that were consumed but
+        # never produced. i.e. nodes that act only
+        # as sources.
         consumed = set(x.key for x in self.consumed_nodes)
         produced = set(x.key for x in self.produced_nodes)
         to_update = consumed - produced
@@ -453,6 +451,12 @@ class Executor(object):
                 continue
             sig = v.signature(ns=self._ns)
             sig.refresh()
+            ctx.produced_signatures.update(sig, ns=self._ns)
+        # write all target signatures that were produced
+        for node in self.produced_nodes:
+            # target signatures were already refreshed
+            # upon target.success
+            sig = node.signature(ns=self._ns)
             ctx.produced_signatures.update(sig, ns=self._ns)
 
 
