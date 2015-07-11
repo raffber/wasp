@@ -13,6 +13,7 @@ Next
  * make sure that if a build fails, the tasks that were successful are not rebuilt
  * logger of a task appears not to be reconfigurable -> overwritten (.configure(pretty=False)) does not work
  * signatures could be numbers instead of strings?
+ * after rm -r build ./wasp cpp can be run twice and it build the source file twice :(
 
  * Better unit testing
  * More integration tests?
