@@ -10,6 +10,7 @@ sphinx = tool('sphinx')
 
 recurse('buildtest')
 
+
 @wasp.command('doc', description='Build project documentation.')
 def doc():
     return sphinx.html('doc')

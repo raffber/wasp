@@ -5,6 +5,7 @@ from .argument import Argument, find_argumentkeys_in_string
 from .util import UnusedArgFormatter, is_iterable
 from .logging import LogStr
 from .fs import Directory
+from . import ctx
 
 from subprocess import Popen, PIPE
 import shlex
@@ -141,7 +142,13 @@ class ShellTask(Task):
         """
         kw = self._process_args()
         s = UnusedArgFormatter().format(self.cmd, **kw)
-        return s
+        post_format_repl = {
+            'BUILDDIR': str(ctx.builddir),
+            'builddir': str(ctx.builddir),
+            'TOPDIR': str(ctx.topdir),
+            'topdir': str(ctx.topdir)
+        }
+        return UnusedArgFormatter().format(s, **post_format_repl)
 
     def _run(self):
         """
