@@ -8,6 +8,8 @@ Current:
 Next
 -----
 
+ * see `./wasp bug`
+
  * make sure that if a build fails, the tasks that were successful are not rebuilt
  * if using {builddir}/asdf in an argument, {builddir}/asdf is quoted => understand why and if this actually makes sense
  * signatures could be numbers instead of strings?

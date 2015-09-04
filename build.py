@@ -5,11 +5,17 @@ from wasp import shell, tool, ctx, chain, recurse
 from wasp.ext.watch import watch
 import wasp
 from wasp.fs import find_exe, Directory
+from wasp import log
 
 sphinx = tool('sphinx')
 
 recurse('buildtest')
 
+@wasp.command('bug')
+def temp():
+    y = shell('yes')
+    y.log = log.clone().configure(pretty=False)
+    yield y
 
 @wasp.command('doc', description='Build project documentation.')
 def doc():
