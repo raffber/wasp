@@ -255,8 +255,10 @@ class ProcessOut(object):
             self._out.append((msg, self.ERR))
         if self._print and stdout:
             print(msg, file=sys.stdout)
+            sys.stdout.flush()
         elif self._print:
             print(msg, file=sys.stderr)
+            sys.stderr.flush()
 
     def finished(self):
         """
@@ -318,12 +320,10 @@ def run(cmd, timeout=100, cwd=None, print=False):
             sleep(POLL_TIMEOUT)  # poll interval is 50ms
             if time_running >= timeout:
                 raise TimeoutError
-            stdout = process.stdout.read()
-            if len(stdout) != 0:
-                out.write(stdout, stdout=True)
-            stderr = process.stderr.read()
-            if len(stderr) != 0:
-                out.write(stderr, stdout=False)
+            for line in process.stdout:
+                out.write(line.strip('\n'), stdout=True)
+            for line in process.stderr:
+                out.write(line.strip('\n'), stdout=False)
         out.finished()
         exit_code = process.returncode
     except TimeoutError:
