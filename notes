@@ -8,17 +8,8 @@ Current:
 Next
 -----
 
- * see `./wasp bug`
-
  * make sure that if a build fails, the tasks that were successful are not rebuilt
  * if using {builddir}/asdf in an argument, {builddir}/asdf is quoted => understand why and if this actually makes sense
- * signatures could be numbers instead of strings?
-
- * logger of a task appears not to be reconfigurable -> overwritten (.configure(pretty=False)) does not work
- * the follwing should work properly and "stream" the output of cmake to stdout
-    |   build = shell('make', cwd=capnpn_build).use(configure)
-    |   build.log = log.clone()
-    |   build.log.configure(pretty=False)
 
  * Better unit testing
  * More integration tests?
@@ -48,6 +39,7 @@ Lower Priorieties/Questions
 ============================
 
  * add commandline options to tools
+ * signatures could be numbers instead of strings?
  * Allow specifying different build directories (for different combinations of
     build flags)
  * Possibly remove task.key and replace with id(task)

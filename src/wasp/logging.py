@@ -177,7 +177,7 @@ class Logger(object):
         :return: A :class:`LogStr` with the message.
         """
         if not self.pretty:
-            return '\n'.join(args)
+            return '\n'.join([str(x) for x in args])
         start = self.color(start, fg=color, style='bright')
         if len(args) > 0:
             first = True
@@ -187,6 +187,7 @@ class Logger(object):
                 if isinstance(arg, LogStr):
                     new_args.append(arg)
                     continue
+                assert isinstance(arg, str)
                 new_args.extend(arg.split('\n'))
             for arg in new_args:
                 if first:
