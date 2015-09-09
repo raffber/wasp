@@ -297,8 +297,7 @@ class CacheSignature(Signature):
         jsonarr = factory.to_json(data)
         value = str(json_checksum(jsonarr))
         self._value = value
-        if self.key != ':dc':
-            return value
+        self._valid = True
         return value
 
 
