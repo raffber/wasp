@@ -45,11 +45,28 @@ class SignatureProvider(object):
             self._d[ns] = {}
         return self._d[ns].get(key, default)
 
+    @lock
+    def update(self, signature, ns=None):
+        """
+        Updates the signature with the new signature.
+        """
+        ns = _get_ns(ns)
+        if ns not in self._d:
+            self._d[ns] = {}
+        self._d[ns][signature.key] = signature
+
     def save(self, cache):
         """
         Saves this object to ``cache``.
         """
-        cache.prefix('signaturedb').update(self._d)
+        newd = {}
+        for ns, signatures in self._d.items():
+            curd = {}
+            for key, signature in signatures.items():
+                if not signature.discard:
+                    curd[key] = signature
+            newd[ns] = curd
+        cache.prefix('signaturedb').update(newd)
 
     @lock
     def invalidate_signature(self, key, ns=None):
@@ -143,9 +160,10 @@ class Signature(Serializable):
     :param key: Key to identify the signature. If None, a uuid is assigned.
     """
 
-    def __init__(self, value=None, valid=False, key=None):
+    def __init__(self, value=None, valid=False, key=None, discard=False):
         self._value = value
         self._valid = valid
+        self._discard = discard
         if key is not None:
             self._key = key
         else:
@@ -157,6 +175,16 @@ class Signature(Serializable):
         Returns the key of the signature for identifying it in storage.
         """
         return self._key
+
+    @property
+    def discard(self):
+        """
+        Determines whether the signature is to be saved to the cache.
+        If the signature represents the signature of a temporary object,
+        it should not be saved to the cache, since this will clutter the cache
+        (and make it grow forever each time you run ``wasp``)
+        """
+        return self._discard
 
     @property
     def value(self):
@@ -188,7 +216,7 @@ class Signature(Serializable):
 
     def to_json(self):
         d = super().to_json()
-        d.update({'value': self._value, 'valid': self.valid, 'key': self.key})
+        d.update({'value': self._value, 'valid': self.valid, 'key': self.key, 'discard': self.discard})
         return d
 
     @classmethod
@@ -211,14 +239,14 @@ class FileSignature(Signature):
     :param path: Path of the :class:`wasp.node.FileNode`, which is
         set as key.
     """
-    def __init__(self, path, value=None, valid=True):
+    def __init__(self, path, value=None, valid=True, discard=False):
         assert path is not None, 'Path must be given for file signature'
         if not os.path.exists(path):
             valid = False
         self.path = path
         if value is None and valid:
             value = self.refresh()
-        super().__init__(value, valid=valid, key=path)
+        super().__init__(value, valid=valid, key=path, discard=discard)
 
     def to_json(self):
         d = super().to_json()
@@ -265,8 +293,8 @@ class CacheSignature(Signature):
     :param key: Key for identifying the signature.
     :param prefix: Cache prefix. See :class:`wasp.cache.Cache`.
     """
-    def __init__(self, key, prefix=None, cache_key=None, value=None, valid=True):
-        super().__init__(value, valid=valid, key=key)
+    def __init__(self, key, prefix=None, cache_key=None, value=None, valid=True, discard=False):
+        super().__init__(value, valid=valid, key=key, discard=discard)
         self._cache = None
         self._prefix = prefix
         self._cache_key = cache_key
@@ -280,7 +308,8 @@ class CacheSignature(Signature):
 
     @classmethod
     def from_json(cls, d):
-        return cls(d['key'], cache_key=d['key'], prefix=d['prefix'], value=d['value'], valid=d['valid'])
+        return cls(d['key'], cache_key=d['key'], prefix=d['prefix']
+                   , value=d['value'], valid=d['valid'], discard=d['discard'])
 
     @lock
     def refresh(self, value=None):

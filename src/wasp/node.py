@@ -69,7 +69,7 @@ class Node(object):
         :param ns: The namespace for which the signature should be returned.
         """
         if self._discard:
-            return DummySignature()
+            return DummySignature(discard=True)
         signature = ctx.signatures.get(self.key, ns=ns)
         if signature is None:
             signature = self._make_signature()
@@ -172,7 +172,7 @@ class SymbolicNode(Node):
         self._cache = None
 
     def _make_signature(self):
-        return CacheSignature(self.key, prefix='symblic-nodes', cache_key=self.key)
+        return CacheSignature(self.key, prefix='symblic-nodes', cache_key=self.key, discard=self._discard)
 
     def read(self):
         """

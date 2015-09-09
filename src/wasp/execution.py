@@ -437,7 +437,7 @@ class Executor(object):
         """
         Called after :func:`_execute_tasks:.
         """
-        # update all signatures that were consumed but
+        # refresh all signatures that were consumed but
         # never produced. i.e. nodes that act only
         # as sources.
         consumed = set(x.key for x in self.consumed_nodes)
@@ -452,12 +452,14 @@ class Executor(object):
             sig = v.signature(ns=self._ns)
             sig.refresh()
             ctx.produced_signatures.update(sig, ns=self._ns)
+            ctx.signatures.update(sig, ns=self._ns)
         # write all target signatures that were produced
         for node in self.produced_nodes:
             # target signatures were already refreshed
             # upon target.success
             sig = node.signature(ns=self._ns)
             ctx.produced_signatures.update(sig, ns=self._ns)
+            ctx.signatures.update(sig, ns=self._ns)
 
 
 class ParallelExecutor(Executor):
