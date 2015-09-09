@@ -588,6 +588,8 @@ def directory(arg):
         return Directory(arg.path)
     elif isinstance(arg, Directory):
         return arg
+    elif isinstance(arg, Path):
+        return Directory(arg.path)
     raise ValueError('No compatible type given to `directory()`'
                      ', type was `{0}`.'.format(arg.__class__.__name__))
 
