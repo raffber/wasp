@@ -360,7 +360,8 @@ class Task(object):
 
          * :class:`wasp.argument.Argument`
          * :class:`wasp.argument.ArgumentCollection`: uses all its arguments
-         * :class:`TaskGroup`: Uses all tasks contained in the task group
+         * :class:`TaskGroup`: Uses the group.target_task if given,
+            otherwise all tasks contained in the task group
          * :class:`wasp.node.SymbolicNode`: Adds the node as a dependency and retrieves
             arguments from it.
          * :class:`wasp.node.Node`: Adds the node as a dependency.
@@ -380,8 +381,11 @@ class Task(object):
                 for x in a.values():
                     self.use_arg(x)
             elif isinstance(a, TaskGroup):
-                for t in a.tasks:
-                    self.use(t)
+                if a.target_task is None:
+                    for t in a.tasks:
+                        self.use(t)
+                else:
+                    self.use(a.target_task)
             elif isinstance(a, SymbolicNode):
                 self._used_nodes.append(a)
                 self.sources.append(a)
@@ -472,11 +476,17 @@ class TaskGroup(object):
     A group of :class:`Task` objects.
 
     :param tasks: iterable of :class:`Task` objects to be grouped.
+    :param target_task: Task which acts as a target for ``produce()`` and ``use()`` for
+        other tasks.
     """
-    def __init__(self, tasks):
+    def __init__(self, tasks, target_task=None):
         assert is_iterable(tasks), 'tasks argument to TaskGroup() is expected to be iterable.'
         self._tasks = list(tasks)
-        self._produce_task = None
+        self._target_task = None
+
+    @property
+    def target_task(self):
+        return self._target_task
 
     @property
     def tasks(self):
@@ -515,13 +525,13 @@ class TaskGroup(object):
         def _fun(t):
             t.result = t.arguments
             t.success = True
-        if self._produce_task is None:
-            self._produce_task = Task(fun=_fun)
-            self._tasks.append(self._produce_task)
+        if self._target_task is None:
+            self._target_task = Task(fun=_fun)
+            self._tasks.append(self._target_task)
         for t in self._tasks:
-            if self._produce_task is not t:
-                self._produce_task.use(t)
-        self._produce_task.produce(*args)
+            if self._target_task is not t:
+                self._target_task.use(t)
+        self._target_task.produce(*args)
         return self
 
     def append(self, task):
@@ -565,7 +575,7 @@ def _flatten(args):
     return ret
 
 
-def group(*args, collapse=True):
+def group(*args, collapse=True, target_task=None):
     """
     Returns a :class:`TaskGroup` object based on the arguments.
     """
@@ -575,7 +585,7 @@ def group(*args, collapse=True):
             '*args must be a tuple of Tasks, but was: {0}'.format(type(arg).__name__)
     if len(args) == 1 and collapse:
         return args[0]
-    return TaskGroup(args)
+    return TaskGroup(args, target_task=target_task)
 
 
 class ChainingTaskGroup(TaskGroup):
