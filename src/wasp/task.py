@@ -430,7 +430,6 @@ class Task(object):
         if is_iterable(arg.value):
             item.value.extend(list(arg.value))
         else:
-            assert arg.type == str
             item.value.append(arg.value)
 
     def get_result(self):
