@@ -118,23 +118,6 @@ class ShellTask(Task):
             self.require(argname)
         return self
 
-    def use_catenate(self, arg):
-        """
-        When an argument is used multiple times, this function creates a list of
-        the values of each argument in ``self.arguments``. This is useful for
-        injecting flags or multiple arguments into one key. (e.g. 'CFLAGS')
-        """
-        if arg.key not in self.arguments:
-            item = Argument(arg.key, value=[])
-            self.arguments.add(item)
-        else:
-            item = self.arguments[arg.key]
-        if is_iterable(arg.value):
-            item.value.extend(list(arg.value))
-        else:
-            assert arg.type == str
-            item.value.append(arg.value)
-
     def _format_cmd(self):
         """
         Formats ``self.cmd`` into an executable string by calling
