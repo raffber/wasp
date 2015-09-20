@@ -149,6 +149,7 @@ class Path(Serializable):
         d.update({'path': self.path, 'absolute': self._absolute, 'relto': self._relto})
         return d
 
+    @property
     def isdir(self):
         """
         Returns true if the path points to a directory.
@@ -167,7 +168,7 @@ class Path(Serializable):
         """
         if not self.exists:
             return
-        if not self.isdir():
+        if not self.isdir:
             os.remove(self.path)
             return
         lst = os.listdir(self.path)
@@ -511,7 +512,7 @@ def path(arg):
     if isinstance(arg, FileNode):
         return File(arg.path)
     elif isinstance(arg, str):
-        if Path(arg).isdir():
+        if Path(arg).isdir:
             return Directory(arg)
         else:
             return File(arg)
