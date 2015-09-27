@@ -357,7 +357,7 @@ class Directory(Path):
         """
         Return a list of path objects that are contained in this directory.
         """
-        return paths(os.path.listdir(self.path))
+        return paths(os.listdir(self.path))
 
 
 factory.register(Directory)
@@ -671,16 +671,19 @@ class FindTask(Task):
         for d in self._dirs:
             if found:
                 break
-            contents = d.list()
-            for f in contents:
-                for name in self._names:
-                    if isinstance(name, str):
-                        if f == name:
-                            result_file = f.path
-                            result_dir = str(d)
-                            found = True
-                            break
-                    else:
+            contents = None
+            for name in self._names:
+                if isinstance(name, str):
+                    f = d.join(name)
+                    if f.exists:
+                        result_file = f.path
+                        result_dir = str(d)
+                        found = True
+                        break
+                else:
+                    if contents is None:
+                        contents = d.list()
+                    for f in contents:
                         if name.match(f):
                             result_file = f.path
                             result_dir = str(d)
@@ -703,7 +706,10 @@ class FindTask(Task):
         pass
 
     def _print_fail(self):
-        str_names = filter([x if isinstance(x, str) else None for x in self._names])
+        str_names = []
+        for x in self._names:
+            if isinstance(x, str):
+                str_names.append(x)
         self.log.log_fail('Cannot find required file! Looking for: [{0}]'.format(', '.join(str_names)))
 
     def _print_success(self, file, dir):
