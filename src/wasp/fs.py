@@ -657,7 +657,11 @@ class FindTask(Task):
         self._dirs = directories(dirs)
         self._names = list(names)
         if argprefix is None:
-            argprefix = list(self._names)
+            str_names = []
+            for x in self._names:
+                if isinstance(x, str):
+                    str_names.append(x)
+            argprefix = str_names
         elif isinstance(argprefix, str):
             argprefix = [argprefix]
         assert isinstance(argprefix, list)
@@ -684,7 +688,7 @@ class FindTask(Task):
                     if contents is None:
                         contents = d.list()
                     for f in contents:
-                        if name.match(f):
+                        if name.match(f.path):
                             result_file = f.path
                             result_dir = str(d)
                             found = True
@@ -706,10 +710,7 @@ class FindTask(Task):
         pass
 
     def _print_fail(self):
-        str_names = []
-        for x in self._names:
-            if isinstance(x, str):
-                str_names.append(x)
+        str_names = [str(x) for x in self._names]
         self.log.log_fail('Cannot find required file! Looking for: [{0}]'.format(', '.join(str_names)))
 
     def _print_success(self, file, dir):
@@ -757,8 +758,10 @@ class FindLibrary(FindTask):
     """
     def __init__(self, *args, dirs=None, **kw):
         if dirs is None:
-            dirs = os.getenv('LD_LIBRARY_PATH').split(':')
+            dirs = self.LIB_PATH
         super().__init__(*args, dirs=dirs, **kw)
+
+    LIB_PATH = '/usr/lib'
 
     def _store_result(self, file, dir):
         pass
