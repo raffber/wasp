@@ -353,6 +353,12 @@ class Directory(Path):
             return self.copy()
         return Directory(ctx.builddir.join(self._path))
 
+    def list(self):
+        """
+        Return a list of path objects that are contained in this directory.
+        """
+        return paths(os.path.listdir(self.path))
+
 
 factory.register(Directory)
 
@@ -665,13 +671,21 @@ class FindTask(Task):
         for d in self._dirs:
             if found:
                 break
-            for name in self._names:
-                f = File(d.join(name))
-                if f.exists:
-                    result_file = f.path
-                    result_dir = str(d)
-                    found = True
-                    break
+            contents = d.list()
+            for f in contents:
+                for name in self._names:
+                    if isinstance(name, str):
+                        if f == name:
+                            result_file = f.path
+                            result_dir = str(d)
+                            found = True
+                            break
+                    else:
+                        if name.match(f):
+                            result_file = f.path
+                            result_dir = str(d)
+                            found = True
+                            break
         if self._required and not found:
             self._success = False
             self._print_fail()
@@ -689,7 +703,8 @@ class FindTask(Task):
         pass
 
     def _print_fail(self):
-        self.log.log_fail('Cannot find required file! Looking for: [{0}]'.format(', '.join(self._names)))
+        str_names = filter([x if isinstance(x, str) else None for x in self._names])
+        self.log.log_fail('Cannot find required file! Looking for: [{0}]'.format(', '.join(str_names)))
 
     def _print_success(self, file, dir):
         self.log.log_success('Found file `{0}` in `{1}`'.format(file, dir))

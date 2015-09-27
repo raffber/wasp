@@ -40,8 +40,10 @@ def unpack(unpack_dir):
     Already existing files are removed.
     """
     # recursive remove existing install
+    # NOTE: temporarly disabled until wasp is stable
     if os.path.exists(unpack_dir):
-        remove_recursive(unpack_dir)
+        return
+        # remove_recursive(unpack_dir)
     os.mkdir(unpack_dir)
     for filename, content in wasp_packed:
         dirname = os.path.dirname(filename)
@@ -84,7 +86,7 @@ def main(major, minor, point):
         except:
             # something bad happend during import, maybe something
             # is corrupted => try unpacking again
-            unpack(unpack_dir)
+            # unpack(unpack_dir)
             # and reload
             wasp = __import__('wasp')
     except ImportError:
