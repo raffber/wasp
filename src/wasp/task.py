@@ -494,7 +494,6 @@ def collect(*args, **kw):
                 t.result.update(node.read())
         for arg in t.arguments:
             t.result.add(arg)
-        print(t.result)
     node_args = nodes(args)
     t = Task(sources=node_args, always=True, fun=_collect_args)
     return t

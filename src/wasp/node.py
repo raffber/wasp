@@ -254,7 +254,9 @@ def nodes(*args):
     from . import Task, TaskGroup
     ret = []
     for arg in args:
-        if isinstance(arg, Task) or isinstance(arg, TaskGroup):
+        if arg is None:
+            continue
+        elif isinstance(arg, Task) or isinstance(arg, TaskGroup):
             ret.extend(arg.targets)
         elif is_iterable(arg):
             ret.extend(nodes(*arg))
