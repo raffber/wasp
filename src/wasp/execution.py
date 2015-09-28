@@ -1,4 +1,5 @@
 import traceback
+from multiprocessing import cpu_count
 from .task import Task, TaskGroup, MissingArgumentError, TaskCollection
 from .util import EventLoop, Event, is_iterable, ThreadPool
 from . import log, ctx, extensions
@@ -496,10 +497,12 @@ class ParallelExecutor(Executor):
                 log.fatal(log.format_fail('Execution Interrupted!!'))
                 self._on_fail.fire(self._task)
 
-    def __init__(self, jobs=1, ns=None):
+    def __init__(self, jobs=None, ns=None):
         super().__init__(ns=ns)
         self._current_jobs = 0
         self._loop = EventLoop()
+        if jobs is None:
+            jobs = cpu_count()
         self._jobs = jobs
         self._success_event = Event(self._loop).connect(self.task_success)
         self._failed_event = Event(self._loop).connect(self.task_failed)

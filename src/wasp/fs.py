@@ -18,7 +18,7 @@ import shutil
 
 from .node import FileNode
 from .task import Task
-from .util import Serializable, is_iterable, first
+from .util import Serializable, is_iterable
 from . import factory, ctx
 from .generator import Generator
 from .argument import format_string, find_argumentkeys_in_string
@@ -101,12 +101,14 @@ class Path(Serializable):
         abspath = os.path.realpath(self._path)
         return Path(os.path.relpath(abspath, start=relto), relto=relto)
 
+    @property
     def absolute(self):
         """
         Returns an absolute version of the path.
         """
         return Path(self._path, make_absolute=True)
 
+    @property
     def relative_to(self):
         """
         Returns the path to which this path object is relative to.
@@ -204,18 +206,23 @@ class Path(Serializable):
             return self.copy()
         return Path(ctx.builddir.join(self._path))
 
+    @property
     def is_relative(self):
         """
         Returns True if this path is relative.
         """
         return not os.path.isabs(self._path)
 
+    @property
     def basename(self):
         """
         Returns the basename of the path, i.e. its last component.
         For example ``src/main.c`` becomes ``main.c``.
         """
         return os.path.basename(self._path)
+
+
+factory.register(Path)
 
 
 class Directory(Path):
@@ -296,7 +303,7 @@ class Directory(Path):
         else:
             exclude_re = None
         if recursive:
-            abs_ = str(self.absolute())
+            abs_ = str(self.absolute)
             for dirpath, dirnames, filenames in os.walk(self._path):
                 if dirs:
                     it = chain(dirnames, filenames)
@@ -357,7 +364,10 @@ class Directory(Path):
         """
         Return a list of path objects that are contained in this directory.
         """
-        return paths(os.listdir(self.path))
+        ret = []
+        for fpath in os.listdir(self.path):
+            ret.append(self.join(fpath))
+        return ret
 
 
 factory.register(Directory)
@@ -688,7 +698,7 @@ class FindTask(Task):
                     if contents is None:
                         contents = d.list()
                     for f in contents:
-                        if name.match(f.path):
+                        if name.match(f.basename):
                             result_file = f.path
                             result_dir = str(d)
                             found = True
@@ -721,7 +731,7 @@ def find(*names, dirs=None, argprefix=None, required=True):
     """
     See :class:`FindTask`. Accepts the same parameters.
     """
-    FindTask(*names, dirs=dirs, argprefix=argprefix, required=required)
+    return FindTask(*names, dirs=dirs, argprefix=argprefix, required=required)
 
 
 class FindExecutable(FindTask):
@@ -746,32 +756,6 @@ def find_exe(*names, dirs=None, argprefix=None, required=True):
     See :class:`FindExecutable`. Accepts the same parameters.
     """
     return FindExecutable(*names, dirs=dirs, argprefix=argprefix, required=required)
-
-
-class FindLibrary(FindTask):
-    """
-    Looks for executables. If ``dirs`` is not specified, the all paths in the ``LD_LIBRARY_PATH`` variable
-    are searched. This tasks writes the following arguments to the target nodes:
-        * argprefix + 'lib`: The file path
-        * argprefix + 'exe': The file path
-        * argprefix + 'dir': The directory path containing the file
-    """
-    def __init__(self, *args, dirs=None, **kw):
-        if dirs is None:
-            dirs = self.LIB_PATH
-        super().__init__(*args, dirs=dirs, **kw)
-
-    LIB_PATH = '/usr/lib'
-
-    def _store_result(self, file, dir):
-        pass
-
-
-def find_lib(*names, dirs=None, argprefix=None, required=True):
-    """
-    See :class:`FindLibrary`. Accepts the same parameters.
-    """
-    return FindLibrary(*names, dirs=dirs, argprefix=argprefix, required=required)
 
 
 class RemoveTask(Task):

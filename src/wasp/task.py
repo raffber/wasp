@@ -487,6 +487,19 @@ def empty():
     return t
 
 
+def collect(*args, **kw):
+    def _collect_args(t):
+        for node in t.sources:
+            if isinstance(node, SymbolicNode):
+                t.result.update(node.read())
+        for arg in t.arguments:
+            t.result.add(arg)
+        print(t.result)
+    node_args = nodes(args)
+    t = Task(sources=node_args, always=True, fun=_collect_args)
+    return t
+
+
 class TaskGroup(object):
     """
     A group of :class:`Task` objects.

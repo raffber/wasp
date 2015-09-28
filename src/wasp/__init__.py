@@ -160,9 +160,9 @@ from .config import config, Config
 from .option import options, handle_options, FlagOption, EnableOption, StringOption, IntOption
 from .argument import Argument, value, arg, format_string, find_argumentkeys_in_string, ArgumentCollection
 from .commands import command, Command, CommandFailedError
-from .fs import Directory, File, copy, remove, paths, path, defer_install, find, find_exe, find_lib
+from .fs import Directory, File, copy, remove, paths, path, defer_install, find, find_exe
 from .fs import files, file, path, paths, directories, directory
-from .task import Task, group, chain, task, TaskCollection, TaskGroup
+from .task import Task, group, chain, task, TaskCollection, TaskGroup, collect
 from .shell import shell, ShellTask, quote
 from .tools import tool
 from .builtin import build, configure, install, alias, init

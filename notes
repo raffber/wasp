@@ -8,8 +8,13 @@ Current:
 Next
 -----
 
- * an os dependent default path module
+ * allow finding directories find( .... , directory=True)
+ * clean task must be a special task executed *before* handle_options
+ * make sure the parallel build in capnqml works
+ * capnqml python build produces way too many targets for the collect() task?!
  * make sure that if a build fails, the tasks that were successful are not rebuilt
+
+ * an os dependent default path module
  * if using {builddir}/asdf in an argument, {builddir}/asdf is quoted => understand why and if this actually makes sense
  * create a --show-changed, --show-changed-files flags that lists all changes from last run
 
