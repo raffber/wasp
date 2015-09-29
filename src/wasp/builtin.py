@@ -1,4 +1,4 @@
-from . import options, ctx, CommandFailedError, decorators, StringOption
+from . import options, ctx, CommandFailedError, decorators, StringOption, log
 from .main import run_command
 from .util import FunctionDecorator
 from .commands import Command, command
@@ -215,3 +215,15 @@ def alias(from_, to_):
     def _from():
         from .main import run_command
         run_command(to_)
+
+
+@command('diff')
+def _diff():
+    thislog = log.clone().configure(verbosity=log.INFO)
+    for ns in ctx.produced_signatures.namespaces:
+        for k, v in ctx.produced_signatures.get_signatures(ns=ns).items():
+            new_sig = v.clone()
+            new_sig.refresh()
+            if v.value != new_sig.value:
+                thislog.log_info('Signature of `{0}` changed since last run.'.format(v.key))
+

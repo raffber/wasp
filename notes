@@ -10,8 +10,6 @@ Next
  * clean task must be a special task executed *before* handle_options
  * an os dependent default path module
  * if using {builddir}/asdf in an argument, {builddir}/asdf is quoted => understand why and if this actually makes sense
- * create a --show-changed, --show-changed-files flags that lists all changes from last run, maybe just a
-    special command ./wasp diff
 
  * Better unit testing
  * More integration tests?
@@ -40,6 +38,7 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * improve formatting in ./wasp diff
  * allow finding directories find( .... , directory=True)
  * add commandline options to tools
  * signatures could be numbers instead of strings?

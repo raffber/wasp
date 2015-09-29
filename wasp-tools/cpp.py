@@ -2,6 +2,7 @@ from wasp import ShellTask, find_exe, Task, quote
 from wasp import group
 from wasp import nodes, FileNode, node
 from wasp import file, directory, osinfo
+from wasp.util import is_iterable
 import re
 
 
@@ -30,39 +31,80 @@ class DependencyScan(Task):
 
     :param source: The source file to be scanned.
     :param target: The target node where the result should be written to. If
-        None, :cpp/headers/<source-path> is used.
+        None, :cpp/<source-path> is used.
     """
+
+    NUM_LINES = 200
+    DEPTH = 10
 
     def __init__(self, source, target=None):
         f = file(source)
         if target is None:
-            target = node(':cpp/headers/{0}'.format(str(f)))
+            target = node(':cpp/{0}'.format(str(f)))
         super().__init__(sources=f, targets=target)
         self._f = f
+        self.arguments.add(includes=[])
+
+    def use_arg(self, arg):
+        if arg.key == 'includes':
+            if is_iterable(arg.value):
+                for v in arg.value:
+                    self.arguments.value('includes').append(v)
+            else:
+                assert isinstance(arg.value, str)
+                self.arguments.value('includes').append(arg.value)
+            return
+        super().use_arg(arg)
 
     def _run(self):
+        headers = set()
+        self._scan(headers, self._f, 1)
+        self.result['headers'] = list(str(x) for x in headers)
+        self.success = True
+
+    def _scan(self, headers, header, current_depth):
+        if current_depth > self.DEPTH:
+            return set()
         include_re = re.compile('^\s*#include *[<"](?P<include>[0-9a-zA-Z\-_\. /]+)[>"]\s*$')
         num_lines = 0
-        headers = []
-        dir = self._f.directory()
-        with open(str(self._f), 'r') as f:
+        with open(str(header), 'r') as f:
             for line in f:
                 num_lines += 1
-                if num_lines > 200:
+                if num_lines > self.NUM_LINES:
                     break
                 m = include_re.match(line)
                 if m:
                     include_filepath = m.group('include')
-                    f = dir.join(include_filepath)
-                    # TODO: scan over include path here
-                    if not f.exists:
-                        continue
-                    headers.append(str(f))
-        self.result['headers'] = headers
-        self.success = True
+                    self.include_found(header, headers, include_filepath, current_depth)
+
+    def include_found(self, header, headers, include_filepath, current_depth):
+        include_paths = list(self.arguments.value('includes', []))
+        include_paths.append(directory(header))
+        for path in include_paths:
+            if directory(path).isabs:
+                continue
+            f = directory(path).join(include_filepath)
+            if f.exists and not f.isdir:
+                if f.path in headers:
+                    return
+                headers.add(f.path)
+                self._scan(headers, f, current_depth+1)
 
 
 class CompileTask(ShellTask):
+
+    def _init(self):
+        csrc = []
+        for src in self.sources:
+            if not isinstance(src, FileNode):
+                continue
+            is_csrc = [str(src).endswith(ext) for ext in self.extensions]
+            if any(is_csrc):
+                csrc.append(str(src))
+                headers = node(':cpp/{0}'.format(src)).read().value('headers', [])
+                self.sources.extend(nodes(headers))
+        self.arguments['csources'] = csrc
+
     def use_arg(self, arg):
         if arg.key in ['cflags', 'includes']:
             self.use_catenate(arg)
@@ -76,12 +118,14 @@ class CompileTask(ShellTask):
         # unless they are given as an absolute path
         include = ['-I' + directory(x).relative(self._cwd, skip_if_abs=True).path for x in include]
         kw['INCLUDES'] = ' '.join(set(include))
-        kw['CFLAGS'] = ''.join(set(self.arguments.value('cflags', [])))
+        kw['CFLAGS'] = ' '.join(set(self.arguments.value('cflags', [])))
+        kw['CSOURCES'] = ' '.join(set(self.arguments.value('csources')))
         return kw
 
 
 class CxxCompile(CompileTask):
-    cmd = '{CXX} {CFLAGS} {INCLUDES} -c -o {TGT} {SRC}'
+    extensions = ['cxx', 'cpp', 'c++']
+    cmd = '{CXX} {CFLAGS} {INCLUDES} -c -o {TGT} {CSOURCES}'
 
     def _init(self):
         super()._init()
@@ -89,7 +133,8 @@ class CxxCompile(CompileTask):
 
 
 class CCompile(CompileTask):
-    cmd = '{CC} {CFLAGS} {INCLUDES} -c -o {TGT} {SRC}'
+    extensions = ['c']
+    cmd = '{CC} {CFLAGS} {INCLUDES} -c -o {TGT} {CSOURCES}'
 
     def _init(self):
         super()._init()
@@ -121,6 +166,7 @@ class Link(ShellTask):
         else:
             raise NotImplementedError  # TODO ...
         kw['LIBRARIES'] = ' '.join([quote(l) for l in libs_cmdline])
+        kw['LDFLAGS'] = ' '.join(set(self.arguments.value('ldflags', [])))
         return kw
 
 
@@ -142,6 +188,13 @@ def compile(sources, use_default=True):
             if use_default:
                 task.use(':cpp/cxx')
         ret.append(task)
+        dep_scan = DependencyScan(source)
+        assert len(dep_scan.targets) >= 1
+        header_dep_node = dep_scan.targets[0]
+        task.use(header_dep_node)
+        for header in header_dep_node.read().value('headers', []):
+            task.depends(header)
+        ret.append(dep_scan)
     return group(ret)
 
 

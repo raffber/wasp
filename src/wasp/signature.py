@@ -29,6 +29,12 @@ class SignatureProvider(object):
             self._d[ns] = {}
         self._d[ns][signature.key] = signature
 
+    def get_signatures(self, ns=None):
+        ns = _get_ns(ns)
+        if ns not in self._d:
+            self._d[ns] = {}
+        return self._d[ns]
+
     @lock
     def get(self, key, default=None, ns=None):
         """
@@ -95,6 +101,13 @@ class SignatureProvider(object):
             for sig in nsv.values():
                 sig.invalidate()
 
+    @property
+    def namespaces(self):
+        """
+        Returns a list of namespaces.
+        """
+        return self._d.keys()
+
 
 class ProducedSignatures(object):
     """
@@ -110,6 +123,12 @@ class ProducedSignatures(object):
         """
         # copy the dict, so that the cache can be written to
         self._signaturedb = dict(cache.prefix('signaturedb'))
+
+    def get_signatures(self, ns=None):
+        ns = _get_ns(ns)
+        if ns not in self._signaturedb:
+            self._signaturedb[ns] = {}
+        return self._signaturedb[ns]
 
     def clear(self):
         """
@@ -140,6 +159,13 @@ class ProducedSignatures(object):
         if ns not in self._signaturedb:
             self._signaturedb[ns] = {}
         self._signaturedb[ns][signature.key] = signature
+
+    @property
+    def namespaces(self):
+        """
+        Returns a list of namespaces.
+        """
+        return self._signaturedb.keys()
 
 
 class Signature(Serializable):
@@ -231,6 +257,9 @@ class Signature(Serializable):
             self._value = value
         return value
 
+    def clone(self):
+        raise NotImplementedError
+
 
 class FileSignature(Signature):
     """
@@ -281,6 +310,8 @@ class FileSignature(Signature):
         self._valid = True
         return value
 
+    def clone(self):
+        return FileSignature(self.path, value=self.value, valid=self.valid, discard=self.discard)
 
 factory.register(FileSignature)
 
@@ -329,6 +360,11 @@ class CacheSignature(Signature):
         self._valid = True
         return value
 
+    def clone(self):
+        return CacheSignature(
+            self.key, prefix=self._prefix, cache_key=self._cache_key,
+            value=self.value, valid=self.valid, discard=self.discard)
+
 
 factory.register(CacheSignature)
 
@@ -351,6 +387,9 @@ class DummySignature(Signature):
 
     def __ne__(self, other):
         return False
+
+    def clone(self):
+        return DummySignature()
 
 
 factory.register(DummySignature)

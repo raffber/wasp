@@ -1,4 +1,4 @@
-from wasp import nodes, shell, group, find_lib, find_exe, file, tool, Directory
+from wasp import nodes, shell, group, find_exe, file, tool, Directory, Task, find
 from wasp.task import empty
 
 _cpp = tool('cpp')
@@ -18,20 +18,41 @@ class Modules(object):
     core = 'Core'
     gui = 'Gui'
     widgets = 'Widgets'
+    qml = 'Qml'
+    quick = 'Quick'
+    quick_widgets = 'QuickWidgets'
 
 
-def find_modules(includedir=INCLUDE_DIR, libdir=LIB_DIR, keys=[Modules.core, Modules.widgets]):
+class CollectorTask(Task):
+
+    def _run(self):
+        self.result = self.arguments
+        self.success = True
+
+    @property
+    def always(self):
+        return True
+
+    def use_arg(self, arg):
+        if arg.key in ['includes', 'libraries']:
+            self.use_catenate(arg)
+            return
+        super().use_arg(arg)
+
+
+def find_modules(includedir=INCLUDE_DIR, libdir=LIB_DIR, keys=[Modules.core]):
     ret = []
+    collector = CollectorTask()
     for key in keys:
         lowerkey = key.lower()
-        lib = find_lib('libQt5'+key + '.so', dirs=libdir, argprefix='libraries')
+        lib = find('libQt5'+key + '.so', dirs=libdir, argprefix='libraries')
         include_path = Directory(includedir).join('Qt' + key)
-        lib.result['includes'] = include_path.path
         lib.produce(':qt/lib/' + lowerkey)
         ret.append(lib)
-    base_includes = empty().use(includes=includedir).produce(':qt/include')
-    ret.append(base_includes)
-    return group(ret)
+        collector.use(lib).use(includes=include_path)
+    collector.use(includes=includedir)
+    ret.append(collector)
+    return group(ret, target_task=collector)
 
 
 def moc(fs):
