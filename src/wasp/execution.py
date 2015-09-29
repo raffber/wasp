@@ -625,6 +625,17 @@ def run_task(task):
     return task.task.success
 
 
+def _uniquify(node_list):
+    """
+    Uniquifies a list of nodes and returns a new list
+    with only unique nodes.
+    """
+    ret = {}
+    for x in node_list:
+        ret[x.key] = x
+    return ret.values()
+
+
 def _flatten(tasks, ns=None):
     """
     Flattens a list of task and creates :class:`TaskContainer` objects.
@@ -641,6 +652,12 @@ def _flatten(tasks, ns=None):
             ret.extend(_flatten(task.tasks, ns=ns))
         else:
             task = TaskContainer(task, ns=ns)
+            new_sources = _uniquify(task.sources)
+            task.sources.clear()
+            task.sources.extend(new_sources)
+            new_targets = _uniquify(task.targets)
+            task.targets.clear()
+            task.targets.extend(new_targets)
             ret.append(task)
     return ret
 

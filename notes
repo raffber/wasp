@@ -7,14 +7,11 @@ Current:
 Next
 -----
 
- * configure creates a lot of symbolic nodes...
- * allow finding directories find( .... , directory=True)
  * clean task must be a special task executed *before* handle_options
- * source nodes are contained multiple time for cpp.compile() tasks
-
  * an os dependent default path module
  * if using {builddir}/asdf in an argument, {builddir}/asdf is quoted => understand why and if this actually makes sense
- * create a --show-changed, --show-changed-files flags that lists all changes from last run
+ * create a --show-changed, --show-changed-files flags that lists all changes from last run, maybe just a
+    special command ./wasp diff
 
  * Better unit testing
  * More integration tests?
@@ -43,6 +40,7 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * allow finding directories find( .... , directory=True)
  * add commandline options to tools
  * signatures could be numbers instead of strings?
  * Allow specifying different build directories (for different combinations of
