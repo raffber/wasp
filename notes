@@ -4,14 +4,10 @@ Next Task
 Current:
 ---------
 
- * make sure that if a build fails, the tasks that were successful are not rebuilt
-        => it appears sth is wrong with dependencies
-        => upon compile error in util.cpp it seems util.h returns has_changed() == True
-
 Next
 -----
 
-
+ * configure creates a lot of symbolic nodes...
  * allow finding directories find( .... , directory=True)
  * clean task must be a special task executed *before* handle_options
  * source nodes are contained multiple time for cpp.compile() tasks

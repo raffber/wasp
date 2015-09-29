@@ -380,9 +380,9 @@ class Executor(object):
         """
         self._cancel()
         self._success = False
-        # invalidate the sources, such that this task is rerun
-        for source in task.task.sources:
-            source.signature(ns=self._ns).invalidate()
+        # invalidate the target nodes, such that this task is rerun
+        for t in task.task.targets:
+            t.signature(ns=self._ns).invalidate()
 
     def task_success(self, task, start=True):
         """
@@ -614,8 +614,9 @@ def run_task(task):
                 '{0}: {1}'.format(type(e).__name__,  str(e)))
         log.fatal(msg)
         real_task.success = False
-    for node in real_task.targets:
-        node.signature(task.ns).refresh()
+    if real_task.success:
+        for node in real_task.targets:
+            node.signature(task.ns).refresh()
     for target in task.targets:
         target.after_run(target=True)
     for source in task.sources:
