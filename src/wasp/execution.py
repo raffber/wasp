@@ -502,7 +502,7 @@ class ParallelExecutor(Executor):
         self._current_jobs = 0
         self._loop = EventLoop()
         if jobs is None:
-            jobs = cpu_count()
+            jobs = 2*cpu_count()
         self._jobs = jobs
         self._success_event = Event(self._loop).connect(self.task_success)
         self._failed_event = Event(self._loop).connect(self.task_failed)

@@ -198,7 +198,7 @@ def execute_tasks(name, tasks):
     ret = extensions.api.run_task_collection(tasks)
     if ret != NotImplemented:
         return ret
-    jobs = Argument('jobs', type=int).retrieve_all(default=1).value
+    jobs = Argument('jobs', type=int).retrieve_all(default=None).value
     produce = ctx.options.group(name)['target'].value
     if produce is not None:
         produce = nodes(produce)
