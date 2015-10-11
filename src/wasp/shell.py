@@ -1,3 +1,4 @@
+import os
 import sys
 from .task import Task
 from .node import FileNode
@@ -12,6 +13,9 @@ import shlex
 from time import sleep
 
 POLL_TIMEOUT = 0.05  # s
+
+INVALID_ENV_ARGUMENT = 'Argument `env` for shell must be in the format of ' \
+                       '{"name": "value"} or {"name": ["list", "of", "values"]}'
 
 
 class ShellTask(Task):
@@ -133,18 +137,56 @@ class ShellTask(Task):
         }
         return UnusedArgFormatter().format(s, **post_format_repl)
 
+    def _make_env(self):
+        envarg = self.arguments.value('env', default=None)
+        if envarg is None:
+            return os.environ
+        if self.arguments.value('clearenv', False):
+            env = {}
+        else:
+            env = dict(os.environ.copy().items())
+        assert isinstance(envarg, dict), INVALID_ENV_ARGUMENT
+        for k, v in envarg.items():
+            assert isinstance(k, str) and (isinstance(v, list) or isinstance(v, str)), INVALID_ENV_ARGUMENT
+            if isinstance(v, list):
+                v = ':'.join(v)
+            env[k] = v
+        return env
+
     def _run(self):
         """
         Formats, executes the shell command and postprocesses its output.
         """
         commandstring = self._format_cmd()
-        exit_code, out = run(commandstring, cwd=self._cwd, print=not self.log.pretty)
+        exit_code, out = run(commandstring, cwd=self._cwd, print=not self.log.pretty, env=self._make_env())
         self._out = out
         self._finished(exit_code, out.stdout, out.stderr)
         if self.success:
             self.log.info(self.log.format_success() + commandstring)
         self.printer.print(self.success, stdout=out.stdout, stderr=out.stderr,
                            exit_code=exit_code, commandstring=commandstring)
+
+    def use_arg(self, arg):
+        if arg.key == 'env':
+            curarg = self.arguments.get('env')
+            if curarg is None:
+                super().use_arg(arg)
+                return
+            assert arg.type == dict, INVALID_ENV_ARGUMENT
+            assert curarg.type == dict, INVALID_ENV_ARGUMENT
+            for k, v in arg.value.items():
+                assert isinstance(k, str), INVALID_ENV_ARGUMENT
+                assert isinstance(v, list) or isinstance(v, str), INVALID_ENV_ARGUMENT
+                curval = curarg.value[k]
+                assert isinstance(curval, list) or isinstance(curval, str), INVALID_ENV_ARGUMENT
+                if not isinstance(curval, list):
+                    curval = [curval]
+                if not isinstance(v, list):
+                    v = [v]
+                curval.extend(v)
+                curarg.value[k] = v
+            return
+        super().use_arg(arg)
 
     def __repr__(self):
         return '<class ShellTask: {0}>'.format(self.cmd)
@@ -280,7 +322,7 @@ class ProcessOut(object):
         return self._merged_cache
 
 
-def run(cmd, timeout=100, cwd=None, print=False):
+def run(cmd, timeout=100, cwd=None, print=False, env=None):
     """
     Executes a command ``cmd`` with the given ``timeout``.
 
@@ -294,7 +336,8 @@ def run(cmd, timeout=100, cwd=None, print=False):
     exit_code = None
     out = ProcessOut(print=print)
     try:
-        process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, cwd=cwd, universal_newlines=True)
+        process = Popen(cmd, stdout=PIPE, stderr=PIPE,
+                        shell=True, cwd=cwd, universal_newlines=True, env=env)
         # XXX: this is some proper hack, but it is quite unavoidable
         # maybe use different library?!
         time_running = 0
