@@ -5,8 +5,8 @@ from .node import FileNode
 from .argument import Argument, find_argumentkeys_in_string
 from .util import UnusedArgFormatter, is_iterable
 from .logging import LogStr
-from .fs import Directory
-from . import ctx
+from .fs import Directory, top_dir, Path
+from . import ctx, osinfo
 
 from subprocess import Popen, PIPE
 import shlex
@@ -39,7 +39,7 @@ class ShellTask(Task):
         self._cmd = cmd
         self._printer = None
         if cwd is None:
-            self._cwd = None
+            self._cwd = top_dir()
         else:
             self._cwd = Directory(cwd, make_absolute=True).path
         self._out = None
@@ -105,11 +105,15 @@ class ShellTask(Task):
         # who have not grown up with make, will probably use the less shouty version
         # and use lower-case strings.
         for key, arg in self.arguments.items():
-            if arg.type != str:
+            if isinstance(arg.value, Path):
+                value = arg.value.path
+            elif arg.type != str:
                 continue
+            else:
+                value = arg.value
             if '-' in key:
                 key = key.replace('-', '_')
-            value = quote(str(arg.value))
+            value = quote(str(value))
             kw[key.upper()] = value
             kw[key.lower()] = value
         return kw
@@ -362,4 +366,10 @@ def quote(s):
     Ensures that a shell command is properly quoted.
     Equivalent to ``shlex.quote``.
     """
+    # http://blogs.msdn.com/b/twistylittlepassagesallalike/archive/2011/04/23/everyone-quotes-arguments-the-wrong-way.aspx
+    if osinfo.windows:
+        # XXX this is huge hack and it will not work in many cases..
+        # but why does shlex.quote() use single quotes on windows as well?
+        # somehow escape for cmd.exe (this causes issues with program to invoke)
+        return '"' + s + '"'
     return shlex.quote(s)

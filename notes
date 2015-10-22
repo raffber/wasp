@@ -10,6 +10,7 @@ Next
  * clean task must be a special task executed *before* handle_options
  * an os dependent default path module
  * if using {builddir}/asdf in an argument, {builddir}/asdf is quoted => understand why and if this actually makes sense
+ * copy task is not really useful, atm its behaviour is pretty strange...
 
  * Better unit testing
  * More integration tests?

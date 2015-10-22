@@ -96,6 +96,7 @@ class Path(Serializable):
         """
         if isinstance(relto, Path):
             relto = relto.path
+        assert isinstance(relto, str), 'Expected either `Path` or `str` for argument relto.'
         if skip_if_abs and self.isabs:
             return Path(self, make_absolute=True)
         abspath = os.path.realpath(self._path)
@@ -221,6 +222,27 @@ class Path(Serializable):
         """
         return os.path.basename(self._path)
 
+    def join(self, *args, append=''):
+        """
+        Joins the positional arguments as path and appends a string to them.
+
+        :param append: String to append to path, e.g. a file extension.
+        """
+        new_args = []
+        for arg in args:
+            if isinstance(arg, File) or isinstance(arg, FileNode):
+                new_args.append(arg.path)
+            else:
+                assert isinstance(arg, str), 'Expected either File, FileNode' \
+                                             ' or str, but found `{0}`'.format(type(arg).__name__)
+                new_args.append(arg)
+        path = os.path.join(self.path, *new_args) + append
+        if os.path.isdir(path):
+            return Directory(path)
+        if os.path.isfile(path):
+            return File(path)
+        return Path(path)
+
 
 factory.register(Path)
 
@@ -248,27 +270,6 @@ class Directory(Path):
         Returns a copy of ``self``.
         """
         return Directory(self.path, relto=self._relto, make_absolute=self._absolute)
-
-    def join(self, *args, append=''):
-        """
-        Joins the positional arguments as path and appends a string to them.
-
-        :param append: String to append to path, e.g. a file extension.
-        """
-        new_args = []
-        for arg in args:
-            if isinstance(arg, File) or isinstance(arg, FileNode):
-                new_args.append(arg.path)
-            else:
-                assert isinstance(arg, str), 'Expected either File, FileNode' \
-                                             ' or str, but found `{0}`'.format(type(arg).__name__)
-                new_args.append(arg)
-        path = os.path.join(self.path, *new_args) + append
-        if os.path.isdir(path):
-            return Directory(path)
-        if os.path.isfile(path):
-            return File(path)
-        return Path(path)
 
     def create(self):
         """
