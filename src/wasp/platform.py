@@ -1,4 +1,4 @@
-from platform import system
+from platform import system, machine
 
 
 class OSInfo(object):
@@ -8,6 +8,7 @@ class OSInfo(object):
 
     def __init__(self):
         self._name = system()
+        self._x64 = machine().endswith('64')
 
     def name(self):
         """
@@ -42,3 +43,17 @@ class OSInfo(object):
         Returns True if the current OS is Apples OSX.
         """
         return self._name == 'Darwin'
+
+    @property
+    def x64(self):
+        """
+        Returns True if the OS is 64bits.
+        """
+        return self._x64
+
+    @property
+    def x86(self):
+        """
+        Returns True if the OS is 32bits.
+        """
+        return not self._x64
