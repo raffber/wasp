@@ -2,7 +2,7 @@ from . import options, ctx, CommandFailedError, decorators, StringOption, log
 from .main import run_command
 from .util import FunctionDecorator
 from .commands import Command, command
-from .option import FlagOption, handle_options, ArgumentOption
+from .option import FlagOption, handle_options, ArgumentOption, IntOption
 from .argument import Argument
 from .fs import remove
 from .cache import CACHE_FILE
@@ -90,9 +90,11 @@ def _handle_log_options(option_handler):
 
 
 @options
-def _add_argument_options(col):
+def _add_options(col):
     col.add(ArgumentOption(name='arguments', keys=['d', 'define'],
                            description='Adds arguments to ctx.arguments. E.g. -d cflags="-g -O0"'))
+    col.add(IntOption(name='jobs', keys=['j', 'jobs'], description='Specify number of jobs to run in parallel.'))
+
 
 @handle_options
 def _handle_argument_options(option_handler):

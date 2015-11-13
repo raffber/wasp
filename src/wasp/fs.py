@@ -15,6 +15,7 @@ from itertools import chain
 import os
 import re
 import shutil
+import sys
 
 from .node import FileNode
 from .task import Task
@@ -671,6 +672,8 @@ class FindTask(Task):
     """
     def __init__(self, *names, dirs=None, argprefix=None, required=True):
         super().__init__(always=True)
+        if dirs is None:
+            dirs = set(os.environ.get('PATH', '').split(os.pathsep))
         self._dirs = directories(dirs)
         self._names = list(names)
         if argprefix is None:
@@ -700,6 +703,7 @@ class FindTask(Task):
         for d in self.directories:
             if found:
                 break
+            assert isinstance(d, Directory)
             contents = None
             for name in self.names:
                 if isinstance(name, str):
