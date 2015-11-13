@@ -81,6 +81,12 @@ class Path(Serializable):
             self._relto = os.getcwd()
         self._absolute = make_absolute
 
+    def copy_to(self, target):
+        target = path(target)
+        if isinstance(target, Directory):
+            target = target.join(self.basename).path
+        shutil.copy(self.absolute.path, target)
+
     def copy(self):
         """
         Returns a copy of ``self``.
