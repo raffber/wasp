@@ -679,15 +679,23 @@ class FindTask(Task):
         self._argprefix = argprefix
         self._required = required
 
+    @property
+    def directories(self):
+        return self._dirs
+
+    @property
+    def names(self):
+        return self._names
+
     def _run(self):
         found = False
         result_file = ''
         result_dir = ''
-        for d in self._dirs:
+        for d in self.directories:
             if found:
                 break
             contents = None
-            for name in self._names:
+            for name in self.names:
                 if isinstance(name, str):
                     f = d.join(name)
                     if f.exists:
@@ -721,7 +729,7 @@ class FindTask(Task):
         pass
 
     def _print_fail(self):
-        str_names = [str(x) for x in self._names]
+        str_names = [str(x) for x in self.names]
         self.log.log_fail('Cannot find required file! Looking for: [{0}]'.format(', '.join(str_names)))
 
     def _print_success(self, file, dir):

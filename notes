@@ -8,9 +8,10 @@ Next
 -----
 
  * clean task must be a special task executed *before* handle_options
- * an os dependent default path module
- * if using {builddir}/asdf in an argument, {builddir}/asdf is quoted => understand why and if this actually makes sense
  * copy task is not really useful, atm its behaviour is pretty strange...
+ * windows: something with the signatures does not seem to work properly
+ * allow specifiying a "don't quote me" modifier in ShellTask
+ * find_... should also check an "argname" and do retrieve_all() on it
 
  * Better unit testing
  * More integration tests?
@@ -39,6 +40,8 @@ Bugs
 Lower Priorieties/Questions
 ============================
 
+ * an os dependent default path module
+ * if using {builddir}/asdf in an argument, {builddir}/asdf is quoted => understand why and if this actually makes sense
  * improve formatting in ./wasp diff
  * allow finding directories find( .... , directory=True)
  * add commandline options to tools

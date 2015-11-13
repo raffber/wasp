@@ -328,6 +328,8 @@ class FlagOption(Option):
     Option which is treated as a flag if it is specified on the command
     line, i.e. True is stored if the option is given.
     """
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
 
     def add_to_argparse(self, args):
         strings = []
@@ -341,9 +343,14 @@ class FlagOption(Option):
 
     def set_value(self, v):
         if v is None:
-            self._value = False
+            v = False
         assert isinstance(v, bool), 'Value must be a bool'
         self._value = v
+
+    def get_value(self):
+        return super().get_value()
+
+    value = property(get_value, set_value)
 
 
 factory.register(FlagOption)
