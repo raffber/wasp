@@ -83,12 +83,21 @@ class Path(Serializable):
         self._absolute = make_absolute
 
     def copy_to(self, target):
+        """
+        Copies the path to a ``target``.
+        :param target: Target directoy or path. If the target is a directory,
+            a new subdirectory with name ``self.basename`` is created.
+        :return: ``Path`` object representing the target.
+        """
         target = path(target)
         if isinstance(target, Directory):
-            target = target.join(self.basename).path
+            target = target.join(self.basename)
         else:
-            target = target.path
-        shutil.copy(self.absolute.path, target)
+            target = target
+        if target.exists:
+            target.remove(recursive=True)
+        shutil.copy(self.absolute.path, target.path)
+        return path(target)
 
     def copy(self):
         """
@@ -379,6 +388,28 @@ class Directory(Path):
             ret.append(self.join(fpath))
         return ret
 
+    def copy_to(self, target, recursive=True):
+        """
+        Copies the directory to a ``target``. If ``recursive = True``, the directory is
+        copied recursively.
+        :param target: Target directoy or path. If the target is a directory,
+            a new subdirectory with name ``self.basename`` is created.
+        :param recursive: Specifies if the directory is to copied recursively (default to True).
+        :return: ``Directory`` object representing the target.
+        """
+        target = path(target)
+        if isinstance(target, Directory):
+            target = target.join(self.basename)
+        else:
+            target = target
+        if target.exists:
+            target.remove(recursive=True)
+        if recursive:
+            shutil.copytree(self.absolute.path, target.path)
+        else:
+            shutil.copy(self.absolute.path, target.path)
+        return directory(target)
+
 
 factory.register(Directory)
 
@@ -542,9 +573,7 @@ def path(arg):
             return Directory(arg)
         else:
             return File(arg)
-    elif isinstance(arg, File):
-        return arg
-    elif isinstance(arg, Directory):
+    elif isinstance(arg, Path):
         return arg
     raise ValueError('No compatible type given to `path()`.')
 

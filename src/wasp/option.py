@@ -423,7 +423,9 @@ class StringOption(Option):
         strings = []
         for prefix, key in zip(self._prefix, self._keys):
             strings.append(prefix + key)
-        args.add_argument(*strings, default=self.value, help=self._description, dest=self.name)
+        args.add_argument(*strings, default=self.value,
+                          nargs=1, type=str, help=self._description,
+                          dest=self.name)
 
     def retrieve_from_dict(self, args):
         self.value = args.get(self.name, None)

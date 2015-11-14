@@ -153,7 +153,7 @@ class ShellTask(Task):
         for k, v in envarg.items():
             assert isinstance(k, str) and (isinstance(v, list) or isinstance(v, str)), INVALID_ENV_ARGUMENT
             if isinstance(v, list):
-                v = ':'.join(v)
+                v = os.pathsep.join(v)
             env[k] = v
         return env
 
