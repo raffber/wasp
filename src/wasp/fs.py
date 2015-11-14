@@ -86,6 +86,8 @@ class Path(Serializable):
         target = path(target)
         if isinstance(target, Directory):
             target = target.join(self.basename).path
+        else:
+            target = target.path
         shutil.copy(self.absolute.path, target)
 
     def copy(self):
@@ -514,7 +516,7 @@ def files(*args, ignore=False):
         elif isinstance(f, File):
             ret.append(f)
         elif is_iterable(f):
-            ret.extend(files(*f))
+            ret.extend(files(*f, ignore=ignore))
         elif not ignore:
             raise ValueError('No compatible type given to `files()`.')
     return ret
@@ -585,7 +587,7 @@ def paths(*args, ignore=False):
     ret = []
     for f in args:
         if is_iterable(f):
-            ret.extend(paths(*f))
+            ret.extend(paths(*f, ignore=ignore))
         else:
             try:
                 p = path(f)
@@ -619,7 +621,6 @@ def directory(arg):
                      ', type was `{0}`.'.format(arg.__class__.__name__))
 
 
-
 def directories(*args, ignore=False):
     """
     Returns a list of :class:`Directory` objects.
@@ -648,7 +649,7 @@ def directories(*args, ignore=False):
         elif isinstance(f, Path):
             ret.append(Directory(f.path))
         elif is_iterable(f):
-            ret.extend(directories(*f))
+            ret.extend(directories(*f, ignore=ignore))
         elif not ignore:
             raise ValueError('No compatible type given to `directories()`'
                              ', type was `{0}`.'.format(f.__class__.__name__))
