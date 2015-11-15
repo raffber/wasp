@@ -13,6 +13,10 @@ class MissingArgumentError(Exception):
     pass
 
 
+class TaskFailedError(Exception):
+    pass
+
+
 class Task(object):
     """
     ``Tasks`` are the central unit of execution of ``wasp``. A build process is formulated as

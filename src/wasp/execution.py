@@ -1,6 +1,6 @@
 import traceback
 from multiprocessing import cpu_count
-from .task import Task, TaskGroup, MissingArgumentError, TaskCollection
+from .task import Task, TaskGroup, MissingArgumentError, TaskCollection, TaskFailedError
 from .util import EventLoop, Event, is_iterable, ThreadPool
 from . import log, ctx, extensions
 
@@ -609,6 +609,9 @@ def run_task(task):
         else:
             real_task.on_fail()
         real_task.postprocess()
+    except TaskFailedError as e:
+        real_task.success = False
+        log.fatal(str(e))
     except Exception as e:
         msg = log.format_fail(''.join(traceback.format_tb(e.__traceback__)),
                 '{0}: {1}'.format(type(e).__name__,  str(e)))

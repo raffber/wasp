@@ -1,10 +1,12 @@
 import os
 import zlib
 import binascii
-from wasp import shell, tool, ctx, chain, recurse
+from wasp.util import first
+from wasp import shell, tool, ctx, recurse, FileNode
 from wasp.ext.watch import watch
 import wasp
-from wasp.fs import find_exe, Directory
+from wasp.fs import find_exe, Directory, file, files
+from wasp.task import TaskFailedError
 
 sphinx = tool('sphinx')
 
@@ -40,10 +42,14 @@ def recursive_list(dirname):
 
 
 def do_create_wasp(t):
-    target = str(t.sources[0])
+    source = first(files(t.sources, ignore=True))
+    target = first(files(t.targets, ignore=True))
+    if source is None or target is None:
+        raise TaskFailedError('CreateWasp: source or target not given.')
+    source.copy_to(target)
     waspdir = Directory('src')
     v = wasp.version
-    with open(target, 'a') as out:
+    with open(str(target), 'a') as out:
         out.write('\n\nwasp_packed=[')
         for f in waspdir.glob('.*\.py$', recursive=True):
             relpath = os.path.relpath(f.path, start=waspdir.path)
@@ -65,8 +71,6 @@ if __name__ == '__main__':
 
 @wasp.command('create-wasp', description='Builds the wasp redistributable')
 def create_wasp():
-    dest = ctx.builddir.join('wasp')
-    c = chain()
-    c += wasp.copy('dist/wasp-prebuild', dest)
-    c += wasp.Task(sources=dest, fun=do_create_wasp, always=True)
-    return c
+    return wasp.Task(sources='dist/wasp-prebuild',
+                     targets=ctx.builddir.join('wasp'),
+                     fun=do_create_wasp, always=True)

@@ -328,6 +328,8 @@ class FlagOption(Option):
     Option which is treated as a flag if it is specified on the command
     line, i.e. True is stored if the option is given.
     """
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
 
     def add_to_argparse(self, args):
         strings = []
@@ -341,9 +343,14 @@ class FlagOption(Option):
 
     def set_value(self, v):
         if v is None:
-            self._value = False
+            v = False
         assert isinstance(v, bool), 'Value must be a bool'
         self._value = v
+
+    def get_value(self):
+        return super().get_value()
+
+    value = property(get_value, set_value)
 
 
 factory.register(FlagOption)
@@ -416,7 +423,9 @@ class StringOption(Option):
         strings = []
         for prefix, key in zip(self._prefix, self._keys):
             strings.append(prefix + key)
-        args.add_argument(*strings, default=self.value, help=self._description, dest=self.name)
+        args.add_argument(*strings, default=self.value,
+                          nargs=1, type=str, help=self._description,
+                          dest=self.name)
 
     def retrieve_from_dict(self, args):
         self.value = args.get(self.name, None)
@@ -445,7 +454,11 @@ class IntOption(Option):
                           help=self._description, dest=self.name)
 
     def retrieve_from_dict(self, args):
-        self.value = args.get(self.name, None)
+        # TODO: why [0]?
+        v = args.get(self.name, None)
+        if isinstance(v, list):
+            v = v[0]
+        self.value = v
 
     def set_value(self, v):
         if v is None:

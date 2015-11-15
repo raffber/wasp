@@ -15,6 +15,7 @@ from itertools import chain
 import os
 import re
 import shutil
+import sys
 
 from .node import FileNode
 from .task import Task
@@ -80,6 +81,23 @@ class Path(Serializable):
         if not self.isabs and relto is None:
             self._relto = os.getcwd()
         self._absolute = make_absolute
+
+    def copy_to(self, target):
+        """
+        Copies the path to a ``target``.
+        :param target: Target directoy or path. If the target is a directory,
+            a new subdirectory with name ``self.basename`` is created.
+        :return: ``Path`` object representing the target.
+        """
+        target = path(target)
+        if isinstance(target, Directory):
+            target = target.join(self.basename)
+        else:
+            target = target
+        if target.exists:
+            target.remove(recursive=True)
+        shutil.copy(self.absolute.path, target.path)
+        return path(target)
 
     def copy(self):
         """
@@ -370,6 +388,28 @@ class Directory(Path):
             ret.append(self.join(fpath))
         return ret
 
+    def copy_to(self, target, recursive=True):
+        """
+        Copies the directory to a ``target``. If ``recursive = True``, the directory is
+        copied recursively.
+        :param target: Target directoy or path. If the target is a directory,
+            a new subdirectory with name ``self.basename`` is created.
+        :param recursive: Specifies if the directory is to copied recursively (default to True).
+        :return: ``Directory`` object representing the target.
+        """
+        target = path(target)
+        if isinstance(target, Directory):
+            target = target.join(self.basename)
+        else:
+            target = target
+        if target.exists:
+            target.remove(recursive=True)
+        if recursive:
+            shutil.copytree(self.absolute.path, target.path)
+        else:
+            shutil.copy(self.absolute.path, target.path)
+        return directory(target)
+
 
 factory.register(Directory)
 
@@ -507,7 +547,7 @@ def files(*args, ignore=False):
         elif isinstance(f, File):
             ret.append(f)
         elif is_iterable(f):
-            ret.extend(files(*f))
+            ret.extend(files(*f, ignore=ignore))
         elif not ignore:
             raise ValueError('No compatible type given to `files()`.')
     return ret
@@ -533,9 +573,7 @@ def path(arg):
             return Directory(arg)
         else:
             return File(arg)
-    elif isinstance(arg, File):
-        return arg
-    elif isinstance(arg, Directory):
+    elif isinstance(arg, Path):
         return arg
     raise ValueError('No compatible type given to `path()`.')
 
@@ -578,7 +616,7 @@ def paths(*args, ignore=False):
     ret = []
     for f in args:
         if is_iterable(f):
-            ret.extend(paths(*f))
+            ret.extend(paths(*f, ignore=ignore))
         else:
             try:
                 p = path(f)
@@ -612,7 +650,6 @@ def directory(arg):
                      ', type was `{0}`.'.format(arg.__class__.__name__))
 
 
-
 def directories(*args, ignore=False):
     """
     Returns a list of :class:`Directory` objects.
@@ -641,7 +678,7 @@ def directories(*args, ignore=False):
         elif isinstance(f, Path):
             ret.append(Directory(f.path))
         elif is_iterable(f):
-            ret.extend(directories(*f))
+            ret.extend(directories(*f, ignore=ignore))
         elif not ignore:
             raise ValueError('No compatible type given to `directories()`'
                              ', type was `{0}`.'.format(f.__class__.__name__))
@@ -665,6 +702,8 @@ class FindTask(Task):
     """
     def __init__(self, *names, dirs=None, argprefix=None, required=True):
         super().__init__(always=True)
+        if dirs is None:
+            dirs = set(os.environ.get('PATH', '').split(os.pathsep))
         self._dirs = directories(dirs)
         self._names = list(names)
         if argprefix is None:
@@ -679,15 +718,24 @@ class FindTask(Task):
         self._argprefix = argprefix
         self._required = required
 
+    @property
+    def directories(self):
+        return self._dirs
+
+    @property
+    def names(self):
+        return self._names
+
     def _run(self):
         found = False
         result_file = ''
         result_dir = ''
-        for d in self._dirs:
+        for d in self.directories:
             if found:
                 break
+            assert isinstance(d, Directory)
             contents = None
-            for name in self._names:
+            for name in self.names:
                 if isinstance(name, str):
                     f = d.join(name)
                     if f.exists:
@@ -721,7 +769,7 @@ class FindTask(Task):
         pass
 
     def _print_fail(self):
-        str_names = [str(x) for x in self._names]
+        str_names = [str(x) for x in self.names]
         self.log.log_fail('Cannot find required file! Looking for: [{0}]'.format(', '.join(str_names)))
 
     def _print_success(self, file, dir):
