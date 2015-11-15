@@ -859,7 +859,6 @@ class CopyTask(Task):
     :param permsissions: UNIX style representation of permissions (typically given in octal).
     :param recursive: Determines whether directories are to be copied recursively.
     """
-    # TODO: port to windows....
 
     def __init__(self, fs, destination, permissions=None, recursive=False):
         self._recursive = recursive
@@ -876,23 +875,9 @@ class CopyTask(Task):
 
     def _run(self):
         self.success = True
+        destpath = self._destination.path
         for f in self._files:
-            destpath = self._destination.path
-            formatted = format_string(destpath, self.arguments)
-            try:
-                if self._recursive:
-                    shutil.copytree(str(f), formatted)
-                else:
-                    shutil.copy2(str(f), formatted)
-                if self._permissions is not None:
-                    os.chmod(formatted, self._permissions)
-                msg = 'Copy {0} to {1}'.format(str(f), formatted)
-                self.log.info(self.log.format_success(msg))
-            except OSError as e:
-                msg = 'Failed to copy `{0}` to `{1}`: {2}'.format(str(f), formatted, str(e))
-                self.log.fatal(self.log.format_fail(msg))
-                self.success = False
-                break
+            f.copy_to(destpath)
 
 
 def copy(source, destination, permissions=None, recursive=False):
@@ -900,6 +885,28 @@ def copy(source, destination, permissions=None, recursive=False):
     See :class:`CopyTask`. Accepts the same parameters.
     """
     return CopyTask(source, destination, permissions=permissions, recursive=recursive)
+
+
+class MoveTask(Task):
+    def __init__(self, fs, destination, permissions=None, recursive=False):
+        self._recursive = recursive
+        self._permissions = permissions
+        if isinstance(destination, str):
+            if destination.endswith('/') or destination.endswith('\\'):
+                destination = Directory(destination)
+            else:
+                destination = File(destination)
+        assert isinstance(destination, Path)
+        self._destination = destination
+        self._files = paths(fs, ignore=True)
+        super().__init__(targets=fs, always=True)
+
+    def _run(self):
+        self.success = True
+        destpath = self._destination.path
+        for f in self._files:
+            f.move_to(destpath)
+
 
 
 class FileInstallGenerator(Generator):
