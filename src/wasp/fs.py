@@ -99,6 +99,23 @@ class Path(Serializable):
         shutil.copy(self.absolute.path, target.path)
         return path(target)
 
+    def move_to(self, target):
+        """
+        Moves the path to a ``target``.
+        :param target: Target directoy or path. If the target is a directory,
+            a new subdirectory with name ``self.basename`` is created.
+        :return: ``Path`` object representing the target.
+        """
+        target = path(target)
+        if isinstance(target, Directory):
+            target = target.join(self.basename)
+        else:
+            target = target
+        if target.exists:
+            target.remove(recursive=True)
+        shutil.move(self.absolute.path, target.path)
+        return path(target)
+
     def copy(self):
         """
         Returns a copy of ``self``.
@@ -856,13 +873,11 @@ class CopyTask(Task):
     :param fs: List of files to be copied. Accepts the same input as :func:`paths`.
     :param destination: Destination path. If it ends with a '/' (or '\\') the destination
         is considered a directory and a new file is created in the directory.
-    :param permsissions: UNIX style representation of permissions (typically given in octal).
     :param recursive: Determines whether directories are to be copied recursively.
     """
 
-    def __init__(self, fs, destination, permissions=None, recursive=False):
+    def __init__(self, fs, destination, recursive=False):
         self._recursive = recursive
-        self._permissions = permissions
         if isinstance(destination, str):
             if destination.endswith('/') or destination.endswith('\\'):
                 destination = Directory(destination)
@@ -877,20 +892,21 @@ class CopyTask(Task):
         self.success = True
         destpath = self._destination.path
         for f in self._files:
-            f.copy_to(destpath)
+            if isinstance(f, Directory):
+                f.copy_to(destpath, recursive=self._recursive)
+            else:
+                f.copy_to(destpath)
 
 
-def copy(source, destination, permissions=None, recursive=False):
+def copy(source, destination, recursive=False):
     """
     See :class:`CopyTask`. Accepts the same parameters.
     """
-    return CopyTask(source, destination, permissions=permissions, recursive=recursive)
+    return CopyTask(source, destination, recursive=recursive)
 
 
 class MoveTask(Task):
-    def __init__(self, fs, destination, permissions=None, recursive=False):
-        self._recursive = recursive
-        self._permissions = permissions
+    def __init__(self, fs, destination):
         if isinstance(destination, str):
             if destination.endswith('/') or destination.endswith('\\'):
                 destination = Directory(destination)
@@ -907,6 +923,12 @@ class MoveTask(Task):
         for f in self._files:
             f.move_to(destpath)
 
+
+def move(source, destination):
+    """
+    See :class:`MoveTask`. Accepts the same parameters.
+    """
+    return MoveTask(source, destination)
 
 
 class FileInstallGenerator(Generator):
