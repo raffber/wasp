@@ -99,6 +99,8 @@ class OptionHandler(object):
             self._commands.append(com)
             ctx.options.group(com).retrieve_from_dict(more)
             extra = more['other_commands']
+
+    def handle_options(self):
         for fun in decorators.handle_options:
             fun(self)
 
@@ -532,6 +534,9 @@ def run(dir_path):
         extensions.api.retrieve_options(ctx.options)
         options.parse()
         extensions.api.options_parsed(ctx.options)
+        if 'clean' in options.commands:
+            run_command('clean')
+        options.handle_options()
         successs = handle_commands(options)
     except FatalError:
         successs = False
