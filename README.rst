@@ -1,4 +1,3 @@
-
 Welcome To wasp
 ===============
 
@@ -47,7 +46,7 @@ Features and Non-Features
 wasp is for you if....
 ----------------------
 
- * ... you want
+ * ... you want flexible build tool for automating everything
 
  * ... you want to be able to create a build system that *just works* and can
     easily be installed on all platforms.
@@ -56,7 +55,7 @@ wasp is for you if....
 wasp is *not* for you if...
 ----------------------------
 
- * ... you only have simple tasks to perform. You're probably better of with one
+ * ... you only have trivial tasks to perform. You're probably better of with one
  of the not so general purpose tools. (e.g. gradle for building java stuff,
  QMAKE for building qt apps or grunt.js for doing web related things)
 

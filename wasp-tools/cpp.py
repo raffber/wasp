@@ -1,23 +1,218 @@
-from wasp import ShellTask, find_exe, Task, quote
+import os
+from wasp import ShellTask, find_exe, Task, quote, empty
 from wasp import group
-from wasp import nodes, FileNode, node
-from wasp import file, directory, osinfo
+from wasp import nodes, FileNode, node, Argument
+from wasp import file, directory, osinfo, StringOption
+from wasp.shell import run as run_command
+
 from wasp.util import is_iterable
+import wasp
 import re
 
 
-def find_cc(produce=True):
-    t = find_exe('gcc', argprefix=['cc', 'ld'])
-    if produce:
-        t.produce(':cpp/cc')
-    return t
+if not osinfo.linux and not osinfo.windows:
+    raise ImportError('`cpp` tool does not support your platform')
 
 
-def find_cxx(produce=True):
-    t = find_exe('g++', argprefix=['cxx', 'ld'])
-    if produce:
-        t.produce(':cpp/cxx')
-    return t
+@wasp.options
+def options(opt):
+    if osinfo.linux:
+        opt.add(StringOption('cc', 'Set the C compiler executable.'))
+        opt.add(StringOption('cxx', 'Set the C++ compiler executable.'))
+        opt.add(StringOption('ld', 'Set the linker compiler executable.'))
+    elif osinfo.windows:
+        opt.add(StringOption('msvc-path', 'Set the path to the base folder where MSVC is located.'))
+        opt.add(StringOption('msvc-arch', 'Set the architecture to be used for compiling (`x86` or `x64`).'))
+
+
+class CompilerCli(object):
+
+    def __init__(self, compilername):
+        self._name = compilername
+
+    @property
+    def position_independent_code(self):
+        if self._name in ['gcc', 'clang']:
+            return '-fPIC'
+        return ''
+
+    def include_dir(self, directory):
+        return '-I' + quote(str(directory))
+
+    @property
+    def enable_exceptions(self):
+        if self._name == 'msvc':
+            return '/EHsc'
+        return ''
+
+    def default_flags(self, debug=False, arch=None):
+        if self._name == 'msvc':
+            if arch == 'x64':
+                if debug:
+                    return ['/nologo', '/Od', '/MDd', '/W3', '/GS-', '/Z7', '/D_DEBUG']
+                return ['/nologo', '/Ox', '/MD', '/W3', '/GS-', '/DNDEBUG']
+            else:  # x86 or else
+                if debug:
+                    return ['/nologo', '/Od', '/MDd', '/W3', '/Z7', '/D_DEBUG']
+                return ['/nologo', '/Ox', '/MD', '/W3', '/DNDEBUG']
+        return '-std=c++14 ' + ('-O0 -g' if debug else '-O2')
+
+
+class LinkerCli(object):
+
+    def __init__(self, linkername):
+        self._name = linkername
+
+    def link(self, library):
+        library = str(library)
+        if self._name == 'gcc' or self._name == 'clang':
+            if '/' in library or library.startswith('lib'):
+                # use the file name directly
+                return library
+            else:
+                # file name is squashed already
+                return '-l' + library
+        elif self._name == 'msvc':
+            return library
+
+
+if osinfo.windows:
+    DEFAULT_COMPILER = 'msvc'
+    DEFAULT_LINKER = 'msvc'
+
+    MSVC_VARS = ['VS140COMNTOOLS', 'VS120COMNTOOLS', 'VS100COMNTOOLS', 'VS90COMNTOOLS', 'VS80COMNTOOLS']
+    RELEVANT_ENV_VARS = ['lib', 'include', 'path', 'libpath']
+    ARCH_VCVARS_ARG = {'x86': 'x86', 'x64': 'amd64'}
+
+    class MsvcError(Exception):
+        pass
+
+
+    class FindMsvc(Task):
+        def __init__(self, msvcpath=None, arch=None, debug=False):
+            super().__init__()
+            self._arch = arch
+            if msvcpath is not None:
+                self._msvcpath = directory(msvcpath)
+            else:
+                self._msvcpath = None
+            self._env = {}
+            self._debug = debug
+
+        def _retrieve_arch(self):
+            if osinfo.x64:
+                self._arch = 'x64'
+            else:
+                self._arch = 'x86'
+
+        def _retrieve_msvc(self):
+            for varname in MSVC_VARS:
+                v = os.environ.get(varname, None)
+                if v is not None:
+                    if directory(v).exists:
+                        self._msvcpath = directory(v).join('../../VC').absolute
+                        return
+
+        def _source(self):
+            vcvars = self._msvcpath.join('vcvarsall.bat')
+            if not vcvars.exists:
+                raise MsvcError('`vcvarsall.bat` does not exist in `{0}`. '
+                                'Please specify a valid path to MSVC.'.format(self._msvcpath))
+            arch = ARCH_VCVARS_ARG.get(self._arch, 'x86')
+            exit_code, io = run_command('"{vcvars}" {arch} & set'.format(vcvars=vcvars, arch=arch))
+            for line in io.stdout.split('\n'):
+                splits = line.strip().split('=')
+                if len(splits) != 2:
+                    continue
+                varname, varvalue = splits[0].lower(), splits[1]
+                if varname in RELEVANT_ENV_VARS:
+                    subpaths = varvalue.split(os.pathsep)
+                    # ignore duplicates
+                    self._env[varname] = subpaths
+            for var in RELEVANT_ENV_VARS:
+                if var not in self._env:
+                    raise MsvcError('`vcvarsall.bat` in `{0}` returned '
+                                    'an invalid environment.'.format(self._msvcpath))
+
+        def _run(self):
+            try:
+                if self._arch is None:
+                    self._retrieve_arch()
+                if self._msvcpath is None:
+                    self._retrieve_msvc()
+                self._source()
+                cl = self._find_exe("cl.exe")
+                self._result.update({
+                    'cc': cl,
+                    'cxx': cl,
+                    'ld': self._find_exe("link.exe"),
+                    'rc': self._find_exe("rc.exe"),
+                    'lib': self._find_exe("lib.exe"),
+                    'mc': self._find_exe("mc.exe"),
+                    'env': self._env,
+                    'arch': self._arch,
+                    'debug': self._debug
+                })
+                self.success = True
+            except MsvcError as e:
+                self.log.fatal(str(e))
+                self.success = False
+
+        def _find_exe(self, name):
+            for path in self._env['path']:
+                ret = directory(path).join(name)
+                if ret.exists:
+                    return ret.path
+            raise MsvcError('Could not find executable `{0}` '
+                            'in environment returned from `vcvarsall.bat`'.format(name))
+
+    def find_cc(use_default=True, debug=False):
+        if use_default:
+            msvcpath = Argument('msvc_path').retrieve_all().value
+            arch = Argument('msvc_arch').retrieve_all().value
+            t = FindMsvc(msvcpath=msvcpath, arch=arch, debug=debug)
+            t.produce(':cpp/cc')
+            t.produce(':cpp/cxx')
+            t.produce(':cpp/ld')
+            return t
+        return FindMsvc()
+
+    find_cxx = find_cc
+    find_ld = find_cc
+
+elif osinfo.linux:
+    DEFAULT_COMPILER = 'gcc'
+    DEFAULT_LINKER = 'gcc'
+
+
+    def find_cc(debug=False, use_default=True):
+        if use_default:
+            cc = Argument('cc').retrieve_all().value
+            t = find_exe('gcc', argprefix=['cc', 'ld'])
+            if cc is None:
+                t.use(cc=cc)
+            else:
+                t = empty().use(cc=cc)
+            t.use(debug=debug)
+            t.produce(':cpp/cc')
+        else:
+            t = find_exe('gcc', argprefix=['cc', 'ld'])
+        return t
+
+
+    def find_cxx(debug=False, use_default=True):
+        if use_default:
+            cxx = Argument('cxx').retrieve_all().value
+            t = find_exe('g++', argprefix=['cxx', 'ld'])
+            if cxx is None:
+                t.use(cxx=cxx)
+            else:
+                t = empty().use(cxx=cxx)
+            t.use(debug=debug)
+            t.produce(':cpp/cxx')
+        else:
+            t = find_exe('g++', argprefix=['cxx', 'ld'])
+        return t
 
 
 class DependencyScan(Task):
@@ -42,6 +237,7 @@ class DependencyScan(Task):
         if target is None:
             target = node(':cpp/{0}'.format(str(f)))
         super().__init__(sources=f, targets=target)
+        self._target_node = target
         self._f = f
         self.arguments.add(includes=[])
 
@@ -59,7 +255,12 @@ class DependencyScan(Task):
     def _run(self):
         headers = set()
         self._scan(headers, self._f, 1)
-        self.result['headers'] = list(str(x) for x in headers)
+        headers = set(str(x) for x in headers)
+        previous_headers = set(self._target_node.read().value('headers', []))
+        new_headers = headers - previous_headers
+        self.result['headers'] = list(headers)
+        # make sure the new headers are included in the database
+        self.targets.extend(nodes(new_headers))
         self.success = True
 
     def _scan(self, headers, header, current_depth):
@@ -92,8 +293,10 @@ class DependencyScan(Task):
 
 
 class CompileTask(ShellTask):
+    extensions = []
 
     def _init(self):
+        self._compilername = DEFAULT_COMPILER
         csrc = []
         for src in self.sources:
             if not isinstance(src, FileNode):
@@ -104,6 +307,16 @@ class CompileTask(ShellTask):
                 headers = node(':cpp/{0}'.format(src)).read().value('headers', [])
                 self.sources.extend(nodes(headers))
         self.arguments['csources'] = csrc
+
+    def _prepare(self):
+        self._compilername = self.arguments.value('compilername', DEFAULT_COMPILER)
+        cli = CompilerCli(self._compilername)
+        self.use(cflags=cli.position_independent_code)
+        self.use(cflags=cli.enable_exceptions)
+        self.use(cflags=cli.default_flags(
+            debug=self.arguments.value('debug', False),
+            arch=self.arguments.value('arch', None)
+        ))
 
     def use_arg(self, arg):
         if arg.key in ['cflags', 'includes']:
@@ -116,16 +329,23 @@ class CompileTask(ShellTask):
         include = self.arguments.value('includes', [])
         # relative directories must be mapped relative to self._cwd
         # unless they are given as an absolute path
-        include = ['-I' + directory(x).relative(self._cwd, skip_if_abs=True).path for x in include]
+        cli = CompilerCli(self._compilername)
+        include = [cli.include_dir(directory(x).relative(self._cwd, skip_if_abs=True).path) for x in include]
         kw['INCLUDES'] = ' '.join(set(include))
         kw['CFLAGS'] = ' '.join(set(self.arguments.value('cflags', [])))
-        kw['CSOURCES'] = ' '.join(set(self.arguments.value('csources')))
+        kw['CSOURCES'] = ' '.join(set(self.arguments.value('csources', [])))
         return kw
 
 
 class CxxCompile(CompileTask):
     extensions = ['cxx', 'cpp', 'c++']
-    cmd = '{CXX} {CFLAGS} {INCLUDES} -c -o {TGT} {CSOURCES}'
+
+    @property
+    def cmd(self):
+        if self._compilername == 'msvc':
+            return '{CXX} {CFLAGS} {INCLUDES} /c /Fo{TGT} {CSOURCES}'
+        else:
+            return '{CXX} {CFLAGS} {INCLUDES} -c -o {TGT} {CSOURCES}'
 
     def _init(self):
         super()._init()
@@ -134,7 +354,13 @@ class CxxCompile(CompileTask):
 
 class CCompile(CompileTask):
     extensions = ['c']
-    cmd = '{CC} {CFLAGS} {INCLUDES} -c -o {TGT} {CSOURCES}'
+
+    @property
+    def cmd(self):
+        if self._compilername == 'msvc':
+            return '{CC} {CFLAGS} {INCLUDES} /c /Fo{TGT} {CSOURCES}'
+        else:
+            return '{CC} {CFLAGS} {INCLUDES} -c -o {TGT} {CSOURCES}'
 
     def _init(self):
         super()._init()
@@ -142,31 +368,35 @@ class CCompile(CompileTask):
 
 
 class Link(ShellTask):
-    cmd = '{LD} {LDFLAGS} {LIBRARIES} -o {TGT} {SRC}'
+    def _init(self):
+        super()._init()
+        self._linkername = DEFAULT_LINKER
+
+    def _prepare(self):
+        super()._prepare()
+        self._linkername = self.arguments.value('linkername', DEFAULT_LINKER)
+
+    @property
+    def cmd(self):
+        if self._linkername == 'msvc':
+            return '{LD} {LDFLAGS} {LIBRARIES} /OUT:{TGT} {SRC}'
+        else:
+            return '{LD} {LDFLAGS} {LIBRARIES} -o {TGT} {SRC} {STATIC_LIBS}'
 
     def use_arg(self, arg):
-        if arg.key in ['ldflags', 'libraries']:
+        if arg.key in ['ldflags', 'libraries', 'static_libraries']:
             self.use_catenate(arg)
             return
         super().use_arg(arg)
 
     def _process_args(self):
         kw = super()._process_args()
-        libraries = self.arguments.value('libraries')
-        # libraries = [l[3:] if l.startswith('lib') else l for l in libraries]
-        libs_cmdline = []
-        if osinfo.linux:
-            for l in libraries:
-                if '/' in l or l.startswith('lib'):
-                    # use the file name directly
-                    libs_cmdline.append(l)
-                else:
-                    # file name is squashed already
-                    libs_cmdline.append('-l' + l)
-        else:
-            raise NotImplementedError  # TODO ...
+        libraries = self.arguments.value('libraries', [])
+        cli = LinkerCli(self._linkername)
+        libs_cmdline = [cli.link(x) for x in libraries]
         kw['LIBRARIES'] = ' '.join([quote(l) for l in libs_cmdline])
         kw['LDFLAGS'] = ' '.join(set(self.arguments.value('ldflags', [])))
+        kw['STATIC_LIBS'] = ' '.join(set(self.arguments.value('static_libraries', [])))
         return kw
 
 
@@ -198,10 +428,17 @@ def compile(sources, use_default=True):
     return group(ret)
 
 
-def link(obj_files, target='main', use_default=True, cpp=True):
+def link(obj_files, target='main', use_default=True, cpp=True, shared=False):
     t = Link(sources=nodes(obj_files), targets=file(target).to_builddir())
     if use_default:
         ldnode = ':cpp/cxx' if cpp else ':cpp/cc'
         spawner = find_cxx if cpp else find_cc
-        t.use(ldnode, libraries=['stdc++', 'c']).require('ld', spawn=spawner)
+        if osinfo.linux:
+            t.use(libraries=['stdc++', 'c', 'pthread'])
+        t.use(ldnode).require('ld', spawn=spawner)
+    if shared:
+        if osinfo.windows:
+            t.use(ldflags='/dll')
+        else:
+            t.use(ldflags='-shared')
     return t

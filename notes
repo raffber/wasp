@@ -7,7 +7,21 @@ Current:
 Next
 -----
 
- * copy task is not really useful, atm its behaviour is pretty strange...
+[FAIL]    File "/home/raff/coding/capnqml/.wasp/wasp/execution.py", line 606, in run_task
+    ~~      real_task.run()
+    ~~    File "/home/raff/coding/capnqml/.wasp/wasp/util.py", line 115, in __call__
+    ~~      ret.append(callable_(self._arg, *args, **kwargs))
+    ~~    File "/home/raff/coding/capnqml/.wasp/wasp/task.py", line 95, in <lambda>
+    ~~      self._run_list.append(lambda x: self._run())
+    ~~    File "wasp-tools/cpp.py", line 257, in _run
+    ~~      self._scan(headers, self._f, 1)
+    ~~    File "wasp-tools/cpp.py", line 271, in _scan
+    ~~      with open(str(header), 'r') as f:
+    ~~
+    ~~  FileNotFoundError: [Errno 2] No such file or directory: 'src/test/test-message.capnp.c++'
+
+
+ * DONT! rerun successful tasks which are dependencies
  * windows: something with the signatures does not seem to work properly
  * allow specifiying a "don't quote me" modifier in ShellTask
  * BUG: options-with-hyphens get converted to options_with_hyphens
