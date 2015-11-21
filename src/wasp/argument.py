@@ -226,9 +226,9 @@ class Argument(Serializable):
         """
         if self._required_type is not None and value is not None:
             self._value = (self._required_type)(value)
-            # if not isinstance(value, self._required_type):
-            #     raise TypeError('Argument {0} must be of type {1}, but found type {2}!'.format(
-            #         self.key, self._required_type.__name__, type(value).__name__))
+            if not isinstance(value, self._required_type):
+                raise TypeError('Argument {0} must be of type {1}, but found type {2}!'.format(
+                    self.key, self._required_type.__name__, type(value).__name__))
             return
         if self._required_type is None and value is not None:
             self._use_type(type(value))

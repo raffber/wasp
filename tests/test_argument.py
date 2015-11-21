@@ -1,5 +1,5 @@
-from . import setup_context
-from wasp import ArgumentCollection, Argument, arg, value, ctx, Metadata, FlagOption, Context
+from tests import setup_context
+from wasp import ArgumentCollection, Argument, arg, value, ctx, Metadata, FlagOption, Context, StringOption
 from wasp import format_string, find_argumentkeys_in_string
 from wasp.option import OptionsCollection
 
@@ -47,7 +47,7 @@ def test_argument_retrieve():
     arg = Argument('foo').retrieve(ctx.meta)
     assert arg.value == 'bar'
     col = OptionsCollection()
-    col.add(FlagOption('foo', 'Enables foo for testing.', keys='somethingelse'))
+    col.add(StringOption('foo', 'Enables foo for testing.', keys='somethingelse'))
     col.retrieve_from_dict({'foo': 'bar'})
     arg = Argument('foo').retrieve(col)
     assert arg.value == 'bar'

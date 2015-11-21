@@ -1,6 +1,6 @@
 from wasp.cache import Cache
 from wasp.fs import File
-from . import test_dir
+from tests import test_dir
 
 import os
 

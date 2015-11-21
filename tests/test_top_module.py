@@ -1,7 +1,7 @@
 import wasp
 import os
 from wasp.main import load_directory, load_recursive
-from . import test_dir
+from tests import test_dir
 
 
 def test_version():
