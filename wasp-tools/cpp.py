@@ -45,6 +45,11 @@ class CompilerCli(object):
             return '/EHsc'
         return ''
 
+    def defines(self, defines):
+        if self._name == 'msvc':
+            return ' '.join(['/D"{0}"'.format(d) for d in defines])
+        return ' '.join(['-D"{0}"'.format(d) for d in defines])
+
     def default_flags(self, debug=False, arch=None):
         if self._name == 'msvc':
             if arch == 'x64':
@@ -166,10 +171,13 @@ if osinfo.windows:
             raise MsvcError('Could not find executable `{0}` '
                             'in environment returned from `vcvarsall.bat`'.format(name))
 
-    def find_cc(use_default=True, debug=False):
+    def find_cc(use_default=True, debug=False, x64=None):
         if use_default:
             msvcpath = Argument('msvc_path').retrieve_all().value
-            arch = Argument('msvc_arch').retrieve_all().value
+            if x64 is None:
+                arch = Argument('msvc_arch').retrieve_all().value
+            else:
+                arch = 'x64' if x64 else 'x86'
             t = FindMsvc(msvcpath=msvcpath, arch=arch, debug=debug)
             t.produce(':cpp/cc')
             t.produce(':cpp/cxx')
@@ -319,7 +327,7 @@ class CompileTask(ShellTask):
         ))
 
     def use_arg(self, arg):
-        if arg.key in ['cflags', 'includes']:
+        if arg.key in ['cflags', 'includes', 'defines']:
             self.use_catenate(arg)
             return
         super().use_arg(arg)
@@ -334,6 +342,8 @@ class CompileTask(ShellTask):
         kw['INCLUDES'] = ' '.join(set(include))
         kw['CFLAGS'] = ' '.join(set(self.arguments.value('cflags', [])))
         kw['CSOURCES'] = ' '.join(set(self.arguments.value('csources', [])))
+        defines = self.arguments.value('defines', [])
+        kw['DEFINES'] = cli.defines(defines)
         return kw
 
 
@@ -343,9 +353,9 @@ class CxxCompile(CompileTask):
     @property
     def cmd(self):
         if self._compilername == 'msvc':
-            return '{CXX} {CFLAGS} {INCLUDES} /c /Fo{TGT} {CSOURCES}'
+            return '{CXX} {CFLAGS} {INCLUDES} {DEFINES} /c /Fo{TGT} {CSOURCES}'
         else:
-            return '{CXX} {CFLAGS} {INCLUDES} -c -o {TGT} {CSOURCES}'
+            return '{CXX} {CFLAGS} {INCLUDES} {DEFINES} -c -o {TGT} {CSOURCES}'
 
     def _init(self):
         super()._init()
@@ -358,9 +368,9 @@ class CCompile(CompileTask):
     @property
     def cmd(self):
         if self._compilername == 'msvc':
-            return '{CC} {CFLAGS} {INCLUDES} /c /Fo{TGT} {CSOURCES}'
+            return '{CC} {CFLAGS} {INCLUDES} {DEFINES} /c /Fo{TGT} {CSOURCES}'
         else:
-            return '{CC} {CFLAGS} {INCLUDES} -c -o {TGT} {CSOURCES}'
+            return '{CC} {CFLAGS} {INCLUDES} {DEFINES} -c -o {TGT} {CSOURCES}'
 
     def _init(self):
         super()._init()

@@ -10,6 +10,7 @@ CONFIG_FILE_NAMES = ['wasprc.json', 'wasprc.user.json']
 Default file names for config files.
 """
 
+# TODO: rewrite this using schema module
 # TODO: document config keys and how they can be set
 
 
@@ -174,7 +175,10 @@ class Config(object):
         return set(lst)
 
     def _argument_merger(self, hp):
-        self.arguments.overwrite_merge(hp)
+        if self.arguments is None:
+            self.arguments = hp
+        else:
+            self.arguments.overwrite_merge(hp)
 
     def _argument_parser(self, d):
         parse_assert(isinstance(d, dict), 'While parsing config file: Expected a '
