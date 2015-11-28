@@ -1,4 +1,4 @@
-from .fs import Directory
+from .fs import Directory, directories
 from .argument import ArgumentCollection, Argument
 from .metadata import Metadata
 from . import log, extensions, decorators
@@ -82,7 +82,7 @@ class Config(object):
         self._handlers = {
             'extensions': make_handler('extensions', parser=self._parse_extensions, merger=self._merge_extensions),
             'metadata': make_handler('metadata', parser=lambda x: Metadata.from_json(x)),
-            'pythonpath': make_handler('pythonpath', parser=lambda x: Directory(x)),
+            'pythonpath': make_handler('pythonpath', parser=lambda x: directories(x)),
             'verbosity': make_handler('verbosity', parser=self._parse_verbosity),
             'arguments': make_handler('arguments', parser=self._argument_parser, merger=self._argument_merger),
             'default_command': make_handler('default_command'),

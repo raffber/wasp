@@ -47,6 +47,14 @@ class Metadata(Serializable):
             self._other[key] = value
         object.__setattr__(self, key, value)
 
+    def as_dict(self):
+        ret = dict(self._other)
+        ret.update({
+            'projectname': self.projectname,
+            'projectid': self.projectid
+        })
+        return ret
+
     @classmethod
     def from_json(cls, d):
         self = cls()

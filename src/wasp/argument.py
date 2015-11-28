@@ -225,8 +225,8 @@ class Argument(Serializable):
         Raises: TypeError if type conversion from value to the required type is not successful.
         """
         if self._required_type is not None and value is not None:
-            self._value = (self._required_type)(value)
-            if not isinstance(self._value, self._required_type):
+            # self._value = (self._required_type)(value)
+            if not isinstance(value, self._required_type):
                 raise TypeError('Argument {0} must be of type {1}, but found type {2}!'.format(
                     self.key, self._required_type.__name__, type(value).__name__))
             return
