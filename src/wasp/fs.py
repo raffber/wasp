@@ -22,7 +22,7 @@ from .task import Task
 from .util import Serializable, is_iterable
 from . import factory, ctx
 from .generator import Generator
-from .argument import format_string, find_argumentkeys_in_string
+from .argument import find_argumentkeys_in_string
 
 
 def sanitize_path(fpath):

@@ -67,12 +67,12 @@ def _handle_log_options(option_handler):
 
     def retrieve(flag):
         return d[flag].value
-    verbosity_one = retrieve('verbosity-fatal')
-    verbosity_two = retrieve('verbosity-error')
-    verbosity_three = retrieve('verbosity-warn')
-    verbosity_four = retrieve('verbosity-info')
-    verbosity_five = retrieve('verbosity-debug')
-    quiet = retrieve('verbosity-quiet')
+    verbosity_one = retrieve('verbosity_fatal')
+    verbosity_two = retrieve('verbosity_error')
+    verbosity_three = retrieve('verbosity_warn')
+    verbosity_four = retrieve('verbosity_info')
+    verbosity_five = retrieve('verbosity_debug')
+    quiet = retrieve('verbosity_quiet')
     if verbosity_five:
         option_handler.verbosity = 5
     elif verbosity_four:

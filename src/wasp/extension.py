@@ -17,18 +17,6 @@ class ExtensionApi(object):
     def config_loaded(self, config):
         return self._map(lambda x: x.config_loaded(config))
 
-    def create_config_handlers(self):
-        ret = []
-        for ext in self._collection.values():
-            handlers = ext.create_config_handlers()
-            if handlers == NotImplemented:
-                continue
-            if is_iterable(handlers):
-                ret.extend(list(handlers))
-            else:
-                ret.append(handlers)
-        return ret
-
     def context_created(self):
         return self._map(lambda x: x.context_created())
 
