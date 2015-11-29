@@ -19,13 +19,30 @@ class Metadata(Serializable):
         * projectname (defaults to 'myproject')
         * projectid (to be used as name in the filesystem. defaults to 'myproject')
     """
-    projectname = 'myproject'
-    projectid = None
+
+    @property
+    def projectname(self):
+        return self._projectname
+
+    @projectname.setter
+    def projectname(self, arg):
+        self._projectname = arg
+
+    @property
+    def projectid(self):
+        if self._projectid is None:
+            return self._projectname
+        return self._projectid
+
+    @projectid.setter
+    def projectid(self, arg):
+        self._projectid = arg
+
     _other = {}
 
     def __init__(self):
-        if self.projectid is None:
-            self.projectid = self.projectname
+        self._projectname = 'myproject'
+        self._projectid = None
         self._other = {}
 
     def __setattr__(self, key, value):
