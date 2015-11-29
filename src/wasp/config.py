@@ -10,8 +10,101 @@ CONFIG_FILE_NAMES = ['wasprc.json', 'wasprc.user.json']
 Default file names for config files.
 """
 
-# TODO: rewrite this using schema module
 # TODO: document config keys and how they can be set
+
+class ConfigKey(object):
+
+    def __init__(self, key, parser=None, merger=None):
+        self._key = key
+        self._parser = parser
+        self._merger = merger
+
+    def __set__(self, instance, value):
+        instance.set(self._key, value)
+
+    def __get__(self, instance, owner):
+        return instance.get(self._key)
+
+    def parse(self, instance, value):
+        if self._parser is not None:
+            instance.set(self._key, self._parser(instance, value))
+            return
+        instance.set(self._key, value)
+
+    def merge(self, instance, hp):
+        x = hp.get(self._key)
+        if x is not None:
+            if self._merger:
+                self._merger(instance, x)
+                return
+            instance.set(self._key, x)
+
+    @property
+    def key(self):
+        return self._key
+
+
+VALID_VERBOSITY = ['debug', 'info', 'warn', 'error', 'fatal', 'quiet']
+
+
+def _parse_verbosity(instance, value):
+    parse_assert(value in VALID_VERBOSITY,
+             'Invalid verbosity key. expected on of `{0}`'.format(VALID_VERBOSITY))
+    value = value.lower().strip()
+    ret = 3
+    if value == 'debug':
+        ret = 5
+    elif value == 'info':
+        ret = 4
+    elif value == 'warn':
+        ret = 3
+    elif value == 'error':
+        ret = 2
+    elif value == 'fatal':
+        ret = 1
+    elif value == 'quiet':
+        ret = 0
+    return ret
+
+
+def _merge_extensions(instance, hp):
+    if instance.extension is not None:
+        instance.extensions.extend(hp)
+    else:
+        instance.extensions = set()
+
+
+def _parse_extensions(instance, lst):
+    parse_assert(isinstance(lst, list), 'While parsing config file: Expected a list of string for `extensions`.')
+    parse_assert(all([isinstance(x, str) for x in lst]), 'While parsing config file: '
+                                                         'Expected a list of string for `extensions`.')
+    return set(lst)
+
+
+def _argument_merger(instance, hp):
+    if instance.arguments is None:
+        instance.arguments = hp
+    else:
+        instance.arguments.overwrite_merge(hp)
+
+
+def _argument_parser(instance, d):
+    parse_assert(isinstance(d, dict), 'While parsing config file: Expected a '
+                                      'dictionary for key `arguments` in config file.')
+    ret = ArgumentCollection()
+    for key, value in d.items():
+        ret[key] = Argument(key).assign(value)
+    return ret
+
+
+def _assert_bool(instance, v):
+    parse_assert(isinstance(v, bool), 'Expected a bool, was `{0}`'.format(type(v).__name__))
+    return v
+
+
+def _assert_string(instance, v):
+    parse_assert(isinstance(v, str), 'Expected a str, was `{0}`'.format(type(v).__name__))
+    return v
 
 
 class Config(object):
@@ -20,47 +113,20 @@ class Config(object):
     :param json_data: dict collecting infromation for parsing the config.
     """
 
-    class KeyHandler(object):
-        """
-        Handler for a config key. Adds a property attribute to
-        ``config.__class__``. Also allows setting a parser which extracts
-        the data from the JSON data structure and a merger which merges multiple
-        config values.
-        """
-        def __init__(self, config, keyname, parser=None, merger=None):
-            self._keyname = keyname
-            self._parser = parser
-            self._value = None
-            self._merger = merger
-
-            def getter(s):
-                return s._handlers[self._keyname]._value
-
-            def setter(s, item):
-                 s._handlers[self._keyname]._value = item
-            setattr(config.__class__, self._keyname, property(getter, setter))
-
-        @property
-        def name(self):
-            return self._keyname
-
-        def parse(self, value):
-            if self._parser is not None:
-                self._value = self._parser(value)
-                return
-            self._value = value
-
-        def overwrite_merge(self, higher_priority):
-            x = getattr(higher_priority, self._keyname)
-            if x is not None:
-                if self._merger:
-                    self._merger(x)
-                    return
-                self._value = x
+    extensions = ConfigKey('extensions', parser=_parse_extensions, merger=_merge_extensions)
+    metadata = ConfigKey('metadata', parser=lambda _, x: Metadata.from_json(x))
+    pythonpath = ConfigKey('pythonpath', parser=lambda _, x: directories(x))
+    verbosity = ConfigKey('verbosity', parser=_parse_verbosity)
+    arguments = ConfigKey('arguments', parser=_argument_parser, merger=_argument_merger)
+    default_command = ConfigKey('default_command', parser=_assert_string)
+    pretty = ConfigKey('pretty', parser=_assert_bool)
 
     def __init__(self, json_data=None):
-        self._handlers = None
-        self.populate_handlers()
+        self._values = {}
+        self._handlers = {}
+        for k, v in vars(self.__class__).items():
+            if isinstance(v, ConfigKey):
+                self._handlers[v.key] = v
         if json_data is None:
             return
         if not isinstance(json_data, dict):
@@ -69,27 +135,25 @@ class Config(object):
             parse_assert(isinstance(key, str), 'While parsing config file: Expected '
                                                'string as key, got `{0}`'.format(type(key).__name__))
             if key in self._handlers:
-                self._handlers[key].parse(value)
+                self._handlers[key].parse(self, value)
                 continue
             # this should not happend, in this case, the user provided an invalid key.
             parse_assert(False, 'Unexpected key `{0}`'.format(key))
 
-    def populate_handlers(self):
+    def overwrite_merge(self, higher_priority):
         """
-        Populates self with configuration handlers.
+        Merges two config objects. In case both config files contain
+        the same values, the values from ``higher_priority`` take precedence.
         """
-        make_handler = lambda k, parser=None, merger=None: Config.KeyHandler(self, k, parser=parser, merger=merger)
-        self._handlers = {
-            'extensions': make_handler('extensions', parser=self._parse_extensions, merger=self._merge_extensions),
-            'metadata': make_handler('metadata', parser=lambda x: Metadata.from_json(x)),
-            'pythonpath': make_handler('pythonpath', parser=lambda x: directories(x)),
-            'verbosity': make_handler('verbosity', parser=self._parse_verbosity),
-            'arguments': make_handler('arguments', parser=self._argument_parser, merger=self._argument_merger),
-            'default_command': make_handler('default_command'),
-            'pretty': make_handler('pretty')
-        }
-        handlers = extensions.api.create_config_handlers()
-        self._handlers.update({x.name: x for x in handlers})
+        for handler in self._handlers.values():
+            handler.merge(self, higher_priority)
+
+    def get(self, key):
+        return self._values.get(key, None)
+
+    def set(self, key, value):
+        assert key in self._handlers.keys()
+        self._values[key] = value
 
     @classmethod
     def from_file(cls, fpath):
@@ -136,57 +200,6 @@ class Config(object):
         if config is None:
             return Config()
         return config
-
-    def overwrite_merge(self, higher_priority):
-        """
-        Merges two config objects. In case both config files contain
-        the same values, the values from ``higher_priority`` take precedence.
-        """
-        for handler in self._handlers.values():
-            handler.overwrite_merge(higher_priority)
-
-    def _parse_verbosity(self, value):
-        value = value.lower().strip()
-        ret = 3
-        if value == 'debug':
-            ret = 5
-        elif value == 'info':
-            ret = 4
-        elif value == 'warn':
-            ret = 3
-        elif value == 'error':
-            ret = 2
-        elif value == 'fatal':
-            ret = 1
-        elif value == 'quiet':
-            ret = 0
-        return ret
-
-    def _merge_extensions(self, hp):
-        if self.extension is not None:
-            self.extensions.extend(hp)
-        else:
-            self.extensions = set()
-
-    def _parse_extensions(self, lst):
-        parse_assert(isinstance(lst, list), 'While parsing config file: Expected a list of string for `extensions`.')
-        parse_assert(all([isinstance(x, str) for x in lst]), 'While parsing config file: '
-                                                             'Expected a list of string for `extensions`.')
-        return set(lst)
-
-    def _argument_merger(self, hp):
-        if self.arguments is None:
-            self.arguments = hp
-        else:
-            self.arguments.overwrite_merge(hp)
-
-    def _argument_parser(self, d):
-        parse_assert(isinstance(d, dict), 'While parsing config file: Expected a '
-                                          'dictionary for key `arguments` in config file.')
-        ret = ArgumentCollection()
-        for key, value in d.items():
-            ret[key] = Argument(key).assign(value)
-        return ret
 
 
 class config(FunctionDecorator):

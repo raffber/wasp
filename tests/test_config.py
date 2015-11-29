@@ -44,6 +44,38 @@ def test_valid_config():
 
 # TODO: test merge_* function
 
+UNKNOWN_KEY = {
+    'unknown_key': 'asdf'
+}
+
+INVALID_ARGS = {
+    'arguments': [1, 2, 3]
+}
+
+INVALID_PYTHONPATH = {
+    'pythonpath': True
+}
+
+INVALID_VERBOSITY = {
+    'verbosity': 'foobar'
+}
+
+INVALID_PRETTY = {
+    'verbosity': 'asdf'
+}
+
+INVALID_DEFAULT_COMMAND = {
+    'default_command': []
+}
+
+
 def test_invalid_config():
-    # TODO: ....
-    pass
+    for data in [UNKNOWN_KEY, INVALID_ARGS, INVALID_PYTHONPATH,
+                 INVALID_VERBOSITY, INVALID_PRETTY,
+                 INVALID_DEFAULT_COMMAND]:
+        try:
+            Config(data)
+            failed = False
+        except ValueError:
+            failed = True
+        assert failed
