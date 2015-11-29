@@ -9,6 +9,7 @@ class Environment(dict):
     using :meth:`argument_collection`.
     """
     def __init__(self):
+        super().__init__()
         self.load_from_env()
 
     def load_from_env(self):
@@ -25,6 +26,6 @@ class Environment(dict):
         """
         from . import ArgumentCollection, Argument
         ret = ArgumentCollection()
-        for k, v in self:
+        for k, v in self.items():
             ret.add(Argument(k, value=v))
         return ret
