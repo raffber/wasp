@@ -348,7 +348,9 @@ class FlagOption(Option):
         self._value = v
 
     def get_value(self):
-        return super().get_value()
+        if self._value is None:
+            return False
+        return self._value
 
     value = property(get_value, set_value)
 
