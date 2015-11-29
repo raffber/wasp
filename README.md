@@ -27,7 +27,8 @@ Features and Non-Features
    a lot of defaults are already in place and make you productive from the start.
 
  * Since wasp is also library, customization of the build tasks can be done
-   on many levels and therefore existing code can be effectively reused.
+   on many levels and therefore existing code can be effectively reused. Think of
+   your build scripts as programs and not as configuration.
 
  * wasp tries to simplify complex tasks and does not focus on simplifying tasks
    that are already simple. As your project grows more complex, so does your build process.
@@ -47,6 +48,9 @@ wasp is for you if....
 ----------------------
 
  * ... you want flexible build tool for automating everything
+
+ * ... if you don't use a single technology with one associated set of tooling,
+    but multiple technologies and tools that need to interact.
 
  * ... you want to be able to create a build system that *just works* and can
     easily be installed on all platforms.
