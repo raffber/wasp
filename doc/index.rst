@@ -1,11 +1,16 @@
+################################
 Welcome to wasp's documentation!
-================================
+################################
 
-Contents:
+********
+Contents
+********
 
 .. toctree::
-    api.rst
+    introduction.rst
     config.rst
+    api.rst
+
 
 
 Indices and tables

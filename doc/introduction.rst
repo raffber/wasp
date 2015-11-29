@@ -1,0 +1,66 @@
+Introduction
+============
+
+``wasp`` is a build tool and build scripts are written in python.
+
+
+Installation
+------------
+
+Be sure to have python3 installed. It is the only dependency of ``wasp``.
+Note that python2 is not going to work, ``wasp`` is not backwards
+compatible with python2 and is probably never going to be.
+
+Let's get gstarted: ``cd`` into the project directory::
+
+    $ cd path/to/project/directory
+    $ wget https://raw.githubusercontent.com/raffber/wasp/master/wasp
+
+``wasp`` extracts itself once you execute it for the first time.
+If you upgrade it to a new version, it will automatically upgrade itself.
+Now, create your first build script, called ``build.py`` in the same directory::
+
+    import wasp
+
+    @wasp.build
+    def build():
+        print('hello, world!')
+
+Now run::
+
+    $ ./wasp build
+    hello, world!
+
+What you see here is ``wasp`` executing a **Command** called "build".
+For the time being, this command just prints "hello, world!".
+
+A command may specify **dependencies** which are commands to be executed
+before this specific command. One command may consist of multiple
+handler functions, such that you can split the work between mutliple
+functions and scripts. You can also invent your own command names and dependencies::
+
+    import wasp
+
+    @wasp.command('run', depends='build')
+    def run():
+        print('Run my program here!')
+
+Tasks
+------
+
+One can think of a build system as a set of ``Tasks`` which have inputs
+ (called "sources") and outputs (called ``targets``).
+
+
+Now, let's do something else, which is not at all useful but demonstrates how
+``Tasks`` work::
+
+
+    import wasp
+    from wasp import shell, ctx, file
+
+    @wasp.build
+    def build():
+        source = file('build.py')
+        target = source.to_builddir()
+        yield shell('cp {SRC} {TGT}', sources=source, targets=target)

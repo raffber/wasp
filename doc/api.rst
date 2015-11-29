@@ -7,57 +7,143 @@ The wasp module
 .. automodule:: wasp
     :members:
 
-The wasp.argument module
+``argument`` module
 ------------------------
 
 .. automodule:: wasp.argument
     :members:
 
-The wasp.builtin module
+``builtin`` module
 -----------------------
 
 .. automodule:: wasp.builtin
     :members:
 
-The wasp.cache module
+``cache`` module
 ---------------------
 
 .. automodule:: wasp.cache
     :members:
 
-The wasp.commands module
+``commands`` module
 ------------------------
 
 .. automodule:: wasp.commands
     :members:
 
-The wasp.context module
+``config`` module
+-----------------------
+
+.. automodule:: wasp.config
+    :members:
+
+``context`` module
 -----------------------
 
 .. automodule:: wasp.context
     :members:
 
-The wasp.decorator_store module
+``decorator_store`` module
 -------------------------------
 
 .. automodule:: wasp.decorator_store
     :members:
 
-The wasp.environment module
+``environment`` module
 ---------------------------
 
 .. automodule:: wasp.environment
     :members:
 
 
-The wasp.execution module
+``execution`` module
 -------------------------
 
 .. automodule:: wasp.execution
     :members:
 
-The wasp.fs module
+``fs`` module
 ------------------
 
 .. automodule:: wasp.fs
+    :members:
+
+
+``generator`` module
+------------------
+
+.. automodule:: wasp.generator
+    :members:
+
+``logging`` module
+------------------
+
+.. automodule:: wasp.logging
+    :members:
+
+
+``main`` module
+------------------
+
+.. automodule:: wasp.main
+    :members:
+
+``metadata`` module
+------------------
+
+.. automodule:: wasp.metadata
+    :members:
+
+``node`` module
+------------------
+
+.. automodule:: wasp.node
+    :members:
+
+``option`` module
+------------------
+
+.. automodule:: wasp.option
+    :members:
+
+``platform`` module
+------------------
+
+.. automodule:: wasp.platform
+    :members:
+
+``shell`` module
+------------------
+
+.. automodule:: wasp.shell
+    :members:
+
+``signature`` module
+------------------
+
+.. automodule:: wasp.signature
+    :members:
+
+``task`` module
+------------------
+
+.. automodule:: wasp.task
+    :members:
+
+``terminal`` module
+------------------
+
+.. automodule:: wasp.terminal
+    :members:
+
+``tools`` module
+------------------
+
+.. automodule:: wasp.tools
+    :members:
+
+``util`` module
+------------------
+
+.. automodule:: wasp.util
     :members:
