@@ -121,7 +121,9 @@ class FileNode(Node):
     def __init__(self, path):
         from .fs import path as path_
         self._path = path_(path)
-        super().__init__(path)
+        # sanitize path name s.t. we get consistent
+        # path separators and stuff
+        super().__init__(str(self._path))
 
     def _make_signature(self):
         return FileSignature(path=self.path)

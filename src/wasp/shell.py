@@ -35,7 +35,6 @@ class ShellTask(Task):
     :param cwd: Set the working directory from which the shell command should be run.
     """
     def __init__(self, sources=[], targets=[], cmd='', always=False, cwd=None):
-        super().__init__(sources=sources, targets=targets, always=always)
         self._cmd = cmd
         self._printer = None
         if cwd is None:
@@ -43,6 +42,7 @@ class ShellTask(Task):
         else:
             self._cwd = Directory(cwd, make_absolute=True).path
         self._out = None
+        super().__init__(sources=sources, targets=targets, always=always)
 
     @property
     def out(self):

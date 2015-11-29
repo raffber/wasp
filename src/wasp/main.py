@@ -5,7 +5,7 @@ from .tools import proxies as tool_proxies, NoSuchToolError
 from .option import StringOption
 from .execution import execute, ParallelExecutor
 from .node import nodes
-from .argument import Argument
+from .argument import Argument, value
 from . import _recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators, Directory
 from .util import is_iterable
 from .signature import FileSignature
@@ -200,7 +200,14 @@ def execute_tasks(name, tasks):
     ret = extensions.api.run_task_collection(tasks)
     if ret != NotImplemented:
         return ret
-    jobs = Argument('jobs', type=int).retrieve_all(default=None).value
+    jobs = value('jobs')
+    if jobs is not None:
+        try:
+            jobs = int(jobs)
+        except ValueError:
+            log.error('Invalid value given for `jobs` argument. \n'
+                      'Expects somethings convertible to `int`, was: `{0}`'.format(jobs))
+            jobs = None
     produce = ctx.options.group(name)['target'].value
     if produce is not None:
         produce = nodes(produce)
