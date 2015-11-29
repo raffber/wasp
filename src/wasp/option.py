@@ -144,14 +144,15 @@ def sanitize_name(name):
     Sanitizes an option name, such that it gives
     a reasonable argument name.
     """
-    return name.replace(' ', '_').lower()
+    return name.replace('-', '_').replace(' ', '_').lower()
 
 
 def name_to_key(name):
     """
-    Attempts to standardize option names. (replacing '-' by '_' atm)
+    Attempts to standardize option names as used on the
+    command line. (replacing ' ' by '-' atm)
     """
-    return name.replace('-', '_')
+    return name.replace(' ', '-')
 
 
 class Option(Serializable):
@@ -188,7 +189,7 @@ class Option(Serializable):
         assert isinstance(description, str), 'Description must be a string'
         self._name = sanitize_name(name)
         if keys is None:
-            keys = [name_to_key(self._name)]
+            keys = [name_to_key(name)]
         assert isinstance(keys, list) or isinstance(keys, str), 'Keys must either be given as a string or list thereof'
         self._keys = keys
         self._description = description

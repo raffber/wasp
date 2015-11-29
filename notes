@@ -8,7 +8,6 @@ Next
 -----
 
  * allow specifiying a "don't quote me" modifier in ShellTask
- * BUG: options-with-hyphens get converted to options_with_hyphens
 
  * Better unit testing
  * More integration tests?
