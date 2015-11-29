@@ -1,9 +1,12 @@
 import os
+from temp.Lib.csv import excel
 from wasp import ShellTask, find_exe, Task, quote, empty
 from wasp import group
 from wasp import nodes, FileNode, node, Argument
 from wasp import file, directory, osinfo, StringOption
 from wasp.shell import run as run_command
+from wasp.shell import ShellTaskPrinter
+from wasp.logging import LogStr
 
 from wasp.util import is_iterable
 import wasp
@@ -188,6 +191,24 @@ if osinfo.windows:
     find_cxx = find_cc
     find_ld = find_cc
 
+
+    class MsvcCompilerPrinter(ShellTaskPrinter):
+        def print(self, success, stdout='', stderr='', exit_code=0, commandstring=''):
+            stdout = stdout.split('\n')
+            if len(stdout) >= 1:
+                stdout = stdout[1:] # discard first line
+            stdout = '\n'.join(stdout)
+            super().print(success, stdout=stdout, stderr=stderr, exit_code=exit_code, commandstring=commandstring)
+
+    class MsvcLinkerPrinter(ShellTaskPrinter):
+        def print(self, success, stdout='', stderr='', exit_code=0, commandstring=''):
+            stdout = stdout.split('\n')
+            if len(stdout) >= 3:
+                stdout = stdout[3:] # discard first three line
+            stdout = '\n'.join(stdout)
+            super().print(success, stdout=stdout, stderr=stderr, exit_code=exit_code, commandstring=commandstring)
+
+
 elif osinfo.linux:
     DEFAULT_COMPILER = 'gcc'
     DEFAULT_LINKER = 'gcc'
@@ -255,8 +276,8 @@ class DependencyScan(Task):
                 for v in arg.value:
                     self.arguments.value('includes').append(v)
             else:
-                assert isinstance(arg.value, str)
-                self.arguments.value('includes').append(arg.value)
+                v = str(arg.value)
+                self.arguments.value('includes').append(v)
             return
         super().use_arg(arg)
 
@@ -276,6 +297,8 @@ class DependencyScan(Task):
             return set()
         include_re = re.compile('^\s*#include *[<"](?P<include>[0-9a-zA-Z\-_\. /]+)[>"]\s*$')
         num_lines = 0
+        if not header.exists:
+            return
         with open(str(header), 'r') as f:
             for line in f:
                 num_lines += 1
@@ -305,6 +328,8 @@ class CompileTask(ShellTask):
 
     def _init(self):
         self._compilername = DEFAULT_COMPILER
+        if self._compilername == 'msvc':
+            self._printer = MsvcCompilerPrinter(self)
         csrc = []
         for src in self.sources:
             if not isinstance(src, FileNode):
@@ -381,6 +406,9 @@ class Link(ShellTask):
     def _init(self):
         super()._init()
         self._linkername = DEFAULT_LINKER
+        if self._linkername == 'msvc':
+            self._printer = MsvcLinkerPrinter(self)
+
 
     def _prepare(self):
         super()._prepare()
