@@ -222,11 +222,11 @@ class DAG(object):
         if self._produce is not None:
             self._waiting_tasks.clear()
             limited_set = set()
-            produce_ids = [p.key for p in self._produce]
+            produce_ids = [p.name for p in self._produce]
             required = []
             for task in tasks:
                 for t in task.task.targets:
-                    if t.key in produce_ids:
+                    if t.name in produce_ids:
                         required.append(task)
             for req in required:
                 limited = self._limit_selection(req)
@@ -292,14 +292,14 @@ class DAG(object):
         # create map from target => task --> O(m*n)
         for task in tasks:
             for target in task.targets:
-                if target.key not in self._target_map:
-                    self._target_map[target.key] = []
-                self._target_map[target.key].append(task)
+                if target.name not in self._target_map:
+                    self._target_map[target.name] = []
+                self._target_map[target.name].append(task)
         # add dependencies to every task, i.e. add all tasks producing each target --> O(m*n*p)
         for task in tasks:
             for source in task.task.sources:
-                if source.key in self._target_map:
-                    additional_deps = self._target_map[source.key]
+                if source.name in self._target_map:
+                    additional_deps = self._target_map[source.name]
                     task.dependencies.extend(additional_deps)
                     deps = set(task.dependencies)
                     task.dependencies.clear()
@@ -441,12 +441,12 @@ class Executor(object):
         # refresh all signatures that were consumed but
         # never produced. i.e. nodes that act only
         # as sources.
-        consumed = set(x.key for x in self.consumed_nodes)
-        produced = set(x.key for x in self.produced_nodes)
+        consumed = set(x.name for x in self.consumed_nodes)
+        produced = set(x.name for x in self.produced_nodes)
         to_update = consumed - produced
         dict_consumed = {}
         for x in self.consumed_nodes:
-            dict_consumed[x.key] = x
+            dict_consumed[x.name] = x
         for k, v in dict_consumed.items():
             if k not in to_update:
                 continue
@@ -635,7 +635,7 @@ def _uniquify(node_list):
     """
     ret = {}
     for x in node_list:
-        ret[x.key] = x
+        ret[x.name] = x
     return ret.values()
 
 

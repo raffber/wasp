@@ -79,7 +79,7 @@ class ArgumentCollection(dict):
         :param arg: non-None object of type Argument.
         """
         assert arg is not None
-        self[arg.key] = arg
+        self[arg.name] = arg
 
     def __setitem__(self, key, value):
         """

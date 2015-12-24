@@ -27,7 +27,7 @@ class SignatureProvider(object):
         ns = _get_ns(ns)
         if ns not in self._d:
             self._d[ns] = {}
-        self._d[ns][signature.key] = signature
+        self._d[ns][signature.name] = signature
 
     def get_signatures(self, ns=None):
         ns = _get_ns(ns)
@@ -59,7 +59,7 @@ class SignatureProvider(object):
         ns = _get_ns(ns)
         if ns not in self._d:
             self._d[ns] = {}
-        self._d[ns][signature.key] = signature
+        self._d[ns][signature.name] = signature
 
     def save(self, cache):
         """
@@ -158,7 +158,7 @@ class ProducedSignatures(object):
         ns = _get_ns(ns)
         if ns not in self._signaturedb:
             self._signaturedb[ns] = {}
-        self._signaturedb[ns][signature.key] = signature
+        self._signaturedb[ns][signature.name] = signature
 
     @property
     def namespaces(self):

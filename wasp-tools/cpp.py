@@ -269,7 +269,7 @@ class DependencyScan(Task):
         self.arguments.add(includes=[])
 
     def use_arg(self, arg):
-        if arg.key == 'includes':
+        if arg.name == 'includes':
             if is_iterable(arg.value):
                 for v in arg.value:
                     self.arguments.value('includes').append(v)
@@ -350,7 +350,7 @@ class CompileTask(ShellTask):
         ))
 
     def use_arg(self, arg):
-        if arg.key in ['cflags', 'includes', 'defines']:
+        if arg.name in ['cflags', 'includes', 'defines']:
             self.use_catenate(arg)
             return
         super().use_arg(arg)
@@ -420,7 +420,7 @@ class Link(ShellTask):
             return '{LD} {LDFLAGS} {LIBRARIES} -o {TGT} {SRC} {STATIC_LIBS}'
 
     def use_arg(self, arg):
-        if arg.key in ['ldflags', 'libraries', 'static_libraries']:
+        if arg.name in ['ldflags', 'libraries', 'static_libraries']:
             self.use_catenate(arg)
             return
         super().use_arg(arg)

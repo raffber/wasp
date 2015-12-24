@@ -12,7 +12,7 @@ class Compile(ShellTask):
         self.require(('dc', find_dc))
 
     def use_arg(self, arg):
-        if arg.key == 'dflags':
+        if arg.name == 'dflags':
             self.use_catenate(arg)
             return
         super().use_arg(arg)
@@ -26,7 +26,7 @@ class Link(ShellTask):
         self.require(('dc', find_dc))
 
     def use_arg(self, arg):
-        if arg.key == 'ldflags':
+        if arg.name == 'ldflags':
             self.use_catenate(arg)
             return
         super().use_arg(arg)

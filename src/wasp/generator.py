@@ -14,7 +14,7 @@ class Generator(Serializable):
 class GeneratorCollection(dict, Serializable):
 
     def add(self, generator):
-        self[generator.key] = generator
+        self[generator.name] = generator
 
     @classmethod
     def from_json(cls, d):

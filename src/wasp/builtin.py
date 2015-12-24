@@ -227,5 +227,5 @@ def _diff():
             new_sig = v.clone()
             new_sig.refresh()
             if v.value != new_sig.value:
-                thislog.log_info('Signature of `{0}` changed since last run.'.format(v.key))
+                thislog.log_info('Signature of `{0}` changed since last run.'.format(v.name))
 

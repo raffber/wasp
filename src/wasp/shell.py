@@ -171,7 +171,7 @@ class ShellTask(Task):
                            exit_code=exit_code, commandstring=commandstring)
 
     def use_arg(self, arg):
-        if arg.key == 'env':
+        if arg.name == 'env':
             curarg = self.arguments.get('env')
             if curarg is None:
                 super().use_arg(arg)

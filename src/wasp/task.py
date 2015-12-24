@@ -426,11 +426,11 @@ class Task(object):
         the values of each argument in ``self.arguments``. This is useful for
         injecting flags or multiple arguments into one key. (e.g. 'CFLAGS')
         """
-        if arg.key not in self.arguments:
-            item = Argument(arg.key, value=[])
+        if arg.name not in self.arguments:
+            item = Argument(arg.name, value=[])
             self.arguments.add(item)
         else:
-            item = self.arguments[arg.key]
+            item = self.arguments[arg.name]
         if is_iterable(arg.value):
             item.value.extend(list(arg.value))
         else:
