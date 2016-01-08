@@ -59,6 +59,10 @@ class Node(object):
         """
         return self._key
 
+    @property
+    def name(self):
+        return self._key
+
     def signature(self, ns=None):
         """
         Returns a :class:`wasp.signature.Signature` object which

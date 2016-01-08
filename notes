@@ -4,6 +4,9 @@ Next Task
 Current:
 ---------
 
+ * make windows compiler print stdout to error
+    in case of fail
+
 Next
 -----
 

@@ -203,6 +203,13 @@ class Signature(Serializable):
         return self._key
 
     @property
+    def name(self):
+        """
+        Returns the key of the signature for identifying it in storage.
+        """
+        return self._key
+
+    @property
     def discard(self):
         """
         Determines whether the signature is to be saved to the cache.
