@@ -173,12 +173,13 @@ class Argument(Serializable):
         """
         Creats a new Argument with a given key. If value and/or type arguments are present,
         the value/type of this Argument will be set.
+
         :param key: Expected to be a string with length > 0 and match ARGUMENT_KEY_RE.
         :param value: If value is given, it will be immediately assigned to self. if type is None,
         the type(value) will be used.
         :param type: Sets the required type of the argument.
         """
-        self.key = key
+        self._key = key
         assert isinstance(key, str) and len(key) > 0
         self._value = None
         self._required_type = None
@@ -188,6 +189,14 @@ class Argument(Serializable):
         m = ARGUMENT_KEY_RE.match(key)
         if not m:
             raise ValueError('Invalid argument key, expected `{0}`, found: `{1}`'.format(ARGUMENT_KEY_RE_STR, key))
+
+    @property
+    def key(self):
+        return self._key
+
+    @property
+    def name(self):
+        return self._key
 
     def to_json(self):
         d = super().to_json()

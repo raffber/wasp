@@ -52,9 +52,11 @@ def do_create_wasp(t):
     with open(str(target), 'a') as out:
         out.write('\n\nwasp_packed=[')
         for f in waspdir.glob('.*\.py$', recursive=True):
-            relpath = os.path.relpath(f.path, start=waspdir.path)
+            # replace \ with / on windows, otherwise string excaping
+            # might not work
+            relpath = os.path.relpath(f.path, start=waspdir.path).replace('\\', '/')
             with open(f.path, 'rb') as inf:
-                data = inf.read()
+                data = inf.read().replace(b'\r\n', b'\n')
                 data = zlib.compress(data)
                 data = binascii.b2a_base64(data)
                 out.write('\n("{0}", {1}),'.format(relpath, data))
