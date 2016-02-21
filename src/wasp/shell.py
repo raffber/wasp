@@ -2,8 +2,8 @@ import os
 import sys
 from .task import Task
 from .node import FileNode
-from .argument import Argument, find_argumentkeys_in_string
-from .util import UnusedArgFormatter, is_iterable
+from .argument import find_argumentkeys_in_string
+from .util import UnusedArgFormatter
 from .logging import LogStr
 from .fs import Directory, top_dir, Path
 from . import ctx, osinfo
@@ -366,6 +366,8 @@ def quote(s):
     Ensures that a shell command is properly quoted.
     Equivalent to ``shlex.quote``.
     """
+    if not isinstance(s, str):
+        s = str(s)
     # http://blogs.msdn.com/b/twistylittlepassagesallalike/archive/2011/04/23/everyone-quotes-arguments-the-wrong-way.aspx
     if osinfo.windows:
         # XXX this is huge hack and it will not work in many cases..
