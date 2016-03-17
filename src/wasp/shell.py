@@ -318,7 +318,7 @@ class ProcessOut(object):
     @property
     def merged(self):
         """
-        Returnt the ``stdout`` and ``stderr`` output of the process merged into one string.
+        Return the ``stdout`` and ``stderr`` output of the process merged into one string.
         """
         if self._finished and self._merged_cache is not None:
             return self._merged_cache

@@ -431,7 +431,10 @@ class StringOption(Option):
                           dest=self.name)
 
     def retrieve_from_dict(self, args):
-        self.value = args.get(self.name, None)
+        v = args.get(self.name, None)
+        if isinstance(v, list):
+            v = v[0]
+        self.value = v
 
     def set_value(self, v):
         if v is None:
@@ -457,7 +460,6 @@ class IntOption(Option):
                           help=self._description, dest=self.name)
 
     def retrieve_from_dict(self, args):
-        # TODO: why [0]?
         v = args.get(self.name, None)
         if isinstance(v, list):
             v = v[0]
