@@ -1,4 +1,4 @@
-from wasp import directory, Directory, file
+from wasp import directory, Directory, file, factory
 
 curdir = directory(__file__)
 testdir = curdir.join('test-dir')
@@ -19,15 +19,21 @@ def test_directory():
     home_dir = directory('~')
     assert subdir.relative(home_dir).absolute == subdir.absolute
     for f in ['a.txt', 'dira/dirb/b.txt', 'c.txt']:
-        f = file(f)
+        f = testdir.join(file(f))
         directory(f).ensure_exists()
+        assert directory(f).exists
         with open(f.path, 'w') as fwrite:
             fwrite.write('asdf')
-    assert
+        assert file(f).exists
+    fs = [x for x in testdir.glob('.*', dirs=False)]
+    assert fs == ['a.txt', 'dira/dirb/b.txt', 'c.txt']
 
 
 def test_serialize():
-    pass
+    home_dir = directory('~')
+    new_home_dir = factory.from_json(home_dir.to_json())
+    assert home_dir.path == new_home_dir
+    assert home_dir.relative_to == new_home_dir.relative_to
 
 
 def test_file():
@@ -36,3 +42,5 @@ def test_file():
 
 if __name__ == '__main__':
     test_directory()
+    test_serialize()
+    test_file()
