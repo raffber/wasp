@@ -493,7 +493,7 @@ class File(Path):
 
         return ``c``.
         """
-        return os.path.splitext(self._path)[1]
+        return os.path.splitext(self._path)[1][1:]
 
 factory.register(File)
 

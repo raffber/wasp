@@ -1,4 +1,4 @@
-from wasp import directory, Directory, file, factory
+from wasp import directory, Directory, file, factory, File
 
 curdir = directory(__file__)
 testdir = directory(curdir.join('test-dir'))
@@ -8,6 +8,13 @@ def prepare():
     testdir.remove(recursive=True)
     assert not testdir.exists
     testdir.ensure_exists()
+    for f in ['a.txt', 'dira/dirb/b.txt', 'c.txt']:
+        f = file(testdir.join(f))
+        directory(f).ensure_exists()
+        assert directory(f).exists
+        with open(f.path, 'w') as fwrite:
+            fwrite.write('asdf')
+        assert f.exists
 
 
 def test_directory():
@@ -19,13 +26,6 @@ def test_directory():
     assert isinstance(testdir.join('subdir'), Directory)
     home_dir = directory('~')
     assert subdir.relative(home_dir).absolute.path == subdir.absolute.path
-    for f in ['a.txt', 'dira/dirb/b.txt', 'c.txt']:
-        f = file(testdir.join(f))
-        directory(f).ensure_exists()
-        assert directory(f).exists
-        with open(f.path, 'w') as fwrite:
-            fwrite.write('asdf')
-        assert f.exists
     fs = [x.relative(testdir).path for x in testdir.glob('.*', dirs=False)]
     assert set(fs) == {'a.txt', 'dira/dirb/b.txt', 'c.txt'}
     fs = [x.relative(testdir).path for x in testdir.glob('.*', dirs=True, recursive=False)]
@@ -45,6 +45,15 @@ def test_serialize():
 
 def test_file():
     prepare()
+    f = testdir.join('a.txt')
+    assert isinstance(f, File)
+    assert not f.isdir
+    assert f.extension == 'txt'
+    f = f.append_extension('asdf')
+    assert not f.exists
+    assert f.extension == 'asdf'
+    f = f.replace_extension('fdsa')
+    assert f.extension == 'fdsa'
 
 
 if __name__ == '__main__':
