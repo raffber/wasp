@@ -1,10 +1,11 @@
 import os
 from wasp import ShellTask, find_exe, Task, quote, empty
-from wasp import group
+from wasp import group, TaskFailedError
 from wasp import nodes, FileNode, node, Argument
 from wasp import file, directory, osinfo, StringOption
 from wasp.shell import run as run_command
 from wasp.shell import ShellTaskPrinter
+from wasp.logging import LogStr
 
 from wasp.util import is_iterable
 import wasp
@@ -55,12 +56,12 @@ class CompilerCli(object):
         if self._name == 'msvc':
             if arch == 'x64':
                 if debug:
-                    return ['/nologo', '/Od', '/MDd', '/W3', '/GS-', '/Z7', '/D_DEBUG']
-                return ['/nologo', '/Ox', '/MD', '/W3', '/GS-', '/DNDEBUG']
+                    return ['/nologo', '/Od', '/MDd', '/W3', '/GS-', '/Z7', '/D_DEBUG', '/EHsc']
+                return ['/nologo', '/Ox', '/MD', '/W3', '/GS-', '/DNDEBUG', '/EHsc']
             else:  # x86 or else
                 if debug:
-                    return ['/nologo', '/Od', '/MDd', '/W3', '/Z7', '/D_DEBUG']
-                return ['/nologo', '/Ox', '/MD', '/W3', '/DNDEBUG']
+                    return ['/nologo', '/Od', '/MDd', '/W3', '/Z7', '/D_DEBUG', '/EHsc']
+                return ['/nologo', '/Ox', '/MD', '/W3', '/DNDEBUG', '/EHsc']
         return '-std=c++14 ' + ('-O0 -g' if debug else '-O2')
 
 
@@ -269,7 +270,7 @@ class DependencyScan(Task):
         self.arguments.add(includes=[])
 
     def use_arg(self, arg):
-        if arg.name == 'includes':
+        if arg.key == 'includes':
             if is_iterable(arg.value):
                 for v in arg.value:
                     self.arguments.value('includes').append(v)
@@ -324,33 +325,37 @@ class DependencyScan(Task):
 class CompileTask(ShellTask):
     extensions = []
 
+    def __init__(self, *args, use_default=True, **kw):
+        super().__init__(*args, **kw)
+        self._use_default = use_default
+
     def _init(self):
         self._compilername = DEFAULT_COMPILER
         if self._compilername == 'msvc':
             self._printer = MsvcCompilerPrinter(self)
-        csrc = []
         for src in self.sources:
             if not isinstance(src, FileNode):
                 continue
             is_csrc = [str(src).endswith(ext) for ext in self.extensions]
             if any(is_csrc):
-                csrc.append(str(src))
+                self.arguments['csource'] = str(src)
                 headers = node(':cpp/{0}'.format(src)).read().value('headers', [])
                 self.sources.extend(nodes(headers))
-        self.arguments['csources'] = csrc
+                return
 
     def _prepare(self):
         self._compilername = self.arguments.value('compilername', DEFAULT_COMPILER)
-        cli = CompilerCli(self._compilername)
-        self.use(cflags=cli.position_independent_code)
-        self.use(cflags=cli.enable_exceptions)
-        self.use(cflags=cli.default_flags(
-            debug=self.arguments.value('debug', False),
-            arch=self.arguments.value('arch', None)
-        ))
+        if self._use_default:
+            cli = CompilerCli(self._compilername)
+            self.use(cflags=cli.position_independent_code)
+            self.use(cflags=cli.enable_exceptions)
+            self.use(cflags=cli.default_flags(
+                debug=self.arguments.value('debug', False),
+                arch=self.arguments.value('arch', None)
+            ))
 
     def use_arg(self, arg):
-        if arg.name in ['cflags', 'includes', 'defines']:
+        if arg.key in ['cflags', 'includes', 'defines']:
             self.use_catenate(arg)
             return
         super().use_arg(arg)
@@ -364,21 +369,26 @@ class CompileTask(ShellTask):
         include = [cli.include_dir(directory(x).relative(self._cwd, skip_if_abs=True).path) for x in include]
         kw['INCLUDES'] = ' '.join(set(include))
         kw['CFLAGS'] = ' '.join(set(self.arguments.value('cflags', [])))
-        kw['CSOURCES'] = ' '.join(set(self.arguments.value('csources', [])))
+        csource = self.arguments.value('csource', None)
+        if csource is None:
+            raise TaskFailedError('No sources recognized. Are your source files '
+                                  'using the right extensions? Expected one of [{}]'
+                                  .format(', '.join(self.extensions)))
+        kw['CSOURCE'] = csource
         defines = self.arguments.value('defines', [])
         kw['DEFINES'] = cli.defines(defines)
         return kw
 
 
 class CxxCompile(CompileTask):
-    extensions = ['cxx', 'cpp', 'c++']
+    extensions = ['cxx', 'cpp', 'c++', 'cc']
 
     @property
     def cmd(self):
         if self._compilername == 'msvc':
-            return '{CXX} {CFLAGS} {INCLUDES} {DEFINES} /c /Fo{TGT} {CSOURCES}'
+            return '{CXX} {CFLAGS} {INCLUDES} {DEFINES} /c /Fo{TGT} {CSOURCE}'
         else:
-            return '{CXX} {CFLAGS} {INCLUDES} {DEFINES} -c -o {TGT} {CSOURCES}'
+            return '{CXX} {CFLAGS} {INCLUDES} {DEFINES} -c -o {TGT} {CSOURCE}'
 
     def _init(self):
         super()._init()
@@ -420,7 +430,7 @@ class Link(ShellTask):
             return '{LD} {LDFLAGS} {LIBRARIES} -o {TGT} {SRC} {STATIC_LIBS}'
 
     def use_arg(self, arg):
-        if arg.name in ['ldflags', 'libraries', 'static_libraries']:
+        if arg.key in ['ldflags', 'libraries', 'static_libraries']:
             self.use_catenate(arg)
             return
         super().use_arg(arg)
@@ -443,14 +453,14 @@ def compile(sources, use_default=True):
             continue
         target = source.to_file().to_builddir().append_extension('.o')
         if source.to_file().extension.lower() == 'c':
-            task = CCompile(sources=source, targets=target)
+            task = CCompile(sources=source, targets=target, use_default=use_default)
             if use_default:
                 task.use(':cpp/cc')
         else:
             # make sure we are a bit failsafe and we just compile unkown
             # file endings with a cxx compiler. There are a lot of
             # esoteric file extensions for cpp out there.
-            task = CxxCompile(sources=source, targets=target)
+            task = CxxCompile(sources=source, targets=target, use_default=use_default)
             if use_default:
                 task.use(':cpp/cxx')
         ret.append(task)

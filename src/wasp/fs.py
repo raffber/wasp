@@ -15,7 +15,6 @@ from itertools import chain
 import os
 import re
 import shutil
-import sys
 
 from .node import FileNode
 from .task import Task
@@ -33,7 +32,7 @@ def sanitize_path(fpath):
     :return: standardized path representation
     """
     assert isinstance(fpath, str), 'Path must be given as string.'
-    fpath = os.path.realpath(fpath)
+    fpath = os.path.realpath(os.path.expanduser(fpath))
     top_dir = os.getcwd()
     is_subpath = os.path.commonprefix([fpath, top_dir]) == top_dir
     if is_subpath:
@@ -70,12 +69,14 @@ class Path(Serializable):
     def __init__(self, path, make_absolute=False, relto=None):
         if isinstance(path, Path) or isinstance(path, FileNode):
             path = path.path
+        if relto is not None and not os.path.isabs(relto):
+            relto = os.path.realpath(relto)
         if make_absolute:
-            path = os.path.realpath(path)
+            if relto is not None and not os.path.isabs(path):
+                path = os.path.join(relto, path)
+            path = os.path.realpath(os.path.expanduser(path))
         elif relto is None:
             path = sanitize_path(path)
-        if relto is not None and not os.path.isabs(relto):
-            relto = os.path.abspath(relto)
         self._path = path
         self._relto = relto
         if not self.isabs and relto is None:
@@ -142,7 +143,7 @@ class Path(Serializable):
         """
         Returns an absolute version of the path.
         """
-        return Path(self._path, make_absolute=True)
+        return Path(self._path, relto=self._relto, make_absolute=True)
 
     @property
     def relative_to(self):
@@ -661,6 +662,8 @@ def directory(arg):
         return Directory(arg.path)
     elif isinstance(arg, Directory):
         return arg
+    elif isinstance(arg, File):
+        return arg.directory()
     elif isinstance(arg, Path):
         return Directory(arg.path)
     raise ValueError('No compatible type given to `directory()`'
