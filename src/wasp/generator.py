@@ -14,7 +14,7 @@ class Generator(Serializable):
 class GeneratorCollection(dict, Serializable):
 
     def add(self, generator):
-        self[generator.name] = generator
+        self[generator.key] = generator
 
     @classmethod
     def from_json(cls, d):
@@ -24,6 +24,7 @@ class GeneratorCollection(dict, Serializable):
             if key == '__type__':
                 continue
             ret[key] = factory.from_json(value)
+            assert isinstance(ret[key], Generator)
         return cls(ret)
 
     def to_json(self):
