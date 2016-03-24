@@ -6,6 +6,7 @@ testdir = directory(curdir.join('test-dir'))
 
 def prepare():
     testdir.remove(recursive=True)
+    assert not testdir.exists
     testdir.ensure_exists()
 
 
@@ -27,10 +28,12 @@ def test_directory():
         assert f.exists
     fs = [x.relative(testdir).path for x in testdir.glob('.*', dirs=False)]
     assert set(fs) == {'a.txt', 'dira/dirb/b.txt', 'c.txt'}
-    fs = [x.relative(testdir).path for x in testdir.glob('.*', recursive=False)]
+    fs = [x.relative(testdir).path for x in testdir.glob('.*', dirs=True, recursive=False)]
     assert set(fs) == {'a.txt', 'dira', 'c.txt', 'subdir'}
-    fs = [x.relative(testdir).path for x in testdir.glob('.*', recursive=False, exclude='subdir')]
+    fs = [x.relative(testdir).path for x in testdir.glob('.*', recursive=False, dirs=True, exclude='subdir')]
     assert set(fs) == {'a.txt', 'dira', 'c.txt'}
+    testdir.join('dira').copy_to(subdir)
+    assert set([x.relative(testdir).path for x in subdir.list()]) == {'subdir/dira'}
 
 
 def test_serialize():
