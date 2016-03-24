@@ -1,4 +1,4 @@
-from wasp import directory, Directory
+from wasp import directory, Directory, file
 
 curdir = directory(__file__)
 testdir = curdir.join('test-dir')
@@ -13,8 +13,17 @@ def test_directory():
     prepare()
     subdir = testdir.mkdir('subdir')
     assert isinstance(subdir, Directory)
+    assert subdir.isdir
+    assert subdir.exists
     assert isinstance(testdir.join('subdir'), Directory)
-    fo
+    home_dir = directory('~')
+    assert subdir.relative(home_dir).absolute == subdir.absolute
+    for f in ['a.txt', 'dira/dirb/b.txt', 'c.txt']:
+        f = file(f)
+        directory(f).ensure_exists()
+        with open(f.path, 'w') as fwrite:
+            fwrite.write('asdf')
+    assert
 
 
 def test_serialize():
