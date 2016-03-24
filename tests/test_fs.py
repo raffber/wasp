@@ -1,4 +1,5 @@
 from wasp import directory, Directory, file, factory, File
+from wasp.fs import FileCollection
 
 curdir = directory(__file__)
 testdir = directory(curdir.join('test-dir'))
@@ -56,7 +57,17 @@ def test_file():
     assert f.extension == 'fdsa'
 
 
+def test_file_collection():
+    prepare()
+    fs = testdir.glob('.*', dirs=False)
+    col = FileCollection(fs)
+    newcol = col.replace_extension('asdf')
+    for f in newcol:
+        assert f.extension == 'asdf'
+
+
 if __name__ == '__main__':
     test_directory()
     test_serialize()
     test_file()
+    test_file_collection()

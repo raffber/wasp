@@ -520,26 +520,27 @@ class FileCollection(list):
             # a single file, just add it
             self.append(File(fs.path))
 
-    def replace_extension(self, old=None, new=''):
+    def replace_extension(self, new='', old=None):
         """
         Returns a new :class:``FileCollection` object with Files, where the old extension is removed and replaced with the
         new extension
 
-        :param old: Extension to be processed. if None, all extensions are processd. Processed as regular expression.
         :param new: New extension. If an empty string is given, the extension will be removed.
+        :param old: Extension to be processed. if None, all extensions are processd. Processed as regular expression.
         :return: A new FileCollection object with the processed files.
         """
         ret = FileCollection()
         if old is not None:
             old = re.compile(old)
         for f in self:
-            m = old.match(f.extension)
+            if old is not None:
+                m = old.match(f.extension)
+            else:
+                m = None
             if old is not None and m is not None:
                 ret.append(f.replace_extension(new))
-                continue
-            elif m is None:
-                continue
-            ret.append(f.replace_extension(new))
+            elif old is None:
+                ret.append(f.replace_extension(new))
         return ret
 
 
