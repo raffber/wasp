@@ -7,3 +7,5 @@ build
 *.egg-info
 env
 MANIFEST
+.cache
+tests/test-dir

@@ -92,13 +92,13 @@ class FindQt(Task):
                         base_dir = p.path
                         break
             if base_dir is None:
-                self.log.fatal('qt.FindQt: Could not find Qt base dir. Either specify or copy qt to C:\Qt\Qt5.<version>')
+                self.log.fatal('qt.FindQt: Could not find Qt base dir. Either specify or copy qt to C:\\Qt\\<version>\\<compiler>')
                 self.success = False
                 return
             data = {
-                'include_dir': include_dir or base_dir,
-                'lib_dir': lib_dir or directory(base_dir).join('qtbase/lib').path,
-                'bin_dir': bin_dir or directory(base_dir).join('qtbase/bin').path,
+                'include_dir': include_dir or directory(base_dir).join('include').path,
+                'lib_dir': lib_dir or directory(base_dir).join('lib').path,
+                'bin_dir': bin_dir or directory(base_dir).join('bin').path,
                 'base_dir': base_dir
             }
         else:
@@ -115,6 +115,11 @@ def find_qt(use_default=True, include_dir=None, lib_dir=None, bin_dir=None, base
         lib_dir = lib_dir or Argument('qt_lib_dir').retrieve_all().value
         bin_dir = bin_dir or Argument('qt_bin_dir').retrieve_all().value
         base_dir = base_dir or Argument('qt_base_dir').retrieve_all().value
+    else:
+        include_dir = None
+        lib_dir = None
+        bin_dir = None
+        base_dir = None
     t = FindQt(include_dir=include_dir, lib_dir=lib_dir, bin_dir=bin_dir, base_dir=base_dir)
     if use_default:
         t.produce(':qt/config')
@@ -137,19 +142,9 @@ class Modules(object):
             return directory(lib_dir).join('libQt5' + key + '.so').path
 
     @classmethod
-    def includedir(cls, base_dir, include_dir, key):
-        if osinfo.windows:
-            include_dir = base_dir
+    def includedir(cls, include_dir, key):
         include_dir = directory(include_dir)
-        if osinfo.windows:
-            if key in [cls.core, cls.gui, cls.widgets]:
-                return [include_dir.join('qtbase/include/Qt' + key),
-                        include_dir.join('qtbase/include')]
-            if key in [cls.qml, cls.quick, cls.quick_widgets]:
-                return [include_dir.join('qtdeclarative/include/Qt' + key),
-                        include_dir.join('qtdeclarative/include')]
-        else:
-            return [include_dir.join('Qt' + key), include_dir]
+        return [include_dir.join('Qt' + key), include_dir]
 
 
 class FindModules(Task):
@@ -176,11 +171,11 @@ class FindModules(Task):
                 self.success = False
                 return
             libraries.append(fname)
-            include_paths = Modules.includedir(base_dir, include_dir, key)
+            include_paths = Modules.includedir(include_dir, key)
             for path in include_paths:
                 if not file(path).exists:
                     self.log.fatal('qt.FindModules: Could not find include directories at `{0}`'
-                                   .format(', '.join(include_paths)))
+                                   .format(', '.join(x.path for x in include_paths)))
                     self.success = False
                     return
             includes.extend(include_paths)
