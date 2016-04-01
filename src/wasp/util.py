@@ -71,6 +71,7 @@ class Factory(object):
     def to_json(self, arg):
         if isinstance(arg, Serializable):
             ret = arg.to_json()
+            assert isinstance(ret, dict), 'Expected a dict as return value from `Serializable.to_json()`'
         elif isinstance(arg, dict):  # recurse
             ret = {}
             for k, v in arg.items():
