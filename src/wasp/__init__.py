@@ -129,7 +129,6 @@ extensions = ExtensionCollection()
 
 from .util import Proxy
 ctx = Proxy()
-# TODO: document
 
 
 def recurse(*fpaths):

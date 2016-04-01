@@ -1,3 +1,5 @@
+import os
+
 from wasp.config import Config
 
 
@@ -37,7 +39,7 @@ def test_valid_config():
     assert argcol['dict-arg'].value == {
         'foo': 'bar'
     }
-    assert conf.pythonpath[0].path == '~/.local'
+    assert conf.pythonpath[0].path == os.path.expanduser('~/.local')
     assert conf.default_command == 'build'
     assert not conf.pretty
     assert conf.verbosity == 5

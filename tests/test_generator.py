@@ -20,7 +20,7 @@ class DummyGenerator(Generator):
         if source is not None:
             self.source = file(source)
         else:
-            self.source = curdir.join('test-dir').join('test.txt')
+            self.source = file(curdir.join('test-dir').join('test.txt'))
         if destination is not None:
             self.destination = file(destination)
         else:
