@@ -212,7 +212,7 @@ class Logger(object):
         msg = LogStr(self._prepend, msg)
         str_msg = str(msg)
         if self._io is not None:
-            self._io.write(str_msg)
+            self._io.write(str_msg + '\n')
         if not stderr:
             if sys.stdout.isatty():
                 msg.write_to_terminal(endl=True)
