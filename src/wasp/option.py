@@ -323,6 +323,8 @@ class ArgumentOption(Option):
         else:
             self._value = value
 
+    value = property(Option.get_value, set_value)
+
 
 class FlagOption(Option):
     """
@@ -389,7 +391,7 @@ class EnableOption(Option):
     def retrieve_from_dict(self, args):
         enabled = args.get('enable-' + self.name, False)
         disabled = args.get('disable-' + self.name, False)
-        if enabled and self.value:
+        if enabled and not self.value:
             # enabled is default so check disabled
             self._value = not disabled  # True iff disabled not set
         if disabled and self._value:
@@ -397,8 +399,17 @@ class EnableOption(Option):
             self._value = enabled  # True iff enabled set
 
     def set_value(self, v):
+        if v is None:
+            v = False
         assert isinstance(v, bool), 'Value must be a bool'
         self._value = v
+
+    def get_value(self):
+        if self._value is None:
+            return False
+        return self._value
+
+    value = property(get_value, set_value)
 
     def to_json(self):
         d = super().to_json()
@@ -443,6 +454,8 @@ class StringOption(Option):
         assert isinstance(v, str), 'Value must be a str'
         self._value = v
 
+    value = property(Option.get_value, set_value)
+
 
 factory.register(StringOption)
 
@@ -472,6 +485,7 @@ class IntOption(Option):
         assert isinstance(v, int), 'Value must be a int'
         self._value = v
 
+    value = property(Option.get_value, set_value)
 
 factory.register(IntOption)
 

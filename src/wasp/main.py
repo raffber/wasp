@@ -39,7 +39,7 @@ class OptionHandler(object):
         self._commands = []
         self._argparse = argparse.ArgumentParser(description='Welcome to {0}'.format(ctx.meta.projectname))
 
-    def parse(self):
+    def parse(self, args=None):
         """
         Injects the argument parser, adds all options to it (by calling the respective handlers),
         parses the command line and calls all ``@option_handler`` functions.
@@ -70,14 +70,13 @@ class OptionHandler(object):
             grp.description = descriptions[name]
             grp.add(StringOption('target', 'Only produce the given target.', keys=['t', 'target']))
         # call option decorators
-
         for option_decorator in decorators.options:
             option_decorator(ctx.options)
         # setup argument parser
         ctx.options.add_to_argparse(self._argparse)
         if has_argcomplete:
             argcomplete.autocomplete(self._argparse)
-        parsed = self._argparse.parse_args()
+        parsed = self._argparse.parse_args(args=args)
         if parsed.command is None:
             extra = None
         else:
