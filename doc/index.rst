@@ -9,6 +9,8 @@ Contents
 .. toctree::
     introduction.rst
     config.rst
+    utility.rst
+    tools.rst
     api.rst
 
 
