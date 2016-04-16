@@ -164,7 +164,7 @@ from .fs import files, file, path, paths, directories, directory, move
 from .task import Task, group, chain, task, TaskCollection, TaskGroup, collect, empty, TaskFailedError
 from .shell import shell, ShellTask, quote
 from .tools import tool
-from .builtin import build, configure, install, alias, init
+from .builtin import build, configure, install, alias, init, clean
 from .metadata import metadata, Metadata
 from .node import Node, FileNode, SymbolicNode, nodes, node
 
