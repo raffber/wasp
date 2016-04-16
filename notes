@@ -7,6 +7,9 @@ Current:
  * make windows compiler print stdout to error
     in case of fail
 
+ * fix tests on windows
+ * logging: make sure assigning a logger to a task works
+
 Next
 -----
 
