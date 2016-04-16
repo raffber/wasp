@@ -1,11 +1,10 @@
 from wasp import directory, Directory, file, factory, File
 from wasp.fs import FileCollection
 
-curdir = directory(__file__)
-testdir = directory(curdir.join('test-dir'))
-
 
 def prepare():
+    curdir = directory(__file__)
+    testdir = directory(curdir.join('test-dir'))
     testdir.remove(recursive=True)
     assert not testdir.exists
     testdir.ensure_exists()
@@ -19,6 +18,8 @@ def prepare():
 
 
 def test_directory():
+    curdir = directory(__file__)
+    testdir = directory(curdir.join('test-dir'))
     prepare()
     subdir = testdir.mkdir('subdir')
     assert isinstance(subdir, Directory)
@@ -45,6 +46,8 @@ def test_serialize():
 
 
 def test_file():
+    curdir = directory(__file__)
+    testdir = directory(curdir.join('test-dir'))
     prepare()
     f = testdir.join('a.txt')
     assert isinstance(f, File)
@@ -59,6 +62,8 @@ def test_file():
 
 def test_file_collection():
     prepare()
+    curdir = directory(__file__)
+    testdir = directory(curdir.join('test-dir'))
     fs = testdir.glob('.*', dirs=False)
     col = FileCollection(fs)
     newcol = col.replace_extension('asdf')
