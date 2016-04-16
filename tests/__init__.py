@@ -7,10 +7,10 @@ test_dir = os.path.abspath(os.path.dirname(__file__))
 src_dir = os.path.abspath(os.path.join(test_dir, '../src'))
 sys.path.append(src_dir)
 
-from wasp import Context, ctx
+import wasp
 
 
 def setup_context():
     Directory(__file__).join('c4che.json').remove()
-    ctx.__assign_object(Context())
+    wasp.ctx.reset()
     init_context(Directory(__file__))

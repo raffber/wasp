@@ -19,7 +19,7 @@ import shutil
 from .node import FileNode
 from .task import Task
 from .util import Serializable, is_iterable
-from . import factory, ctx
+from . import factory
 from .generator import Generator
 from .argument import find_argumentkeys_in_string
 
@@ -239,6 +239,7 @@ class Path(Serializable):
 
             file('src/main.c').to_builddir().append_extension('.o')
         """
+        from wasp import ctx
         if self.is_subpath(ctx.builddir):
             return self.copy()
         return Path(ctx.builddir.join(self._path))
@@ -393,6 +394,7 @@ class Directory(Path):
         os.makedirs(self._path, exist_ok=True)
 
     def to_builddir(self):
+        from wasp import ctx
         if self.is_subpath(ctx.builddir):
             return self.copy()
         return Directory(ctx.builddir.join(self._path))
@@ -480,6 +482,7 @@ class File(Path):
         return File(self._path + '.' + append)
 
     def to_builddir(self):
+        from wasp import ctx
         if self.is_subpath(ctx.builddir):
             return self.copy()
         return File(ctx.builddir.join(self._path))
@@ -980,4 +983,5 @@ factory.register(FileInstallGenerator)
 
 
 def defer_install(file, destination='{PREFIX}/share/{PROJECTID}', permissions=DEFAULT_PERMSSIONS, command='install'):
+    from wasp import ctx
     ctx.generators(command).add(FileInstallGenerator(file, destination=destination, permissions=permissions))

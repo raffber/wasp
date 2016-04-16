@@ -1,4 +1,4 @@
-from . import decorators, ctx
+from . import decorators
 from wasp.node import node
 
 
@@ -59,6 +59,7 @@ class Command(object):
         return self._name
 
     def run(self, as_dependency=False):
+        from wasp import ctx
         command_cache = ctx.cache.prefix('commands')
         previous_succ = self.name in command_cache and command_cache[self.name].get('success', False)
         if self._skip_as_dependency and as_dependency and previous_succ:

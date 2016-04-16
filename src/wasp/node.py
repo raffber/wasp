@@ -1,5 +1,4 @@
 from uuid import uuid4 as generate_uuid
-from . import ctx
 from .signature import FileSignature, CacheSignature, DummySignature
 from .argument import ArgumentCollection, collection
 from .util import is_iterable
@@ -72,6 +71,7 @@ class Node(object):
 
         :param ns: The namespace for which the signature should be returned.
         """
+        from . import ctx
         if self._discard:
             return DummySignature(discard=True)
         signature = ctx.signatures.get(self.key, ns=ns)
@@ -85,6 +85,7 @@ class Node(object):
         Returns True if the node has changed within the given namespace.
         For more information on namespaces see :class:`wasp.signature.Signature`.
         """
+        from . import ctx
         sig = ctx.produced_signatures.get(self.key, ns=ns)
         if sig is None:
             return True
@@ -99,6 +100,7 @@ class Node(object):
 
         :param ns: he namespace for which the signature should be invalidated.
         """
+        from . import ctx
         ctx.signatures.invalidate_signature(self.key, ns=ns)
 
     def before_run(self, target=False):
@@ -188,6 +190,7 @@ class SymbolicNode(Node):
             if self._cache is None:
                 return ArgumentCollection()
             return self._cache
+        from . import ctx
         arg_col = ctx.cache.prefix('symblic-nodes').get(self.key, None)
         if arg_col is None:
             return ArgumentCollection()
@@ -214,6 +217,7 @@ class SymbolicNode(Node):
         if self.discard:
             self._cache = col
             return
+        from . import ctx
         ctx.cache.prefix('symblic-nodes')[self.key] = col
 
     def update(self, *args, **kw):

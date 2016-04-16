@@ -1,11 +1,12 @@
 from .util import Serializable, checksum, json_checksum, lock
 from uuid import uuid4 as generate_uuid
-from . import factory, ctx
+from . import factory
 import os
 
 
 def _get_ns(ns):
     if ns is None:
+        from wasp import ctx
         return ctx.current_namespace or 'default'
     return ns
 
@@ -355,6 +356,7 @@ class CacheSignature(Signature):
             self._value = value
             return value
         if self._cache is None:
+            from wasp import ctx
             self._cache = ctx.cache.prefix(self._prefix)
         data = self._cache.get(self._cache_key, None)
         if data is None:

@@ -127,9 +127,6 @@ from .extension import ExtensionCollection, ExtensionMetadata
 extensions = ExtensionCollection()
 """A collection of registered extensions"""
 
-from .util import Proxy
-ctx = Proxy()
-
 
 def recurse(*fpaths):
     """
@@ -155,6 +152,9 @@ A list of files which have been registered by :func:`recurse`
 """
 
 from .context import Context
+
+ctx = Context()
+
 from .config import config, Config
 from .option import options, handle_options, FlagOption, EnableOption, StringOption, IntOption
 from .argument import Argument, value, arg, format_string, find_argumentkeys_in_string, ArgumentCollection
@@ -168,5 +168,3 @@ from .builtin import build, configure, install, alias, init
 from .metadata import metadata, Metadata
 from .node import Node, FileNode, SymbolicNode, nodes, node
 
-
-ctx.__assign_object(Context())

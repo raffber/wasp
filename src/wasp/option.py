@@ -1,6 +1,6 @@
 import re
 from .util import Serializable, FunctionDecorator
-from . import factory, decorators, ctx
+from . import factory, decorators
 from wasp.argument import ARGUMENT_KEY_RE_STR
 
 from collections import OrderedDict
@@ -121,6 +121,7 @@ class OptionsCollection(OrderedDict):
         Saves this collection to ``ctx.cache``.
         """
         # TODO: why does this not support subcollctions
+        from wasp import ctx
         d = ctx.cache.prefix('options')[self.name]
         for opt in self.values():
             d[opt.name] = opt
@@ -133,6 +134,7 @@ class OptionsCollection(OrderedDict):
             already present should be overwritten.
         """
         # TODO: why does this not support subcollctions
+        from wasp import ctx
         d = ctx.cache.prefix('options')[self.name]
         for k, v in d.items():
             if override or k not in self.keys() or self[k].empty():

@@ -3,7 +3,7 @@ Arguments represent the primary tool for passing data between tasks.
 They main class :class:`Argument` is a serializable key-value pair.
 """
 
-from . import ctx, factory
+from . import factory
 import re
 import json
 from .util import Serializable, UnusedArgFormatter, parse_assert, is_json_primitive, is_json_serializable
@@ -321,6 +321,7 @@ class Argument(Serializable):
         :param default: Default value which is assigned, if the value was not found.
         :return: self
         """
+        from wasp import ctx
         self.retrieve(ctx.arguments, ctx.options, ctx.config, ctx.meta, ctx.env, default=default)
         return self
 

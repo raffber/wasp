@@ -20,6 +20,9 @@ class Context(object):
     """
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self._generators = {}
         self._tools = ToolsCollection('wasp-tools')
         self._arguments = ArgumentCollection()

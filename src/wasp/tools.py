@@ -1,5 +1,6 @@
 import sys
 from .util import Proxy, load_module_by_name
+from .fs import Directory
 
 proxies = {}
 
@@ -12,7 +13,6 @@ class ToolsCollection(dict):
 
     def __init__(self, tooldir):
         super().__init__()
-        from . import Directory
         if isinstance(tooldir, str):
             tooldir = Directory(tooldir)
         self._tooldir = tooldir
