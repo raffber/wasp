@@ -8,6 +8,7 @@ from .logging import LogStr
 from .fs import Directory, top_dir, Path
 from . import ctx, osinfo
 
+from collections import Iterable
 from subprocess import Popen, PIPE
 import shlex
 from time import sleep
@@ -95,18 +96,27 @@ class ShellTask(Task):
                 tgt_list.append(tgt_path)
         src_str = ' '.join([quote(x) for x in src_list])
         tgt_str = ' '.join([quote(x) for x in tgt_list])
-        kw = {'SRC': src_str,
-              'src': src_str,
-              'TGT': tgt_str,
-              'tgt': tgt_str}
         # assign upper and lower keys, s.t. it is up to the preference of
         # users how to format command strings.
         # typically, one uses upper case variable names, however, people
         # who have not grown up with make, will probably use the less shouty version
         # and use lower-case strings.
+        kw = {'SRC': src_str,
+              'src': src_str,
+              'TGT': tgt_str,
+              'tgt': tgt_str}
         for key, arg in self.arguments.items():
             if isinstance(arg.value, Path):
                 value = arg.value.path
+            elif issubclass(arg.type, Iterable) and arg.type != str:
+                strlist = True
+                for x in arg.value:
+                    if not isinstance(x, str):
+                        strlist = False
+                        break
+                if not strlist:
+                    continue
+                value = ' '.join(arg.value)
             elif arg.type != str:
                 continue
             else:
