@@ -8,6 +8,10 @@ Current:
     in case of fail
  * fix tests on windows
  * Possibly remove task.key and replace with id(task)
+ * If a task failed, in --vdebug, print the failing task
+ * make sure args can somehow be not quoted in shell
+ * reenable passing iterables of strings as shell args
+ * switchnode builds twice?! <= rebuild does not work properly
 
 
 Next
