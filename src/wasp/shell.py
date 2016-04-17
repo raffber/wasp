@@ -3,11 +3,12 @@ import sys
 from .task import Task
 from .node import FileNode
 from .argument import find_argumentkeys_in_string
-from .util import UnusedArgFormatter
 from .logging import LogStr
 from .fs import Directory, top_dir, Path
 from . import ctx, osinfo
+from .util import UnusedArgFormatter
 
+from collections import Iterable
 from subprocess import Popen, PIPE
 import shlex
 from time import sleep
@@ -95,27 +96,26 @@ class ShellTask(Task):
                 tgt_list.append(tgt_path)
         src_str = ' '.join([quote(x) for x in src_list])
         tgt_str = ' '.join([quote(x) for x in tgt_list])
-        kw = {'SRC': src_str,
-              'src': src_str,
-              'TGT': tgt_str,
-              'tgt': tgt_str}
-        # assign upper and lower keys, s.t. it is up to the preference of
-        # users how to format command strings.
-        # typically, one uses upper case variable names, however, people
-        # who have not grown up with make, will probably use the less shouty version
-        # and use lower-case strings.
+        kw = {'src': src_str, 'tgt': tgt_str}
         for key, arg in self.arguments.items():
+            unquoted = None
             if isinstance(arg.value, Path):
-                value = arg.value.path
-            elif arg.type != str:
-                continue
+                value = quote(arg.value.path)
+            elif arg.type == str:
+                unquoted = arg.value
+                value = quote(arg.value)
+            elif issubclass(arg.type, Iterable):
+                if not all(isinstance(x, str) for x in arg.value):
+                    continue
+                value = ' '.join(quote(x) for x in arg.value)
+                unquoted = ' '.join(x for x in arg.value)
             else:
-                value = arg.value
+                continue
             if '-' in key:
                 key = key.replace('-', '_')
-            value = quote(str(value))
-            kw[key.upper()] = value
-            kw[key.lower()] = value
+            kw[key.lower()] = quote(value)
+            if unquoted is not None:
+                kw[key.lower() + '_noquote'] = unquoted
         return kw
 
     def require_all(self):

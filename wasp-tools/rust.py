@@ -1,4 +1,4 @@
-from wasp import shell, find_exe, File, group, ctx, Directory, files
+from wasp import shell, find_exe, ctx, Directory
 
 
 RUST_BINARY_PATHS = ['/usr/bin', '/usr/local/bin']
@@ -27,5 +27,5 @@ def cargo_build(directory):
 
 def executable(source, target):
     target = ctx.builddir.join(target)
-    return shell('{rustc} {SRC} -o {TGT}', sources=source, targets=target)\
+    return shell('{rustc} {src} -o {tgt}', sources=source, targets=target)\
         .use(':rust/rustc').require(('rustc', find_rustc))

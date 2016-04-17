@@ -4,9 +4,6 @@ Next Task
 Current:
 ---------
 
- * allow specifiying a "don't quote me" modifier in ShellTask
- * make sure args can somehow be not quoted in shell
- * reenable passing iterables of strings as shell args
  * switchnode builds twice?! <= rebuild does not work properly
 
 

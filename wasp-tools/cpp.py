@@ -382,16 +382,16 @@ class CompileTask(ShellTask):
         # unless they are given as an absolute path
         cli = CompilerCli(self._compilername)
         include = [cli.include_dir(directory(x).relative(self._cwd, skip_if_abs=True).path) for x in include]
-        kw['INCLUDES'] = ' '.join(set(include))
-        kw['CFLAGS'] = ' '.join(set(self.arguments.value('cflags', [])))
+        kw['includes'] = ' '.join(set(include))
+        kw['cflags'] = ' '.join(set(self.arguments.value('cflags', [])))
         csource = self.arguments.value('csource', None)
         if csource is None:
             raise TaskFailedError('No sources recognized. Are your source files '
                                   'using the right extensions? Expected one of [{}]'
                                   .format(', '.join(self.extensions)))
-        kw['CSOURCE'] = csource
+        kw['csource'] = csource
         defines = self.arguments.value('defines', [])
-        kw['DEFINES'] = cli.defines(defines)
+        kw['defines'] = cli.defines(defines)
         return kw
 
 
@@ -401,9 +401,9 @@ class CxxCompile(CompileTask):
     @property
     def cmd(self):
         if self._compilername == 'msvc':
-            return '{CXX} {CFLAGS} {INCLUDES} {DEFINES} /c /Fo{TGT} {CSOURCE}'
+            return '{cxx} {cflags} {includes} {defines} /c /Fo{tgt} {csource}'
         else:
-            return '{CXX} {CFLAGS} {INCLUDES} {DEFINES} -c -o {TGT} {CSOURCE}'
+            return '{cxx} {cflags} {includes} {defines} -c -o {tgt} {csource}'
 
     def _init(self):
         super()._init()
@@ -416,9 +416,9 @@ class CCompile(CompileTask):
     @property
     def cmd(self):
         if self._compilername == 'msvc':
-            return '{CC} {CFLAGS} {INCLUDES} {DEFINES} /c /Fo{TGT} {CSOURCES}'
+            return '{cc} {cflags} {includes} {defines} /c /Fo{tgt} {csource}'
         else:
-            return '{CC} {CFLAGS} {INCLUDES} {DEFINES} -c -o {TGT} {CSOURCES}'
+            return '{cc} {cflags} {includes} {defines} -c -o {tgt} {csource}'
 
     def _init(self):
         super()._init()
@@ -440,9 +440,9 @@ class Link(ShellTask):
     @property
     def cmd(self):
         if self._linkername == 'msvc':
-            return '{LD} {LDFLAGS} {LIBRARIES} /OUT:{TGT} {SRC}'
+            return '{ld} {ldflags} {libraries} /OUT:{tgt} {src}'
         else:
-            return '{LD} {LDFLAGS} {LIBRARIES} -o {TGT} {SRC} {STATIC_LIBS}'
+            return '{ld} {ldflags} {libraries} -o {tgt} {src} {static_libs}'
 
     def use_arg(self, arg):
         if arg.key in ['ldflags', 'libraries', 'static_libraries']:
@@ -455,9 +455,9 @@ class Link(ShellTask):
         libraries = self.arguments.value('libraries', [])
         cli = LinkerCli(self._linkername)
         libs_cmdline = [cli.link(x) for x in libraries]
-        kw['LIBRARIES'] = ' '.join([quote(l) for l in libs_cmdline])
-        kw['LDFLAGS'] = ' '.join(set(self.arguments.value('ldflags', [])))
-        kw['STATIC_LIBS'] = ' '.join(set(self.arguments.value('static_libraries', [])))
+        kw['libraries'] = ' '.join([quote(l) for l in libs_cmdline])
+        kw['ldflags'] = ' '.join(set(self.arguments.value('ldflags', [])))
+        kw['static_libs'] = ' '.join(set(self.arguments.value('static_libraries', [])))
         return kw
 
 
