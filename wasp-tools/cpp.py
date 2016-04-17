@@ -12,6 +12,9 @@ import wasp
 import re
 
 
+SRC_GLOB = '.*?\.c((pp)|(xx))?$'
+
+
 if not osinfo.linux and not osinfo.windows:
     raise ImportError('`cpp` tool does not support your platform')
 
@@ -25,6 +28,18 @@ def options(opt):
     elif osinfo.windows:
         opt.add(StringOption('msvc-path', 'Set the path to the base folder where MSVC is located.'))
         opt.add(StringOption('msvc-arch', 'Set the architecture to be used for compiling (`x86` or `x64`).'))
+
+
+def glob(*dirs):
+    ret = []
+    for d in dirs:
+        # ensure that we are dealing with a directory
+        # the directory function will raise if there is
+        # an issue
+        d = directory(d)
+        ret.extend(d.glob(SRC_GLOB))
+    return ret
+
 
 
 class CompilerCli(object):

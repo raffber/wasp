@@ -6,9 +6,9 @@ Current:
 
  * make windows compiler print stdout to error
     in case of fail
-
  * fix tests on windows
- * logging: make sure assigning a logger to a task works
+ * Possibly remove task.key and replace with id(task)
+
 
 Next
 -----
@@ -19,7 +19,6 @@ Next
  * More integration tests?
  * Improve tools
  * Documentation
- * Publish on github
 
 Cpp Tool
 ========
@@ -48,9 +47,6 @@ Lower Priorieties/Questions
  * allow finding directories find( .... , directory=True)
  * add commandline options to tools
  * signatures could be numbers instead of strings?
- * Allow specifying different build directories (for different combinations of
-    build flags)
- * Possibly remove task.key and replace with id(task)
  * globalwasp automatically invokes --target . which builds all targets of current dir. can be disabled with -a/--all
  * API to trigger command rerun
     -> maybe outgoing nodes of each command should be checked to determine if a command must be rerun
@@ -64,11 +60,9 @@ Lower Priorieties/Questions
  * progress bar! -> extension?!
  * check this: is node refresh always parallelized?! => parallel for
  * allow ctx.g('subdir')? such that variables can be scoped => ctx.g(__file__)
- * check if relto is honored all the time.
-    => str(path) should return standardized reperesentation
  * create a boolean node.... as in run_if(fun, task) -> TriggerNode
- * improve error output, somehow identify task if MissingArgumentError
- * remove the number of pitfalls
+ * improve error output, identify task if MissingArgumentError
+ * remove pitfalls
     -> collect them
     -> fix them
  * task.parallel must exist (e.g. for invoking external pkg managers)
@@ -76,12 +70,8 @@ Lower Priorieties/Questions
  * sync on log => no ugly race conditions in output
     --> with self.log: ...
  * better --help formatting: actually show descriptions
- * tidy up imports
  * refactor realpath to abspath
  * set default verbosity to info?!
- * binary json?! maybe implmented by myself? -> http://bsonspec.org
- * yaml subset which can be translated to json (a.k.a yson)
-    -> or CSON?! <- should be added to util library
  * invocation from recursive directory: how to deduce topdir?!
  * simplify global bashcompletion activation
  * verbosity per decorator (use command class, assign all tasks their logger just after calling a command)
@@ -96,38 +86,14 @@ Lower Priorieties/Questions
    - pip install --install-option="--prefix=$PREFIX_PATH" package_name
  * find a way to name arguments using the symbolic node name
     -> namespace the arguments
- * benchmark --> make things faster
  * egrep -rni NotImplementedError src/ | grep TODO
+ * see if there is an alternative to JSON with a more friendly syntax (YSON, CSON, TOML)
 
 
 Patterns
 ========
 
-* PATTERN: a task should only update the result, not overwrite it
-
-Discared Ideas
-===============
-
- * what happens if compile flags are changed?
-    -> task needs to have a .name() and a .hash() function
-    -> .name() must not change between invocations of ./wasp
-        -> default impl: hash(self.__class__.__name) + hash(self.sources) + hash(self.targets)
-        -> suclassed: super().name() + hash(self._privatevar)
-    -> .hash() must change if config is changed
-        -> default: self.name() + hash(self.arguments)
-        -> suclassed: super().hash() + hash(self._privatevar)
-
-
-=> ArgumentProviderBase
-    -> defines __getitem__ and __setitem__
-=> overrides: task.overrides.append(provider)
-=> ArgumentProvider(ArgumentProviderBase)
-    -> .limit(keys) limits the keys available
-    -> provider(..., keys=[]) creates an argumentprovider and limits with keys
-=> what about not overriding arguments by default?!
-    -> maybe don't override arg if already there? (in check())
-
-
+* a task should only update the result, not overwrite it
 
 
 Global Installation and call from subdirectory
@@ -153,14 +119,6 @@ Pitfalls
     i.e. if a task is used() but never added, this should somehow be detected
  * possibly make a pitfalls handler where information is collected
 
-Tools
---------------
-
- * cargo/rust
- * cpp
- * qt
- * latex
-
 
 subproject Extension
 ------------------
@@ -184,24 +142,6 @@ Extensions
     --> openocd
     --> gdb server
 
-
-Removal of global variables
-===========================
-
- * see if this is an issue -> if yes, implement this in a separate branch
-    -> probably not going to happen, since most likely, this is a non-issue
- * possibly use some dependency injection algorithm
-    -> default argument could be   def whatever(ctx=inject('ctx')): ....
- * inject a context into the loaded modules?
- * provide a set of clever macros which allows capturing context
- * make a default context global?! retrieve ctx automatically if not provided
- * pass the context everywhere
- * port signature stuff into context again
- * allow passing ctx to the fs components
- * how to handle decorators?!
-    --> couple the decorator to a context with module imports
-    --> this can be accomplished by locking on a global object
-    --> create_context() may create a new context based on an old one.
 
 Ideas for more features
 =======================
