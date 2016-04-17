@@ -608,6 +608,7 @@ def run_task(task):
             real_task.on_success()
         else:
             real_task.on_fail()
+            log.debug(log.format_fail('Task `{}` failed'.format(type(real_task).__name__)))
         real_task.postprocess()
     except TaskFailedError as e:
         real_task.success = False

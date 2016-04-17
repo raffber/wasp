@@ -90,7 +90,6 @@ class Task(object):
         self._always = always
         self._success = False
         self._arguments = ArgumentCollection()
-        self._key = str(uuid())
         self._run_list = CallableList(arg=self)
         self._run_list.append(lambda x: self._run())
         if fun is not None:
@@ -169,12 +168,6 @@ class Task(object):
         """
         return self._targets
 
-    def __eq__(self, other):
-        return other.identfier == self._key
-
-    def __ne__(self, other):
-        return not (other.identfier == self._key)
-
     def check(self, spawn=True):
         """
         Retrieves the required arguments of the task by reading all source nodes.
@@ -197,9 +190,8 @@ class Task(object):
                 # arg = Argument(argkey).retrieve_all()
                 # if arg.is_empty:
                 if spawner is None or not spawn:
-                    raise MissingArgumentError(
-                        'Missing argument for task: Required argument "{1}" is empty.'
-                        .format(self.key, argkey))
+                    raise MissingArgumentError('Missing argument for task: '
+                                               'Required argument `{}` is empty.'.format(argkey))
                 t = spawner()
                 self.use(t)
                 ret.append(t)
@@ -711,4 +703,4 @@ class TaskCollection(dict):
                 self.add(t)
             return
         assert isinstance(task, Task)
-        self[task.key] = task
+        self[id(task)] = task
