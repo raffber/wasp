@@ -77,13 +77,13 @@ class OptionHandler(object):
         if has_argcomplete:
             argcomplete.autocomplete(self._argparse)
         parsed = self._argparse.parse_args(args=args)
-        if parsed.command is None:
+        if 'command' not in parsed or parsed.command is None:
             extra = None
         else:
             extra = parsed.other_commands
         parsed = vars(parsed)
         ctx.options.retrieve_from_dict(parsed)
-        com = parsed['command']
+        com = parsed['command'] if 'command' in parsed else None
         if com is not None:
             self._commands = [com]
         else:
@@ -121,6 +121,7 @@ class OptionHandler(object):
 def retrieve_command_tasks(name, as_dependency=False):
     """
     Retrieves tasks from the command ``name``.
+
     :param name: Name of the command.
     :return: An object of type TaskCollection() populated with tasks.
     """

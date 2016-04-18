@@ -321,13 +321,6 @@ class Task(object):
     task was actually run.
     """
 
-    @property
-    def key(self):
-        """
-        Returns the key for identifying this task.
-        """
-        return self._key
-
     def set_success(self, suc):
         self._success = suc
 

@@ -333,9 +333,6 @@ class FlagOption(Option):
     Option which is treated as a flag if it is specified on the command
     line, i.e. True is stored if the option is given.
     """
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
-
     def add_to_argparse(self, args):
         strings = []
         for prefix, key in zip(self._prefix, self._keys):
