@@ -5,7 +5,7 @@ from .tools import proxies as tool_proxies, NoSuchToolError
 from .option import StringOption
 from .execution import execute, ParallelExecutor
 from .node import nodes
-from .argument import Argument, value
+from .argument import value
 from . import _recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators, Directory
 from .util import is_iterable
 from .signature import FileSignature
