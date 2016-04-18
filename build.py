@@ -2,10 +2,10 @@ import os
 import zlib
 import binascii
 from wasp.util import first
-from wasp import shell, tool, ctx, recurse, FileNode
+from wasp import shell, tool, ctx, recurse
 from wasp.ext.watch import watch
 import wasp
-from wasp.fs import find_exe, Directory, file, files
+from wasp.fs import find_exe, Directory, files
 from wasp.task import TaskFailedError
 
 sphinx = tool('sphinx')

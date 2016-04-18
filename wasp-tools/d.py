@@ -5,7 +5,7 @@ from wasp import ShellTask, osinfo
 
 
 class Compile(ShellTask):
-    cmd = '{DC} {DFLAGS} -c {SRC} -of{TGT}'
+    cmd = '{dc} {dflags} -c {src} -of{tgt}'
 
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
@@ -19,7 +19,7 @@ class Compile(ShellTask):
 
 
 class Link(ShellTask):
-    cmd = '{DC} {LDFLAGS} {SRC} -of{TGT}'
+    cmd = '{dc} {ldflags} {src} -of{tgt}'
 
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)

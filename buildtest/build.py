@@ -11,13 +11,13 @@ cpp = tool('cpp')
 qt = tool('qt')
 
 
-dir = Directory(__file__)
+curdir = Directory(__file__)
 
 
 @wasp.build
 def main():
-    one = d.compile(dir.join('one.d'))
-    two = d.compile(dir.join('two.d'))
+    one = d.compile(curdir.join('one.d'))
+    two = d.compile(curdir.join('two.d'))
     link = d.link(one, two)
     yield group(one, two, link)
 
@@ -44,14 +44,14 @@ def _cpp():
 
 @wasp.command('nodejs', depends='configure')
 def _nodejs():
-    for f in dir.glob('.*?.js$', exclude='build/.*'):
+    for f in curdir.glob('.*?.js$', exclude='build/.*'):
         yield shell('{jsmin} {SRC} > {TGT}', sources=f, targets=f.to_builddir()).use(':jsmin')
 
 
 @wasp.command('qt')
 def _qt():
-    headers = [dir.join('qtmain.h')]
-    sources = [dir.join('qtmain.cpp')]
+    headers = [curdir.join('qtmain.h')]
+    sources = [curdir.join('qtmain.cpp')]
     modules = qt.find_modules()
     mocs = qt.moc(headers)
     sources.extend(mocs.targets)
@@ -60,4 +60,4 @@ def _qt():
     yield modules
     yield mocs
     yield objs
-    yield qt.link(objs, target=dir.join('qtmain')).use(modules)
+    yield qt.link(objs, target=curdir.join('qtmain')).use(modules)
