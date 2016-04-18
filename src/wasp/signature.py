@@ -28,7 +28,7 @@ class SignatureProvider(object):
         ns = _get_ns(ns)
         if ns not in self._d:
             self._d[ns] = {}
-        self._d[ns][signature.name] = signature
+        self._d[ns][signature.key] = signature
 
     def get_signatures(self, ns=None):
         ns = _get_ns(ns)
@@ -60,7 +60,7 @@ class SignatureProvider(object):
         ns = _get_ns(ns)
         if ns not in self._d:
             self._d[ns] = {}
-        self._d[ns][signature.name] = signature
+        self._d[ns][signature.key] = signature
 
     def save(self, cache):
         """
@@ -159,7 +159,7 @@ class ProducedSignatures(object):
         ns = _get_ns(ns)
         if ns not in self._signaturedb:
             self._signaturedb[ns] = {}
-        self._signaturedb[ns][signature.name] = signature
+        self._signaturedb[ns][signature.key] = signature
 
     @property
     def namespaces(self):
@@ -198,13 +198,6 @@ class Signature(Serializable):
 
     @property
     def key(self):
-        """
-        Returns the key of the signature for identifying it in storage.
-        """
-        return self._key
-
-    @property
-    def name(self):
         """
         Returns the key of the signature for identifying it in storage.
         """
@@ -267,6 +260,11 @@ class Signature(Serializable):
 
     def clone(self):
         raise NotImplementedError
+
+    def __repr__(self):
+        name = self.__class__.__name__
+        module = self.__class__.__module__
+        return '<' + module + '.' + name + ' = ' + str(self.value) + '>'
 
 
 class FileSignature(Signature):

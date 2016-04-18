@@ -544,9 +544,7 @@ def run(dir_path):
         if 'clean' in options.commands:
             run_command('clean')
         options.handle_options()
-        successs = handle_commands(options)
+        success = handle_commands(options)
     except FatalError:
-        successs = False
-    finally:
-        ctx.save()
-    return successs
+        success = False
+    ctx.save()

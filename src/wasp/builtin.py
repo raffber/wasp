@@ -130,7 +130,9 @@ class build(FunctionDecorator):
             # register rebuild command
             @command('rebuild', description='Cleans the project and invokes build afterwards.', option_alias='build')
             def _rebuild():
+                d = ctx.cache.prefix('script-signatures')
                 succ = run_command('clean')
+                ctx.cache['script-signatures'] = d
                 if not succ:
                     raise CommandFailedError
                 succ = run_command('build', executed_commands=['clear'])
