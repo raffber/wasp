@@ -349,8 +349,6 @@ class Task(object):
 
          * :class:`wasp.argument.Argument`
          * :class:`wasp.argument.ArgumentCollection`: uses all its arguments
-         * :class:`TaskGroup`: Uses the group.target_task if given,
-            otherwise all tasks contained in the task group
          * :class:`wasp.node.SymbolicNode`: Adds the node as a dependency and retrieves
             arguments from it.
          * :class:`wasp.node.Node`: Adds the node as a dependency.
@@ -358,6 +356,8 @@ class Task(object):
          * ``str``: If formatted as a valid identifier for a :class:`wasp.node.SymbolicNode`
             uses the node. Otherwise, an empty argument is added and it is attempted to
             fill it automatically (by calling ``Argument.retrieve_all()``).
+         * :class:`TaskGroup`: Uses the ``group.target_task`` if given,
+            otherwise all tasks contained in the task group
          * Also accepts an iterable objects of the above types.
 
         :param *args: Tuple of object with the above types.
