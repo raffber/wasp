@@ -30,6 +30,12 @@ class OptionsCollection(OrderedDict):
         Allows specifying two sub-collection keys which map to the same
         sub-collection. Thus, two commands may accept the same options.
         """
+        assert from_ not in self._alias, 'OptionsCollection '
+        if to_ not in self._groups:
+            self._groups[to_] = OptionsCollection(to_)
+        if from_ in self._groups:
+            for k, v in self._groups[from_].items():
+                self._groups[to_][k] = v
         self._alias[from_] = to_
 
     @property

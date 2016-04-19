@@ -9,7 +9,7 @@ import json
 from .util import Serializable, UnusedArgFormatter, parse_assert, is_json_primitive, is_json_serializable
 
 
-ARGUMENT_KEY_RE_STR = '[\w\d]+[\w\d_-]*'
+ARGUMENT_KEY_RE_STR = '[\w\d]+[\w\d_]*'
 """A key of an argument must match this string"""
 ARGUMENT_KEY_RE = re.compile('^' + ARGUMENT_KEY_RE_STR + '$')
 """Compiled version of :data:`wasp.argument.ARGUMENT_KEY_RE`"""
@@ -72,6 +72,21 @@ class ArgumentCollection(dict):
             self._add_single(arg)
         for key, value in kw.items():
             self._add_single(Argument(key).assign(value))
+
+    def update(self, E=None, **F):
+        """
+        Same as ``dict.update`` but actually calls ``__setitem__``
+        of this class.
+        """
+        if E is not None:
+            if hasattr(E, 'keys'):
+                for k in E.keys():
+                    self[k] = E[k]
+            else:
+                for k, v in E:
+                    self[k] = v
+        for k, v in F.items():
+            self[k] = v
 
     def _add_single(self, arg):
         """

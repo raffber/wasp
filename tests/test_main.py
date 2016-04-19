@@ -7,17 +7,13 @@ from wasp import ctx, command, Task
 
 
 
-# TODO:
-# test alias
-# test how option strings are converted to argument strings
-
-
 def options_fun(opt):
-    opt.group('build').add(StringOption('hello', 'Specifies the hello description'))
+    opt.group('build').add(StringOption('hello-world', 'Specifies the hello description'))
     opt.group('build').add(IntOption('foo', 'Allows specifying a number foo'))
     opt.add(ArgumentOption('argopt', 'Specifies an argument'))
     opt.add(FlagOption('foobar', 'Defines whether to foobar or not'))
     opt.add(EnableOption('something', 'Specifies whether something should be enabled'))
+    opt.alias('build', 'dliub')
 
 
 handler_called = False
@@ -46,7 +42,7 @@ def test_options():
     handler = OptionHandler()
     handler.parse(['--foobar', '--enable-something',
                    '--argopt', 'foo=bar', 'build', '--foo', '1234',
-                   '--hello', 'world'])
+                   '--hello-world', 'world'])
     assert handler.commands == ['build']
     assert ctx.options['foobar'].value
     assert ctx.options['something'].value
@@ -58,6 +54,12 @@ def test_options():
     assert arg.value == 'bar'
     handler.handle_options()
     assert handler_called
+    assert ctx.options.group('build')['foo'].value == 1234
+    assert ctx.options.group('build')['hello_world'].value == 'world'
+    # check alias
+    assert ctx.options.group('dliub')['hello_world'].value == 'world'
+    arg = Argument('hello_world').retrieve_all()
+    assert arg.value == 'world'
 
 
 def options_fun2(opt):

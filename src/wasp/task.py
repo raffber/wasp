@@ -1,5 +1,4 @@
 from .node import nodes, is_symbolic_node_string, SymbolicNode, node, Node
-from uuid import uuid4 as uuid
 from .util import CallableList, is_iterable
 from .argument import Argument, ArgumentCollection
 from .commands import Command

@@ -5,6 +5,12 @@ Current:
 ---------
 
 
+ * Test shell module
+ * Test task module
+ * Test tools module
+ * Integration testing test (just run what we have now, assert first if required toolchain missing)
+
+
 Windows Specific
 ----------------
 
