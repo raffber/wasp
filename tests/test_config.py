@@ -8,12 +8,12 @@ VALID_CONFIG = {
     'metadata': {
         'projectname': 'Wasp',
         'projectid': 'wasp',
-        'some-other-key': 'foo'
+        'some_other_key': 'foo'
     },
     'arguments' : {
-        'string-arg': 'somevalue',
-        'list-arg': ['asdf', 2, 3],
-        'dict-arg': {
+        'string_arg': 'somevalue',
+        'list_arg': ['asdf', 2, 3],
+        'dict_arg': {
             'foo': 'bar'
         }
     },
@@ -30,13 +30,13 @@ def test_valid_config():
     meta = conf.metadata
     assert meta.projectname == 'Wasp'
     assert meta.projectid == 'wasp'
-    assert meta.get('some-other-key') == 'foo'
-    meta.set('some-other-key', 'bar')
-    assert meta.get('some-other-key') == 'bar'
+    assert meta.get('some_other_key') == 'foo'
+    meta.set('some_other_key', 'bar')
+    assert meta.get('some_other_key') == 'bar'
     argcol = conf.arguments
-    assert argcol['string-arg'].value == 'somevalue'
-    assert argcol['list-arg'].value == ['asdf', 2, 3]
-    assert argcol['dict-arg'].value == {
+    assert argcol['string_arg'].value == 'somevalue'
+    assert argcol['list_arg'].value == ['asdf', 2, 3]
+    assert argcol['dict_arg'].value == {
         'foo': 'bar'
     }
     assert conf.pythonpath[0].path == os.path.expanduser('~/.local')
