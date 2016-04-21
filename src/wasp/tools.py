@@ -18,21 +18,20 @@ class ToolsCollection(dict):
         self._tooldir = tooldir
 
     def load(self, name, *args, path=None):
-        from . import Directory
-        if len(args) != 0:
-            for arg in args:
-                self.load(arg, path=path)
+        for arg in args:
+            self.load(arg, path=path)
         if name in self:
             return
         if path is None:
             path = self._tooldir.path
         tooldir = Directory(path)
+        sys.path.insert(0, tooldir.path)
         try:
-            sys.path.insert(0, tooldir.path)
             module = load_module_by_name(name)
-            del sys.path[0]
         except FileNotFoundError:
             raise NoSuchToolError('Tool with name `{0}` not found in `{1}`'.format(name, path))
+        finally:
+            del sys.path[0]
         self[name] = module
         if name in proxies.keys():
             # inject the tool proxy
@@ -54,7 +53,6 @@ class ToolsCollection(dict):
         return self._tooldir
 
     def set_tooldir(self, tooldir):
-        from .fs import Directory
         if isinstance(tooldir, str):
             tooldir = Directory(tooldir)
         assert isinstance(tooldir, Directory), 'tooldir must either be a path to a directory or a WaspDirectory'
@@ -74,3 +72,4 @@ def tool(name):
     proxy = Proxy()
     proxies[name] = proxy
     return proxy
+
