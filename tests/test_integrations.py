@@ -58,6 +58,12 @@ def test_rustbuild():
     out_lines = proc_out.stdout.split('\n')
     assert any('rustc' in l for l in out_lines)
     assert '[SUCC]  Command: `rust`' in out_lines
+    bd = directory(topdir.join('build'))
+    main_file = bd.join('main').absolute
+    assert main_file.exists
+    exit_code, proc_out = run(main_file.path)
+    out = proc_out.stdout.split('\n')
+    assert 'Hello, World!' in out
 
 
 def test_cppbuild():
