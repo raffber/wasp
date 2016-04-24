@@ -72,10 +72,8 @@ def test_cppbuild():
     directory(topdir.join('build')).remove()
     exit_code, proc_out = run('./wasp cpp', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
-    err_lines = proc_out.stderr.split('\n')
     assert '[SUCC]  Command: `cpp`' in out_lines
     assert any('-fPIC' in l for l in out_lines)
-    assert len(err_lines) == 0
     exit_code, proc_out = run('./wasp cpp', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
     assert len(out_lines) == 1
