@@ -97,8 +97,17 @@ Of course, tools (see :ref:`tools`) may define arbitrary types of nodes.
 However, usually, these two basic node types are sufficient.
 
 Creations of nodes is facilitated by calling the ``node()`` (to create a single node)
-or the ``nodes()`` functions (to create multiple).
+or the ``nodes()`` functions (to create multiple). The constructor of ``Task`` attempts
+to automatically convert the ``sources`` and ``targets`` argument into nodes by calling
+the ``nodes()`` function. This is why the following two lines from our example::
+
+        source = file('build.py')
+        target = source.to_builddir()
+
+which actually create two ``File`` objects (refer to the :ref:`fs` section) are converted
+into ``FileNode`` object.
 Refer to the API documentation (TODO:...) for more details.
+
 
 .. _arguments:
 
@@ -156,20 +165,21 @@ First of, note that each task contains a:
  *  ``task.arguments`` field, which stores the ``Argument`` objects to be
     during the tasks execution
  *  ``task.result`` field, which stores ``Argument`` objects which are passed on
-    to other nodes (and thus indirectly tasks).
+    to other nodes, which are defined as targets of this task.
+    Thus, the contents of ``task.results`` indirectly gets forwarded to other tasks
+    futher down in the dependency chain.`
 
 A task provides a generic ``task.use()`` function which, depending on the arguments given,
 reacts differently:
 
- *  If an ``Argument`` object is passed, the arg
- *  ``SymbolicNode``: Adds the node as a dependency and retrieves arguments from it
- *  ``Node``: Adds the node as a dependency
- *  ``Task``: Adds the task as a dependency of the task by creating a node.
- *  ``str``: If formatted as a valid identifier for a ``SymbolicNode`` uses the node.
-    Otherwise, an empty argument is added and it is attempted to
-    fill it automatically (by calling ``Argument.retrieve_all()``).
- *  ``ArgumentCollection`: The task uses all contained arguments within the collection
- *  ``TaskGroup``: Uses ``group.target_task`` if given, otherwise all tasks contained in the task group
+ *  If an ``Argument`` object is passed, the argument is sourced to ``task.arguments``.
+ *  ``SymbolicNode``: Adds the node as a dependency and retrieves arguments from it.
+ *  ``Node``: Adds the node as a dependency.
+ *  ``Task``: Adds the task as a dependency of the task by creating an intermediate node.
+ *  ``str``: If formatted as a valid identifier for a ``SymbolicNode`` uses the node it points to.
+    Otherwise, an empty argument is added and it is attempted to fill it automatically (by calling ``Argument.retrieve_all()``).
+ *  ``ArgumentCollection`: The task uses all contained arguments within the collection.
+ *  ``TaskGroup``: Uses ``group.target_task`` if given, otherwise all tasks contained in the task group.
  *  Also accepts an iterable objects of the above types.
 
 
