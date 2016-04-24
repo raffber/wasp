@@ -52,7 +52,7 @@ def _nodejs():
 def _qt():
     headers = [curdir.join('qtmain.h')]
     sources = [curdir.join('qtmain.cpp')]
-    modules = qt.find_modules()
+    modules = qt.find_modules(keys=[qt.Modules.core, qt.Modules.widgets])
     mocs = qt.moc(headers)
     sources.extend(mocs.targets)
     srcs = nodes(sources)

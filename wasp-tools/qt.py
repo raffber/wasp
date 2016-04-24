@@ -200,7 +200,7 @@ def moc(fs):
     ret = []
     for f in fs:
         tgt = file(f).to_builddir().append_extension('moc.cpp')
-        t = shell(cmd='{MOC} -o {TGT} {SRC}', sources=f.to_file(), targets=tgt)
+        t = shell(cmd='{moc} -o {tgt} {src}', sources=f.to_file(), targets=tgt)
         t.require('moc', spawn=find_moc)
         ret.append(t)
     return group(ret)
