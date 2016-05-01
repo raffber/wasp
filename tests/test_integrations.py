@@ -16,7 +16,6 @@ def test_build():
     directory(topdir.join('build')).remove()
     exit_code, proc_out = run('./wasp build', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
-    err_lines = proc_out.stderr.split('\n')
     # check if the commands succeeded
     assert '[SUCC]  Command: `configure`' in out_lines
     assert '[SUCC]  Command: `build`' in out_lines
@@ -31,7 +30,7 @@ def test_build():
     assert bd.join('node_modules').exists
     exit_code, proc_out = run(main_file.path)
     out = proc_out.stdout.split('\n')
-    assert 'Hello, World!!' in out
+    assert 'hello from dlang' in out
     assert bd.join('node_modules/jsmin/bin/jsmin').exists
     exit_code, proc_out = run('./wasp build', cwd=topdir.path)
     outs = proc_out.stdout.split('\n')
@@ -63,19 +62,51 @@ def test_rustbuild():
     assert main_file.exists
     exit_code, proc_out = run(main_file.path)
     out = proc_out.stdout.split('\n')
-    assert 'Hello, World!' in out
+    assert 'hello from rust' in out
 
 
 def test_cppbuild():
     if not osinfo.linux or not check_exists():
         return
+    topdir = directory(__file__).join('..').absolute
+    directory(topdir.join('build')).remove()
+    exit_code, proc_out = run('./wasp cpp', cwd=topdir.path)
+    out_lines = proc_out.stdout.split('\n')
+    assert '[SUCC]  Command: `cpp`' in out_lines
+    assert any('-fPIC' in l for l in out_lines)
+    exit_code, proc_out = run('./wasp cpp', cwd=topdir.path)
+    out_lines = proc_out.stdout.split('\n')
+    assert len(out_lines) == 1
+    assert '[SUCC]  Command: `cpp`' in out_lines
+    bd = directory(topdir.join('build'))
+    main_file = bd.join('main').absolute
+    assert main_file.exists
+    exit_code, proc_out = run(main_file.path)
+    out = proc_out.stdout.split('\n')
+    assert 'hello from cpp' in out
 
 
 def test_qtbuild():
     if not osinfo.linux or not check_exists():
         return
-
+    topdir = directory(__file__).join('..').absolute
+    directory(topdir.join('build')).remove()
+    exit_code, proc_out = run('./wasp qt', cwd=topdir.path)
+    out_lines = proc_out.stdout.split('\n')
+    assert '[SUCC]  Command: `qt`' in out_lines
+    assert any('-fPIC' in l for l in out_lines)
+    exit_code, proc_out = run('./wasp qt', cwd=topdir.path)
+    out_lines = proc_out.stdout.split('\n')
+    assert len(out_lines) == 1
+    assert '[SUCC]  Command: `qt`' in out_lines
+    bd = directory(topdir.join('build'))
+    main_file = bd.join('buildtest/qtmain').absolute
+    assert main_file.exists
+    exit_code, proc_out = run(main_file.path)
+    out = proc_out.stdout.split('\n')
+    assert 'hello from qt' in out
 
 if __name__ == '__main__':
     test_build()
     test_rustbuild()
+    test_qtbuild()
