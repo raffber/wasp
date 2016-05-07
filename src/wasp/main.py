@@ -548,3 +548,4 @@ def run(dir_path):
     except FatalError:
         success = False
     ctx.save()
+    return success
