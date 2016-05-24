@@ -169,8 +169,7 @@ class configure(FunctionDecorator):
         produce = ':def/' + f.__name__
         decorators.commands.append(Command('configure', f,
                                            description='Configures the project',
-                                           produce=produce,
-                                           skip_as_depenency=True))
+                                           produce=produce))
 
 
 class clean(FunctionDecorator):
