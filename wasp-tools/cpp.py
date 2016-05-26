@@ -77,7 +77,7 @@ class CompilerCli(object):
                 if debug:
                     return ['/nologo', '/Od', '/MDd', '/W3', '/Z7', '/D_DEBUG', '/EHsc']
                 return ['/nologo', '/Ox', '/MD', '/W3', '/DNDEBUG', '/EHsc']
-        return '-std=c++14 ' + ('-O0 -g' if debug else '-O2')
+        return '-std=c++14 ' + ('-O0 -g' if debug else '-O3')
 
 
 class LinkerCli(object):
@@ -401,9 +401,9 @@ class CxxCompile(CompileTask):
     @property
     def cmd(self):
         if self._compilername == 'msvc':
-            return '{cxx} {cflags} {includes} {defines} /c /Fo{tgt} {csource}'
+            return '{cxx} {cflags} {cxxflags} {includes} {defines} /c /Fo{tgt} {csource}'
         else:
-            return '{cxx} {cflags} {includes} {defines} -c -o {tgt} {csource}'
+            return '{cxx} {cflags} {cxxflags} {includes} {defines} -c -o {tgt} {csource}'
 
     def _init(self):
         super()._init()
