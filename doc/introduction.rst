@@ -140,7 +140,8 @@ A build process may be roughly divided into the following stages:
  *  Execution of functions registered with ``@wasp.init``. Here one may run initialization tasks.
  *  Sourcing of command line arguments using function registered with ``@wasp.options``.
  *  Calling of all function registered with ``@wasp.handle_options`` used for postprocessing
-    command line arguments.
+    command line arguments. Refer to :ref:`options` for more information on how to present
+    command line arguments to a user.
  *  Running all task handler functions (e.g. all functions handling the ``build`` command)
     These functions will typically lead to a set of tasks to be executed.
  *  Execution Phase: All tasks are executing while respecting their data dependencies.
@@ -186,8 +187,10 @@ reacts differently:
 Further Reading
 ---------------
 
- *  File system operations and tasks :ref:``fs``
- *  How to write ``wasp`` :ref:`tools`
+ *  File system operations and tasks :ref:`fs`
+ *  How to write ``wasp-tools`` :ref:`tools`
+ *  A more detailed guide on tasks and how to customize them: :ref:`tasks`
+ *  Handling command line options: :ref:`options`
  *  The utility module that ships with ``wasp``: :ref:`utility`
 
 
