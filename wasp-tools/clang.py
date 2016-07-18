@@ -71,10 +71,10 @@ def compile_db(tasks):
     return collector.produce(':clang/compiledb')
 
 
-CHECKS = '*,-llvm-header-guard'
+CHECKS = '*,-llvm-header-guard,-cppcoreguidelines-pro-type-union-access,-google-runtime-int'
 
 
 def tidy(src, directory):
-    return shell('clang-tidy -checks=' + CHECKS + '-header-filter="{dir}/.*" {src}',
+    return shell('clang-tidy -checks=' + CHECKS + ' -fix -header-filter="src/.*" {src}',
                     sources=[src, 'compile_commands.json']).use(
                     ':clang/compiledb', dir=directory)

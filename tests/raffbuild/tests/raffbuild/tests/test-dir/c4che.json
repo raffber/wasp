@@ -1,0 +1,21 @@
+{
+    "g": {
+        "last_run": {
+            "__type__": "Namespace"
+        }
+    },
+    "generators": {
+        "generator-test": {
+            "foobar": {
+                "destionation": "raffbuild/tests/test-dir/test.txt.backup",
+                "source": "raffbuild/tests/test-dir/test.txt",
+                "__type__": "DummyGenerator"
+            },
+            "__type__": "GeneratorCollection"
+        }
+    },
+    "signaturedb": {},
+    "ctx": {
+        "topdir": "/home/raff/raffbuild/tests"
+    }
+}

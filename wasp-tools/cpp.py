@@ -13,6 +13,7 @@ import re
 
 
 SRC_GLOB = '.*?\.c((pp)|(xx))?$'
+HEADER_GLOB = '.*?\.h((pp)|(xx))?$'
 
 
 if not osinfo.linux and not osinfo.windows:
@@ -30,14 +31,17 @@ def options(opt):
         opt.add(StringOption('msvc-arch', 'Set the architecture to be used for compiling (`x86` or `x64`).'))
 
 
-def glob(*dirs):
+def glob(*dirs, sources=True, headers=False):
     ret = []
     for d in dirs:
         # ensure that we are dealing with a directory
         # the directory function will raise if there is
         # an issue
         d = directory(d)
-        ret.extend(d.glob(SRC_GLOB))
+        if sources:
+            ret.extend(d.glob(SRC_GLOB))
+        if headers:
+            ret.extend(d.glob(HEADER_GLOB))
     return ret
 
 
