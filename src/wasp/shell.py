@@ -113,7 +113,7 @@ class ShellTask(Task):
                 continue
             if '-' in key:
                 key = key.replace('-', '_')
-            kw[key.lower()] = quote(value)
+            kw[key.lower()] = value
             if unquoted is not None:
                 kw[key.lower() + '_noquote'] = unquoted
         return kw
