@@ -475,12 +475,21 @@ def empty():
     return t
 
 
-def collect(*args, **kw):
+def collect(*args, merge=True):
     def _collect_args(t):
         for node in t.sources:
             if isinstance(node, SymbolicNode):
                 t.result.update(node.read())
         for arg in t.arguments:
+            if arg.key in t.result and merge:
+                v = arg.value
+                curarg = t.result[arg.key]
+                if not isinstance(v, list):
+                    v = [v]
+                if not isinstance(curarg.value, list):
+                    curarg.value = [curarg.value]
+                curarg.value.extend(v)
+                continue
             t.result.add(arg)
     node_args = nodes(args)
     t = Task(sources=node_args, always=True, fun=_collect_args)
