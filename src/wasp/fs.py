@@ -878,38 +878,44 @@ class CopyTask(Task):
     Task to copy files.
 
     :param fs: List of files to be copied. Accepts the same input as :func:`paths`.
-    :param destination: Destination path. If it ends with a '/' (or '\\') the destination
+    :param destination: Destination path. If it ends with ``os.pathsep`` the destination
         is considered a directory and a new file is created in the directory.
     :param recursive: Determines whether directories are to be copied recursively.
     """
 
-    def __init__(self, fs, destination, recursive=False):
+    def __init__(self, fs, destination, recursive=False, mkdir=True):
         self._recursive = recursive
         if isinstance(destination, str):
-            if destination.endswith('/') or destination.endswith('\\'):
+            if destination.endswith(os.pathsep):
                 destination = Directory(destination)
             else:
                 destination = File(destination)
         assert isinstance(destination, Path)
         self._destination = destination
         self._files = paths(fs, ignore=True)
-        super().__init__(targets=fs, always=True)
+        self._mkdir = mkdir
+        super().__init__(sources=fs, always=True)
 
     def _run(self):
         self.success = True
         destpath = self._destination.path
+        if self._mkdir:
+            destdir = self._destination
+            if isinstance(self._destination, File):
+                destdir = Directory(self._destination)
+            destdir.ensure_exists()
         for f in self._files:
             if isinstance(f, Directory):
                 f.copy_to(destpath, recursive=self._recursive)
-            else:
-                f.copy_to(destpath)
+                continue
+            f.copy_to(destpath)
 
 
-def copy(source, destination, recursive=False):
+def copy(source, destination, recursive=False, mkdir=True):
     """
     See :class:`CopyTask`. Accepts the same parameters.
     """
-    return CopyTask(source, destination, recursive=recursive)
+    return CopyTask(source, destination, recursive=recursive, mkdir=mkdir)
 
 
 class MoveTask(Task):
