@@ -200,7 +200,7 @@ class Argument(Serializable):
         self._required_type = None
         self.set_value(value)
         if type is not None:
-            self._use_type(type)
+            self.use_type(type)
         m = ARGUMENT_KEY_RE.match(key)
         if not m:
             raise ValueError('Invalid argument key, expected `{0}`, found: `{1}`'.format(ARGUMENT_KEY_RE_STR, key))
@@ -228,12 +228,16 @@ class Argument(Serializable):
     @property
     def type(self):
         """
-        :return: The type of the value of this Argument. Returns None if the arguent was never assigned
+        :return: The type of the value of this Argument. Returns NoneType if the argument was never assigned
             any value.
         """
-        return self._required_type
+        return self._required_type or type(self._value)
 
-    def _use_type(self, tp):
+    def use_type(self, tp):
+        """
+        Force the value to have a certain type. If a value which is ``not isinstance(value, tp)`` is passed
+        to ``set_value()``, a TypeError is raised.
+        """
         assert tp is None or tp == str or \
             tp == int or tp == bool or tp == float or tp == list or tp == dict or issubclass(tp, Serializable)
         self._required_type = tp
@@ -254,8 +258,6 @@ class Argument(Serializable):
                 raise TypeError('Argument {0} must be of type {1}, but found type {2}!'.format(
                     self.key, self._required_type.__name__, type(value).__name__))
             return
-        if self._required_type is None and value is not None:
-            self._use_type(type(value))
         self._value = value
 
     value = property(get_value, set_value)
