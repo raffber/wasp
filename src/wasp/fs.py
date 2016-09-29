@@ -900,9 +900,7 @@ class CopyTask(Task):
         self.success = True
         destpath = self._destination.path
         if self._mkdir:
-            destdir = self._destination
-            if isinstance(self._destination, File):
-                destdir = Directory(self._destination)
+            destdir = directory(self._destination)
             destdir.ensure_exists()
         for f in self._files:
             if isinstance(f, Directory):
