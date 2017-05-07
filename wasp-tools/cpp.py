@@ -1,6 +1,6 @@
 import os
 from wasp import ShellTask, find_exe, Task, quote, empty
-from wasp import group, TaskFailedError
+from wasp import group, TaskFailedError, ctx
 from wasp import nodes, FileNode, node, Argument
 from wasp import file, directory, osinfo, StringOption
 from wasp.shell import run as run_command
@@ -214,7 +214,7 @@ if osinfo.windows:
         def print(self, success, stdout='', stderr='', exit_code=0, commandstring=''):
             stdout = stdout.split('\n')
             if len(stdout) >= 1:
-                stdout = stdout[1:] # discard first line
+                stdout = stdout[1:]  # discard first line
             stdout = '\n'.join(stdout)
             super().print(success, stdout=stdout, stderr=stderr, exit_code=exit_code, commandstring=commandstring)
 
@@ -222,7 +222,7 @@ if osinfo.windows:
         def print(self, success, stdout='', stderr='', exit_code=0, commandstring=''):
             stdout = stdout.split('\n')
             if len(stdout) >= 3:
-                stdout = stdout[3:] # discard first three line
+                stdout = stdout[3:]  # discard first three line
             stdout = '\n'.join(stdout)
             super().print(success, stdout=stdout, stderr=stderr, exit_code=exit_code, commandstring=commandstring)
 
@@ -341,6 +341,51 @@ class DependencyScan(Task):
                 self._scan(headers, f, current_depth+1)
 
 
+class CppPrinter(ShellTaskPrinter):
+
+    def _format_infomsg(self):
+        raise NotImplementedError
+
+    def print(self, stdout='', stderr='', exit_code=0):
+        t = self._task
+        log = t.log
+        commandstring = t.commandstring
+        if not t.success:
+            return_value_format = log.color('  --> ' + str(exit_code), fg='red', style='bright')
+            out = stderr.strip()
+            if out != '':
+                fatal_print = log.format_fail(LogStr(commandstring) + return_value_format, out)
+            else:
+                fatal_print = log.format_fail(LogStr(commandstring) + return_value_format)
+            log.fatal(fatal_print)
+        elif stderr != '':
+            warn_print = log.format_warn(LogStr(commandstring), stderr.strip())
+            log.warn(warn_print)
+        if t.success:
+            t.log.info(self._format_infomsg())
+            t.log.debug(t.log.format_success() + commandstring)
+        if stdout != '':
+            out = log.format_info(stdout.strip())
+            log.info(out)
+
+
+class CompilePrinter(CppPrinter):
+    def _format_infomsg(self):
+        prepend = self._task.log.format_success()
+        return prepend + 'Compiled: ' + self._task.arguments.value('csource', '')
+
+
+class LinkPrinter(CppPrinter):
+    def _format_infomsg(self):
+        prepend = self._task.log.format_success()
+        tgt_path = None
+        for t in self._task.targets:
+            if isinstance(t, FileNode):
+                tgt_path = t.to_file().relative(ctx.topdir, skip_if_abs=True).path
+                break
+        return prepend + 'Linked: ' + tgt_path
+
+
 class CompileTask(ShellTask):
     extensions = []
 
@@ -352,6 +397,8 @@ class CompileTask(ShellTask):
         self._compilername = DEFAULT_COMPILER
         if self._compilername == 'msvc':
             self._printer = MsvcCompilerPrinter(self)
+        else:
+            self._printer = CompilePrinter(self)
         for src in self.sources:
             if not isinstance(src, FileNode):
                 continue
@@ -435,6 +482,8 @@ class Link(ShellTask):
         self._linkername = DEFAULT_LINKER
         if self._linkername == 'msvc':
             self._printer = MsvcLinkerPrinter(self)
+        else:
+            self._printer = LinkPrinter(self)
 
 
     def _prepare(self):
