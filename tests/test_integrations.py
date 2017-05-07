@@ -36,7 +36,6 @@ def test_build():
     outs = proc_out.stdout.split('\n')
     assert '[SUCC]  Command: `configure`' in outs
     assert '[SUCC]  Command: `build`' in outs
-    assert len(outs) == 2
 
 
 def test_rustbuild():
