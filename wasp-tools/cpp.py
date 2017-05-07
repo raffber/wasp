@@ -31,7 +31,7 @@ def options(opt):
         opt.add(StringOption('msvc-arch', 'Set the architecture to be used for compiling (`x86` or `x64`).'))
 
 
-def glob(*dirs, sources=True, headers=False):
+def glob(*dirs, sources=True, headers=False, exclude=None):
     ret = []
     for d in dirs:
         # ensure that we are dealing with a directory
@@ -39,9 +39,9 @@ def glob(*dirs, sources=True, headers=False):
         # an issue
         d = directory(d)
         if sources:
-            ret.extend(d.glob(SRC_GLOB))
+            ret.extend(d.glob(SRC_GLOB, exclude=exclude))
         if headers:
-            ret.extend(d.glob(HEADER_GLOB))
+            ret.extend(d.glob(HEADER_GLOB, exclude=exclude))
     return ret
 
 

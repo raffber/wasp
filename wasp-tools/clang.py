@@ -1,6 +1,6 @@
 from wasp import TaskGroup, tool, Task, shell, file, ctx
+from wasp.util import is_iterable
 import json
-from collections import Iterable
 
 
 cpp = tool('cpp')
@@ -9,7 +9,7 @@ cpp = tool('cpp')
 def _flatten(*tasks):
     ret = []
     for task in tasks:
-        if isinstance(task, Iterable):
+        if is_iterable(task):
             ret.extend(_flatten(*task))
         elif isinstance(task, TaskGroup):
             ret.extend(_flatten(*task.tasks))
@@ -59,6 +59,8 @@ def compile_db(tasks):
     if not compile_db.exists:
         with open(compile_db.path, 'w') as f:
             f.write('[]')
+    if not is_iterable(tasks):
+        tasks = [tasks]
     tasks = _flatten(*tasks)
     compile_tasks = []
     for task in tasks:
