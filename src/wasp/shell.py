@@ -35,7 +35,7 @@ class ShellTask(Task):
         or sources have changed.
     :param cwd: Set the working directory from which the shell command should be run.
     """
-    def __init__(self, sources=[], targets=[], cmd='', always=False, cwd=None):
+    def __init__(self, sources=None, targets=None, cmd='', always=False, cwd=None):
         self._cmd = cmd
         self._printer = None
         if cwd is None:
@@ -245,7 +245,7 @@ class ShellTaskPrinter(object):
             log.info(out)
 
 
-def shell(cmd, sources=[], targets=[], always=False, cwd=None):
+def shell(cmd, sources=None, targets=None, always=False, cwd=None):
     """
     Equivalent to ``ShellTask(...)``.
     """
