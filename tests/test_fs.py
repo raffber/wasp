@@ -36,6 +36,10 @@ def test_directory():
     assert set(fs) == {'a.txt', 'dira', 'c.txt'}
     testdir.join('dira').copy_to(subdir)
     assert set([x.relative(testdir).path for x in subdir.list()]) == {'subdir/dira'}
+    subdir.remove()
+    assert not subdir.exists
+    subdir.mkdir()
+    assert subdir.exists
 
 
 def test_serialize():

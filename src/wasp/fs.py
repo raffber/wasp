@@ -373,7 +373,7 @@ class Directory(Path):
                 new_ret.append(File(x))
         return new_ret
 
-    def mkdir(self, name):
+    def mkdir(self, name=None):
         """
         Create a child directory with ``name``. Or ensure
         that current directory exists (if name is None)
