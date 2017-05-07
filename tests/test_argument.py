@@ -8,6 +8,7 @@ import wasp
 def test_argument():
     arg = Argument('foo', value=[1, 2, 3])
     assert arg.type == list
+    arg.use_type(list)
     try:
         arg.value = 'asdf'
         failed = False
