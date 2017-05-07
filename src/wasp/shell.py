@@ -43,7 +43,16 @@ class ShellTask(Task):
         else:
             self._cwd = Directory(cwd, make_absolute=True).path
         self._out = None
+        self._commandstring = None
         super().__init__(sources=sources, targets=targets, always=always)
+
+    @property
+    def commandstring(self):
+        """
+        Returns the string that was executed by the shell task.
+        This is only available **after** the task has run.
+        """
+        return self._commandstring
 
     @property
     def out(self):
@@ -161,14 +170,12 @@ class ShellTask(Task):
         """
         Formats, executes the shell command and postprocesses its output.
         """
-        commandstring = self._format_cmd()
-        exit_code, out = run(commandstring, cwd=self._cwd, print=not self.log.pretty, env=self._make_env())
+        self._commandstring = self._format_cmd()
+        exit_code, out = run(self._commandstring, cwd=self._cwd, print=not self.log.pretty, env=self._make_env())
         self._out = out
         self._finished(exit_code, out.stdout, out.stderr)
-        if self.success:
-            self.log.info(self.log.format_success() + commandstring)
-        self.printer.print(self.success, stdout=out.stdout, stderr=out.stderr,
-                           exit_code=exit_code, commandstring=commandstring)
+        self.printer.print(stdout=out.stdout, stderr=out.stderr,
+                           exit_code=exit_code)
 
     def use_arg(self, arg):
         if arg.name == 'env':
@@ -218,18 +225,18 @@ class ShellTaskPrinter(object):
     def __init__(self, task):
         self._task = task
 
-    def print(self, success, stdout='', stderr='', exit_code=0, commandstring=''):
+    def print(self, stdout='', stderr='', exit_code=0):
         """
         Called after the execution of the shell task has finished.
 
-        :param success: True if the task finished successfully.
         :param stdout: The string which was printed to ``stdout``.
         :param stderr: The string which was printed to ``stderr``.
         :param exit_code: The exit code of the process.
-        :param commandstring: The command that was executed.
         """
-        log = self._task.log
-        if not success:
+        t = self._task
+        log = t.log
+        commandstring = t.commandstring
+        if not t.success:
             return_value_format = log.color('  --> ' + str(exit_code), fg='red', style='bright')
             out = stderr.strip()
             if out != '':
@@ -240,6 +247,8 @@ class ShellTaskPrinter(object):
         elif stderr != '':
             warn_print = log.format_warn(LogStr(commandstring), stderr.strip())
             log.warn(warn_print)
+        if t.success:
+            t.log.info(t.log.format_success() + commandstring)
         if stdout != '':
             out = log.format_info(stdout.strip())
             log.info(out)
