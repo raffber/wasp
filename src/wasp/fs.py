@@ -375,14 +375,18 @@ class Directory(Path):
 
     def mkdir(self, name):
         """
-        Create a child directory with ``name``.
+        Create a child directory with ``name``. Or ensure
+        that current directory exists (if name is None)
 
-        :param name: Name of the directory to be created.
+        :param name: Name of the directory to be created or None
+            if current directory should be created.
         """
-        fpath = os.path.join(self.path, name)
-        d = Directory(fpath)
-        d.ensure_exists()
-        return d
+        if name is not None:
+            fpath = os.path.join(self.path, name)
+            d = Directory(fpath)
+            d.ensure_exists()
+            return d
+        self.ensure_exists()
 
     def ensure_exists(self):
         """
@@ -394,6 +398,16 @@ class Directory(Path):
         os.makedirs(self._path, exist_ok=True)
 
     def to_builddir(self):
+        """
+        If this path is relative to the project root
+        directory, moves this path below the build directory.
+        Use this function to generate an output path for a certain
+        path. For example (builddir = 'build')::
+            
+            p = file('src/test/main.cpp')
+            print(p.to_builddir())
+            # prints 'build/src/test/main.cpp' 
+        """
         from wasp import ctx
         if self.is_subpath(ctx.builddir):
             return self.copy()
@@ -420,8 +434,6 @@ class Directory(Path):
         target = path(target)
         if isinstance(target, Directory):
             target = target.join(self.basename)
-        else:
-            target = target
         if target.exists:
             target.remove(recursive=True)
         if recursive:
