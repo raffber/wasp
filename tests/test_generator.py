@@ -33,12 +33,12 @@ class DummyGenerator(Generator):
     def to_json(self):
         d = super().to_json()
         d['source'] = self.source.path
-        d['destionation'] = self.destination.path
+        d['destination'] = self.destination.path
         return d
 
     @classmethod
     def from_json(cls, d):
-        ret = cls(source=d['source'], destination=d['destionation'], restored=True)
+        ret = cls(source=d['source'], destination=d['destination'], restored=True)
         return ret
 
 
