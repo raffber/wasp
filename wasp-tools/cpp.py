@@ -508,9 +508,10 @@ class Link(ShellTask):
         libraries = self.arguments.value('libraries', [])
         cli = LinkerCli(self._linkername)
         libs_cmdline = [cli.link(x) for x in libraries]
+        static_libs = self.arguments.value('static_libraries', [])
         kw['libraries'] = ' '.join([quote(l) for l in libs_cmdline])
         kw['ldflags'] = ' '.join(set(self.arguments.value('ldflags', [])))
-        kw['static_libs'] = ' '.join(set(self.arguments.value('static_libraries', [])))
+        kw['static_libs'] = ' '.join(str(x) for x in static_libs)
         return kw
 
 
