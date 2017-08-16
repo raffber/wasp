@@ -3,7 +3,7 @@ from wasp import node, ctx, FlagOption
 
 class Latch(object):
 
-    def __init__(self, on_option, off_option, description, default=True, key=None):
+    def __init__(self, on_option, off_option, description, default=True):
         self._on_option = str(on_option)
         self._off_option = str(off_option)
         self._description = str(description)

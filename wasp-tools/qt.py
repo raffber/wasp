@@ -1,5 +1,5 @@
 import re
-from wasp import nodes, shell, group, file, tool, Task, Argument, osinfo, directory, options
+from wasp import nodes, shell, group, file, tool, Task, Argument, osinfo, directory, options, spawn
 from wasp import StringOption
 from wasp.fs import FindTask
 
@@ -61,6 +61,27 @@ def find_moc(bin_dir=None, use_default=True):
     return t
 
 
+def windows_find_basedir():
+    qtdir_re = re.compile('qt(?P<version>5\.([0-9\.])+)')
+    installdir = None
+    version = None
+    for p in directory('C:/Qt/').list():
+        m = qtdir_re.match(p.basename.lower())
+        if p.isdir and m is not None:
+            installdir = p
+            version = m.group('version')
+            break
+    if installdir is None:
+        return None
+    version_dir = installdir.join(version)
+    if not version_dir.exists:
+        return
+    for p in version_dir.list():
+        if 'msvc' in p.basename.lower():
+            return str(p)
+    return None
+
+
 class FindQt(Task):
 
     def __init__(self, include_dir=None, lib_dir=None, bin_dir=None, base_dir=None):
@@ -84,17 +105,15 @@ class FindQt(Task):
             }
         elif osinfo.windows:
             if include_dir is not None:
-                self.log.warn('qt.FindQt: setting include_dir with find_qt() is ignored. Use base_dir=... instead.')
+                self.log.log_warn('qt.FindQt: setting include_dir with find_qt() is ignored. Use base_dir=... instead.')
             if base_dir is None:
-                qtdir_re = re.compile('qt5\.([0-9])+')
-                for p in directory('C:/Qt/').list():
-                    if p.isdir and qtdir_re.match(p.basename.lower()):
-                        base_dir = p.path
-                        break
-            if base_dir is None:
-                self.log.fatal('qt.FindQt: Could not find Qt base dir. Either specify or copy qt to C:\\Qt\\<version>\\<compiler>')
-                self.success = False
-                return
+                base_dir = windows_find_basedir()
+                if base_dir is not None:
+                    self.log.log_info('qt.FindQt: Automatically found qt in `{}`'.format(base_dir))
+                else:
+                    self.log.log_fatal('qt.FindQt: Could not find Qt base dir. Either specify or copy qt to C:\\Qt\\<version>\\<compiler>')
+                    self.success = False
+                    return
             data = {
                 'include_dir': include_dir or directory(base_dir).join('include').path,
                 'lib_dir': lib_dir or directory(base_dir).join('lib').path,
@@ -152,11 +171,10 @@ class FindModules(Task):
     def __init__(self, keys, base_dir=None, include_dir=None, lib_dir=None):
         super().__init__()
         self.use(base_dir=base_dir, include_dir=include_dir, lib_dir=lib_dir)
-        self.require('base_dir', 'include_dir', 'lib_dir', spawn=find_qt)
+        self.require('base_dir', 'include_dir', 'lib_dir')
         self._keys = keys
 
     def _run(self):
-        base_dir = self.arguments.value('base_dir')
         include_dir = self.arguments.value('include_dir')
         lib_dir = self.arguments.value('lib_dir')
         assert include_dir is not None and lib_dir is not None
@@ -184,7 +202,9 @@ class FindModules(Task):
         self.success = True
 
 
-def find_modules(use_default=True, include_dir=None, lib_dir=None, base_dir=None, keys=[Modules.core]):
+def find_modules(use_default=True, include_dir=None, lib_dir=None, base_dir=None, keys=None):
+    if keys is None:
+        keys = [Modules.core]
     if use_default:
         include_dir = include_dir or Argument('qt_include_dir').retrieve_all().value
         lib_dir = lib_dir or Argument('qt_lib_dir').retrieve_all().value
@@ -192,16 +212,19 @@ def find_modules(use_default=True, include_dir=None, lib_dir=None, base_dir=None
     t = FindModules(keys, include_dir=include_dir, lib_dir=lib_dir, base_dir=base_dir)
     if use_default:
         t.produce(':qt/modules')
+        t.use(spawn(':qt/config', find_qt))
     return t
 
 
-def moc(fs):
+def moc(fs, use_default=True):
     fs = nodes(fs)
     ret = []
     for f in fs:
         tgt = file(f).to_builddir().append_extension('moc.cpp')
         t = shell(cmd='{moc} -o {tgt} {src}', sources=f.to_file(), targets=tgt)
-        t.require('moc', spawn=find_moc)
+        t.require('moc')
+        if use_default:
+            t.use(spawn(':qt/moc', find_moc))
         ret.append(t)
     return group(ret)
 
@@ -218,16 +241,3 @@ def program(fs):
     ret.append(mocs)
     fs.extend(mocs.targets)
     ret.append(compile(fs))
-
-
-def link(obj_files, target='main', use_default=True):
-    t = _cpp.Link(sources=nodes(obj_files), targets=file(target).to_builddir())
-    if use_default:
-        ldnode = ':cpp/cxx'
-        spawner = _cpp .find_cxx
-        if osinfo.linux:
-            libraries = ['stdc++', 'c']
-        else:
-            libraries = []
-        t.use(ldnode, libraries=libraries).require('ld', spawn=spawner)
-    return t

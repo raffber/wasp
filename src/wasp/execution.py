@@ -1,5 +1,7 @@
 import traceback
 from multiprocessing import cpu_count
+
+from wasp.node import SpawningNode
 from .task import Task, TaskGroup, MissingArgumentError, TaskCollection, TaskFailedError
 from .util import EventLoop, Event, is_iterable, ThreadPool
 from . import log, ctx, extensions
@@ -34,7 +36,6 @@ class TaskContainer(object):
         self._runnable = None
         self._has_run = None
         self._finished = False
-        self._spawned = False
         # if this would not be the case, the task would never be executed
         if len(task.sources) == 0 and len(task.targets) == 0:
             task.always = True
@@ -71,18 +72,6 @@ class TaskContainer(object):
         self._has_run = None
         self._runnable = None
         self._frozen = False
-
-    def get_spawned(self):
-        return self._spawned
-
-    def set_spawned(self, spawned):
-        self._spawned = spawned
-
-    spawned = property(get_spawned, set_spawned)
-    """
-    Allows reading or writing a bool which determines, whether the task
-    already spawned new tasks during :meth:`Task.check()`
-    """
 
     @property
     def noop(self):
@@ -170,6 +159,10 @@ class TaskContainer(object):
             if not dep.has_run:
                 return False
         return True
+
+    @property
+    def spawning_nodes(self):
+        return [node for node in self._task.sources if isinstance(node, SpawningNode)]
 
     def __repr__(self):
         return repr(self.task)
@@ -281,6 +274,13 @@ class DAG(object):
         task = self._runnable_tasks.pop()
         return task
 
+    def _insert_to_target_map(self, tasks):
+        for task in tasks:
+            for target in task.targets:
+                if target.name not in self._target_map:
+                    self._target_map[target.name] = []
+                self._target_map[target.name].append(task)
+
     def insert(self, tasks):
         """
         Inserts a new task into the DAG.
@@ -290,11 +290,17 @@ class DAG(object):
         # p = average number of tasks producing a target
         # for a loosly coupled task set, the complexity is O(n)
         # create map from target => task --> O(m*n)
-        for task in tasks:
-            for target in task.targets:
-                if target.name not in self._target_map:
-                    self._target_map[target.name] = []
-                self._target_map[target.name].append(task)
+        tasks = list(tasks)
+        self._insert_to_target_map(tasks)
+        k = 0
+        while k < len(tasks):
+            task = tasks[k]
+            for src in task.sources:
+                if src.name not in self._target_map and isinstance(src, SpawningNode):
+                    spawned = [TaskContainer(t, ns=task.ns) for t in src.do_spawn()]
+                    self._insert_to_target_map(spawned)
+                    tasks.extend(spawned)
+            k += 1
         # add dependencies to every task, i.e. add all tasks producing each target --> O(m*n*p)
         for task in tasks:
             for source in task.task.sources:
@@ -324,6 +330,7 @@ class Executor(object):
         self._dag = None
         self._consumed_nodes = []
         self._produced_nodes = []
+        self._nodes_in_production = []
         self._executed_tasks = TaskCollection()
         self._executing_tasks = []
         self._success = True
@@ -531,24 +538,14 @@ class ParallelExecutor(Executor):
                 if self._dag.has_finished() and not tasks_executing:
                     self._thread_pool.cancel()
                 break
-            # check task, and if it hadn't had the chance to spawn new tasks
-            # allow it to spawn.
             try:
-                spawn = task.task.check(spawn=not task.spawned)
+                task.task.check()
             except MissingArgumentError as e:
                 msg = log.format_fail(''.join(traceback.format_tb(e.__traceback__)),
                     '{0}: {1}'.format(type(e).__name__,  str(e)))
                 log.fatal(msg)
                 self.task_failed(task)
                 break
-            assert not task.spawned or spawn is None, 'Task.check() may only spawn tasks if spawn=True.'
-            if spawn is not None:
-                assert isinstance(spawn, list)
-                spawn = make_containers(spawn, ns=self._ns)
-                spawn.append(task)
-                self._dag.recompute(spawn)
-                task.spawned = True
-                continue
             self.task_start(task)
             self._thread_pool.submit(
                 ParallelExecutor.TaskRunner(task, self._success_event, self._failed_event))

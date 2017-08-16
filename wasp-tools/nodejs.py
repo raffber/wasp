@@ -1,8 +1,9 @@
-from wasp import ctx, quote, shell, Directory, factory
+from wasp import ctx, shell, Directory, factory, spawn
+from wasp import find_exe as find_exe_wasp
 from wasp.node import Node
 from wasp.signature import Signature
 from wasp.util import lock, checksum
-from wasp import find_exe as find_exe_wasp
+
 
 # TODO: test with different prefixes
 # TODO: test without prefix
@@ -120,8 +121,8 @@ def install(pkg, prefix=None, update=True):
     return shell('{npm} --prefix {prefix} install {package}')\
         .use(package=pkg, prefix=cmdline_prefix)\
         .produce(package(pkg, prefix=prefix))\
-        .use(':nodejs/find-npm')\
-        .require(('npm', find_npm))
+        .use(spawn(':nodejs/find-npm', find_npm))\
+        .require('npm')
 
 
 def _make_prefix(prefix):

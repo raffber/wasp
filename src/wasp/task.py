@@ -167,19 +167,17 @@ class Task(object):
         """
         return self._targets
 
-    def check(self, spawn=True):
+    def check(self):
         """
         Retrieves the required arguments of the task by reading all source nodes.
-        If the task requires more arguments (as set by :func:`Task.require`), the
-        function may spawn new tasks for retrieving those arguments.
-        If ``spawn`` is set to False, the function throws a ``MissingArgumentError``.
+        The function throws a ``MissingArgumentError`` in case a required arguments
+        was not found. Required arguments may be configured by calling ``task.require()``.
         """
         for node in self._used_nodes:
             # retrieve all nodes
             if isinstance(node, SymbolicNode):
                 self.use(node.read())
-        ret = []
-        for argkey, spawner in self._required_arguments:
+        for argkey in self._required_arguments:
             if argkey not in self.arguments or self.arguments[argkey].is_empty:
                 # NOTE: Think about this feature some more:
                 # I feel this leads to somewhat unpredictable behaviour,
@@ -188,15 +186,8 @@ class Task(object):
                 # attempt to retrieve the argument from the common sources
                 # arg = Argument(argkey).retrieve_all()
                 # if arg.is_empty:
-                if spawner is None or not spawn:
-                    raise MissingArgumentError('Missing argument for task: '
+                raise MissingArgumentError('Missing argument for task: '
                                                'Required argument `{}` is empty.'.format(argkey))
-                t = spawner()
-                self.use(t)
-                ret.append(t)
-        if not len(ret) == 0:
-            return ret
-        return None
 
     @property
     def prepare(self):
@@ -433,37 +424,25 @@ class Task(object):
     information can be passed between different tasks.
     """
 
-    def require(self, *arguments, spawn=None):
+    def require(self, *arguments):
         """
         Defines that a certain argument is required for the execution of a task.
-        Furthermore, it allows specifying ``callable`` objects which are expected to
-        return a :class:`Task` or an iterable thereof. This object is called by the
-        :func:`Task.check` method in case the argument has not been specified before.
-        This function accepts the following types:
+        This function accepts the following arguments:
 
          * ``str``: Used as argument key.
-         * ``(str, callable)``: ``str`` used as key and ``callable`` used to spawn
-            tasks in case the argument was not filled.
          * An iterable of the above types.
-
         """
         for arg in arguments:
-            spawner = spawn
-            # add arguments to a list and check them before execution
             if arg is None:
                 continue
             if isinstance(arg, str):
                 argkey = arg
-            elif isinstance(arg, tuple):
-                argkey, spawner = arg
-                assert isinstance(argkey, str), 'Task.require() expects a tuple of (str, callable).'
-                assert callable(spawner), 'Task.require() expects a tuple of (str, callable).'
             elif is_iterable(arg):
                 self.require(*arg)
                 continue
             else:
                 assert False, 'Unrecognized type in Task.require() arguments. Accepted are str or list thereof.'
-            self._required_arguments.append((argkey, spawner))
+            self._required_arguments.append(argkey)
         return self
 
 

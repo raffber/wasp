@@ -236,6 +236,35 @@ class SymbolicNode(Node):
         return self.key
 
 
+class SpawningNode(SymbolicNode):
+    def __init__(self, key=None, discard=False):
+        super().__init__(key=key, discard=discard)
+        self._spawn = None
+
+    @property
+    def spawn(self):
+        return self._spawn
+
+    @spawn.setter
+    def spawn(self, value):
+        assert callable(value) or value is None
+        self._spawn = value
+
+    def do_spawn(self):
+        if self._spawn is None:
+            return []
+        ret = self._spawn()
+        if not is_iterable(ret):
+            return [ret]
+        return list(ret)
+
+
+def spawn(key, spawn=None):
+    ret = SpawningNode(key)
+    ret.spawn = spawn
+    return ret
+
+
 def is_symbolic_node_string(arg):
     """
     Returns True if the argument string qualifies as a name

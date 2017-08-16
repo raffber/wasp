@@ -1,4 +1,4 @@
-from wasp import shell, Directory
+from wasp import shell, Directory, spawn
 from wasp.fs import find_exe
 
 
@@ -6,8 +6,8 @@ def html(docdir):
     sh = shell('{sphinx_build} -b html -d {build_docdir}/doctrees {docdir} {build_docdir}/html'
                , always=True)
     sh.use(build_docdir=Directory(docdir).to_builddir(), docdir=docdir)
-    sh.use(':sphinx/sphinx_build')
-    sh.require(('sphinx_build', find))
+    sh.use(spawn(':sphinx/sphinx_build', find))
+    sh.require('sphinx_build')
     return sh
 
 

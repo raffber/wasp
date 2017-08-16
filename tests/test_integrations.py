@@ -51,7 +51,7 @@ def test_rustbuild():
     assert any('rustc' in l for l in out_lines)
     exit_code, proc_out = run('./wasp rust', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
-    assert len(out_lines) == 2
+    assert len(out_lines) == 3
     exit_code, proc_out = run('./wasp clean rust', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
     assert any('rustc' in l for l in out_lines)
@@ -72,10 +72,9 @@ def test_cppbuild():
     exit_code, proc_out = run('./wasp cpp', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
     assert '[SUCC]  Command: `cpp`' in out_lines
-    assert any('-fPIC' in l for l in out_lines)
     exit_code, proc_out = run('./wasp cpp', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
-    assert len(out_lines) == 1
+    assert len(out_lines) == 2
     assert '[SUCC]  Command: `cpp`' in out_lines
     bd = directory(topdir.join('build'))
     main_file = bd.join('main').absolute
@@ -93,10 +92,9 @@ def test_qtbuild():
     exit_code, proc_out = run('./wasp qt', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
     assert '[SUCC]  Command: `qt`' in out_lines
-    assert any('-fPIC' in l for l in out_lines)
     exit_code, proc_out = run('./wasp qt', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
-    assert len(out_lines) == 1
+    assert len(out_lines) == 3
     assert '[SUCC]  Command: `qt`' in out_lines
     bd = directory(topdir.join('build'))
     main_file = bd.join('buildtest/qtmain').absolute

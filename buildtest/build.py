@@ -60,4 +60,4 @@ def _qt():
     yield modules
     yield mocs
     yield objs
-    yield qt.link(objs, target=curdir.join('qtmain')).use(modules)
+    yield cpp.link(objs, target=curdir.join('qtmain')).use(modules)

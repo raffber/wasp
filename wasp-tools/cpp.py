@@ -1,8 +1,11 @@
+import json
 import os
-from wasp import ShellTask, find_exe, Task, quote, empty
+from json import JSONDecodeError
+
+from wasp import ShellTask, find_exe, Task, quote, empty, spawn
 from wasp import group, TaskFailedError, ctx
 from wasp import nodes, FileNode, node, Argument
-from wasp import file, directory, osinfo, StringOption
+from wasp import file, directory, osinfo, StringOption, files
 from wasp.shell import run as run_command
 from wasp.shell import ShellTaskPrinter
 from wasp.logging import LogStr
@@ -45,6 +48,14 @@ def glob(*dirs, sources=True, headers=False, exclude=None):
     return ret
 
 
+def libname(basename):
+    basename = str(basename)
+    if osinfo.linux:
+        return 'lib' + basename + '.so'
+    elif osinfo.windows:
+        return basename + '.dll'
+    raise NotImplementedError
+
 
 class CompilerCli(object):
 
@@ -75,8 +86,8 @@ class CompilerCli(object):
         if self._name == 'msvc':
             if arch == 'x64':
                 if debug:
-                    return ['/nologo', '/Od', '/MDd', '/W3', '/GS-', '/Z7', '/D_DEBUG', '/EHsc']
-                return ['/nologo', '/Ox', '/MD', '/W3', '/GS-', '/DNDEBUG', '/EHsc']
+                    return ['/nologo', '/Od', '/MDd', '/W3', '/GS-', '/Z7', '/D_DEBUG', '/EHsc', '/permissive-']
+                return ['/nologo', '/Ox', '/MD', '/W3', '/GS-', '/DNDEBUG', '/EHsc', '/permissive-']
             else:  # x86 or else
                 if debug:
                     return ['/nologo', '/Od', '/MDd', '/W3', '/Z7', '/D_DEBUG', '/EHsc']
@@ -107,8 +118,9 @@ if osinfo.windows:
     DEFAULT_LINKER = 'msvc'
 
     MSVC_VARS = ['VS140COMNTOOLS', 'VS120COMNTOOLS', 'VS100COMNTOOLS', 'VS90COMNTOOLS', 'VS80COMNTOOLS']
-    RELEVANT_ENV_VARS = ['lib', 'include', 'path', 'libpath']
+    RELEVANT_ENV_VARS = ['lib', 'include', 'path', 'libpath', 'systemroot']
     ARCH_VCVARS_ARG = {'x86': 'x86', 'x64': 'amd64'}
+    VSWHERE_PATH = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe'
 
     class MsvcError(Exception):
         pass
@@ -132,12 +144,22 @@ if osinfo.windows:
                 self._arch = 'x86'
 
         def _retrieve_msvc(self):
+            # detect up to MSVC 2017
             for varname in MSVC_VARS:
                 v = os.environ.get(varname, None)
                 if v is not None:
                     if directory(v).exists:
                         self._msvcpath = directory(v).join('../../VC').absolute
                         return
+            # MVSC 2017
+            if not file(VSWHERE_PATH).exists:
+                return
+            exit_code, out = run_command(quote(VSWHERE_PATH) + ' -latest -format json')
+            data = json.loads(out.stdout)
+            install_path = data[0]['installationPath']
+            # ponit to where vcvarsall.bat is located
+            self._msvcpath = directory(install_path).join('VC/Auxiliary/Build')
+
 
         def _source(self):
             vcvars = self._msvcpath.join('vcvarsall.bat')
@@ -155,6 +177,8 @@ if osinfo.windows:
                     subpaths = varvalue.split(os.pathsep)
                     # ignore duplicates
                     self._env[varname] = subpaths
+                # else:
+                #     self._env[varname] = varvalue
             for var in RELEVANT_ENV_VARS:
                 if var not in self._env:
                     raise MsvcError('`vcvarsall.bat` in `{0}` returned '
@@ -211,20 +235,20 @@ if osinfo.windows:
 
 
     class MsvcCompilerPrinter(ShellTaskPrinter):
-        def print(self, success, stdout='', stderr='', exit_code=0, commandstring=''):
+        def print(self, stdout='', stderr='', exit_code=0):
             stdout = stdout.split('\n')
             if len(stdout) >= 1:
                 stdout = stdout[1:]  # discard first line
             stdout = '\n'.join(stdout)
-            super().print(success, stdout=stdout, stderr=stderr, exit_code=exit_code, commandstring=commandstring)
+            super().print(stdout=stdout, stderr=stderr, exit_code=exit_code)
 
     class MsvcLinkerPrinter(ShellTaskPrinter):
-        def print(self, success, stdout='', stderr='', exit_code=0, commandstring=''):
+        def print(self, stdout='', stderr='', exit_code=0):
             stdout = stdout.split('\n')
             if len(stdout) >= 3:
                 stdout = stdout[3:]  # discard first three line
             stdout = '\n'.join(stdout)
-            super().print(success, stdout=stdout, stderr=stderr, exit_code=exit_code, commandstring=commandstring)
+            super().print(stdout=stdout, stderr=stderr, exit_code=exit_code)
 
 
 elif osinfo.linux:
@@ -442,7 +466,7 @@ class CompileTask(ShellTask):
                                   .format(', '.join(self.extensions)))
         kw['csource'] = csource
         defines = self.arguments.value('defines', [])
-        kw['defines'] = cli.defines(defines)
+        kw['defines'] = cli.defines(set(defines))
         return kw
 
 
@@ -452,13 +476,13 @@ class CxxCompile(CompileTask):
     @property
     def cmd(self):
         if self._compilername == 'msvc':
-            return '{cxx} {cflags} {cxxflags} {includes} {defines} /c /Fo{tgt} {csource}'
+            return '{cxx} {cflags} {cxxflags} {includes} {defines} /c /Fo{tgt} /Tp{csource}'
         else:
             return '{cxx} {cflags} {cxxflags} {includes} {defines} -c -o {tgt} {csource}'
 
     def _init(self):
         super()._init()
-        self.require('cxx', spawn=find_cxx)
+        self.require('cxx')
 
 
 class CCompile(CompileTask):
@@ -467,13 +491,13 @@ class CCompile(CompileTask):
     @property
     def cmd(self):
         if self._compilername == 'msvc':
-            return '{cc} {cflags} {includes} {defines} /c /Fo{tgt} {csource}'
+            return '{cc} {cflags} {includes} {defines} /c /Fo{tgt} /Tc{csource}'
         else:
             return '{cc} {cflags} {includes} {defines} -c -o {tgt} {csource}'
 
     def _init(self):
         super()._init()
-        self.require('cc', spawn=find_cc)
+        self.require('cc')
 
 
 class Link(ShellTask):
@@ -484,7 +508,7 @@ class Link(ShellTask):
             self._printer = MsvcLinkerPrinter(self)
         else:
             self._printer = LinkPrinter(self)
-
+        self.require('ld')
 
     def _prepare(self):
         super()._prepare()
@@ -493,7 +517,7 @@ class Link(ShellTask):
     @property
     def cmd(self):
         if self._linkername == 'msvc':
-            return '{ld} {ldflags} {libraries} /OUT:{tgt} {src}'
+            return '{ld} {ldflags} {libraries} /OUT:{tgt} {src} {static_libs}'
         else:
             return '{ld} {ldflags} {libraries} -o {tgt} {src} {static_libs}'
 
@@ -524,14 +548,14 @@ def compile(sources, use_default=True):
         if source.to_file().extension.lower() == 'c':
             task = CCompile(sources=source, targets=target, use_default=use_default)
             if use_default:
-                task.use(':cpp/cc')
+                task.use(spawn(':cpp/cc', find_cc))
         else:
             # make sure we are a bit failsafe and we just compile unkown
             # file endings with a cxx compiler. There are a lot of
             # esoteric file extensions for cpp out there.
             task = CxxCompile(sources=source, targets=target, use_default=use_default)
             if use_default:
-                task.use(':cpp/cxx')
+                task.use(spawn(':cpp/cxx', find_cxx))
         ret.append(task)
         dep_scan = DependencyScan(source)
         assert len(dep_scan.targets) >= 1
@@ -546,14 +570,84 @@ def compile(sources, use_default=True):
 def link(obj_files, target='main', use_default=True, cpp=True, shared=False):
     t = Link(sources=nodes(obj_files), targets=file(target).to_builddir())
     if use_default:
-        ldnode = ':cpp/cxx' if cpp else ':cpp/cc'
         spawner = find_cxx if cpp else find_cc
         if osinfo.linux:
             t.use(libraries=['stdc++', 'c', 'pthread'])
-        t.use(ldnode).require('ld', spawn=spawner)
+        ldnode = spawn(':cpp/cxx' if cpp else ':cpp/cc', spawner)
+        t.use(ldnode)
     if shared:
         if osinfo.windows:
             t.use(ldflags='/dll')
         else:
             t.use(ldflags='-shared')
     return t
+
+
+class CompileInfoTask(Task):
+    CATENATE_KEYS = ['cflags', 'includes', 'defines', 'ldflags', 'libraries', 'static_libraries']
+
+    def __init__(self, fname, excludes):
+        super().__init__()
+        self._fname = str(fname)
+        self._excludes = excludes
+
+    def use_arg(self, arg):
+        if arg.key in self.CATENATE_KEYS:
+            self.use_catenate(arg)
+            return
+        super().use_arg(arg)
+
+    def run(self):
+        args = []
+        for k, v in self.arguments.items():
+            if k in self._excludes:
+                continue
+            if k == 'includes':
+                absolutified = [directory(x).absolute.path for x in v.value]
+                v = Argument(k)
+                v.value = absolutified
+            if k in ['libraries', 'static_libraries']:
+                libs = []
+                for x in v.value:
+                    strx = str(x)
+                    # detect whether we are dealing with a file path
+                    # or with a global library reference
+                    # a bit of heuristic ;(
+                    if os.path.sep in strx:
+                        libs.append(file(x).absolute.path)
+                        continue
+                    libs.append(strx)
+                v = Argument(k)
+                v.value = libs
+            args.append(v.to_json())
+        with open(self._fname, 'w') as f:
+            json.dump(args, f)
+        self.success = True
+
+
+def write_compile_info(fname=None, excludes=None):
+    if fname is None:
+        fname = file('compile_info.json').to_builddir()
+    if excludes is None:
+        excludes = []
+    return CompileInfoTask(fname, excludes)
+
+
+def read_compile_info(fname=None):
+    if fname is None:
+        fname = file('compile_info.json').to_builddir()
+
+    def task_fun(t):
+        with open(str(fname)) as f:
+            try:
+                lst = json.load(f)
+            except JSONDecodeError:
+                t.log.log_fail('Invalid compile info. File should be a valid json file.')
+                return
+            if not isinstance(lst, list):
+                t.log.log_fail('Invalid compile info. Expected a list in json file.')
+                return
+            for item in lst:
+                t.result.add(Argument.from_json(item))
+        t.success = True
+    return Task(fun=task_fun, sources=fname)

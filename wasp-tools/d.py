@@ -1,7 +1,7 @@
 import wasp
 from wasp.fs import defer_install, BINARY_PERMISSIONS, find_exe
 from wasp.node import nodes, FileNode
-from wasp import ShellTask, osinfo
+from wasp import ShellTask, osinfo, spawn
 
 
 class Compile(ShellTask):
@@ -9,7 +9,7 @@ class Compile(ShellTask):
 
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
-        self.require(('dc', find_dc))
+        self.require('dc')
 
     def use_arg(self, arg):
         if arg.name == 'dflags':
@@ -23,7 +23,7 @@ class Link(ShellTask):
 
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
-        self.require(('dc', find_dc))
+        self.require('dc')
 
     def use_arg(self, arg):
         if arg.name == 'ldflags':
@@ -45,14 +45,14 @@ def compile(*sources):
         target = source.to_file().to_builddir().append_extension('.o')
         task = Compile(sources=source, targets=target)
         ret.append(task)
-    return wasp.group(ret).use(':d/dc')
+    return wasp.group(ret).use(spawn(':d/dc', find_dc))
 
 
 def link(*sources, target='main', install=True):
     f = wasp.File(target)
     if install:
         defer_install(f.to_builddir(), destination='{PREFIX}/bin/', permissions=BINARY_PERMISSIONS)
-    return Link(sources=nodes(sources), targets=f.to_builddir()).use(':d/dc')
+    return Link(sources=nodes(sources), targets=f.to_builddir()).use(spawn(':d/dc', find_dc))
 
 
 def find_dc(names=COMPILER_NAMES, dirs=COMPILER_DIRS, produce=True):
