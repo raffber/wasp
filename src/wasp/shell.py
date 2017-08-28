@@ -163,6 +163,10 @@ class ShellTask(Task):
             assert isinstance(k, str) and (isinstance(v, list) or isinstance(v, str)), INVALID_ENV_ARGUMENT
             if isinstance(v, list):
                 v = os.pathsep.join(v)
+            if osinfo.windows:
+                # because os.environ returns only capital case variables
+                # #and windows is case insensitive
+                k = k.upper()
             env[k] = v
         return env
 
