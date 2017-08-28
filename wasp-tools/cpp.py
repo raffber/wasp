@@ -53,7 +53,16 @@ def libname(basename):
     if osinfo.linux:
         return 'lib' + basename + '.so'
     elif osinfo.windows:
-        return basename + '.dll'
+        return basename + '.lib'
+    raise NotImplementedError
+
+
+def exename(basename):
+    basename = str(basename)
+    if osinfo.linux:
+        return basename
+    elif osinfo.windows:
+        return basename + '.exe'
     raise NotImplementedError
 
 
@@ -111,6 +120,51 @@ class LinkerCli(object):
                 return '-l' + library
         elif self._name == 'msvc':
             return library
+
+
+class CppPrinter(ShellTaskPrinter):
+
+    def _format_infomsg(self):
+        raise NotImplementedError
+
+    def print(self, stdout='', stderr='', exit_code=0):
+        t = self._task
+        log = t.log
+        commandstring = t.commandstring
+        if not t.success:
+            return_value_format = log.color('  --> ' + str(exit_code), fg='red', style='bright')
+            out = stderr.strip()
+            if out != '':
+                fatal_print = log.format_fail(LogStr(commandstring) + return_value_format, out)
+            else:
+                fatal_print = log.format_fail(LogStr(commandstring) + return_value_format)
+            log.fatal(fatal_print)
+        elif stderr != '':
+            warn_print = log.format_warn(LogStr(commandstring), stderr.strip())
+            log.warn(warn_print)
+        if t.success:
+            t.log.info(self._format_infomsg())
+            t.log.debug(t.log.format_success() + commandstring)
+        if stdout != '':
+            out = log.format_info(stdout.strip())
+            log.info(out)
+
+
+class CompilePrinter(CppPrinter):
+    def _format_infomsg(self):
+        prepend = self._task.log.format_success()
+        return prepend + 'Compiled: ' + self._task.arguments.value('csource', '')
+
+
+class LinkPrinter(CppPrinter):
+    def _format_infomsg(self):
+        prepend = self._task.log.format_success()
+        tgt_path = None
+        for t in self._task.targets:
+            if isinstance(t, FileNode):
+                tgt_path = t.to_file().relative(ctx.topdir, skip_if_abs=True).path
+                break
+        return prepend + 'Linked: ' + tgt_path
 
 
 if osinfo.windows:
@@ -234,7 +288,7 @@ if osinfo.windows:
     find_ld = find_cc
 
 
-    class MsvcCompilerPrinter(ShellTaskPrinter):
+    class MsvcCompilerPrinter(CompilePrinter):
         def print(self, stdout='', stderr='', exit_code=0):
             stdout = stdout.split('\n')
             if len(stdout) >= 1:
@@ -242,7 +296,7 @@ if osinfo.windows:
             stdout = '\n'.join(stdout)
             super().print(stdout=stdout, stderr=stderr, exit_code=exit_code)
 
-    class MsvcLinkerPrinter(ShellTaskPrinter):
+    class MsvcLinkerPrinter(LinkPrinter):
         def print(self, stdout='', stderr='', exit_code=0):
             stdout = stdout.split('\n')
             if len(stdout) >= 3:
@@ -365,51 +419,6 @@ class DependencyScan(Task):
                 self._scan(headers, f, current_depth+1)
 
 
-class CppPrinter(ShellTaskPrinter):
-
-    def _format_infomsg(self):
-        raise NotImplementedError
-
-    def print(self, stdout='', stderr='', exit_code=0):
-        t = self._task
-        log = t.log
-        commandstring = t.commandstring
-        if not t.success:
-            return_value_format = log.color('  --> ' + str(exit_code), fg='red', style='bright')
-            out = stderr.strip()
-            if out != '':
-                fatal_print = log.format_fail(LogStr(commandstring) + return_value_format, out)
-            else:
-                fatal_print = log.format_fail(LogStr(commandstring) + return_value_format)
-            log.fatal(fatal_print)
-        elif stderr != '':
-            warn_print = log.format_warn(LogStr(commandstring), stderr.strip())
-            log.warn(warn_print)
-        if t.success:
-            t.log.info(self._format_infomsg())
-            t.log.debug(t.log.format_success() + commandstring)
-        if stdout != '':
-            out = log.format_info(stdout.strip())
-            log.info(out)
-
-
-class CompilePrinter(CppPrinter):
-    def _format_infomsg(self):
-        prepend = self._task.log.format_success()
-        return prepend + 'Compiled: ' + self._task.arguments.value('csource', '')
-
-
-class LinkPrinter(CppPrinter):
-    def _format_infomsg(self):
-        prepend = self._task.log.format_success()
-        tgt_path = None
-        for t in self._task.targets:
-            if isinstance(t, FileNode):
-                tgt_path = t.to_file().relative(ctx.topdir, skip_if_abs=True).path
-                break
-        return prepend + 'Linked: ' + tgt_path
-
-
 class CompileTask(ShellTask):
     extensions = []
 
@@ -517,7 +526,7 @@ class Link(ShellTask):
     @property
     def cmd(self):
         if self._linkername == 'msvc':
-            return '{ld} {ldflags} {libraries} /OUT:{tgt} {src} {static_libs}'
+            return '{ld} {ldflags} {libraries} {src} {static_libs} /OUT:{lnk_tgt}'
         else:
             return '{ld} {ldflags} {libraries} -o {tgt} {src} {static_libs}'
 
@@ -536,6 +545,7 @@ class Link(ShellTask):
         kw['libraries'] = ' '.join([quote(l) for l in libs_cmdline])
         kw['ldflags'] = ' '.join(set(self.arguments.value('ldflags', [])))
         kw['static_libs'] = ' '.join(str(x) for x in static_libs)
+        kw['lnk_tgt'] = kw['tgt'].replace('.lib', '.dll')
         return kw
 
 
@@ -567,7 +577,12 @@ def compile(sources, use_default=True):
     return group(ret)
 
 
-def link(obj_files, target='main', use_default=True, cpp=True, shared=False):
+def link(obj_files, target=None, use_default=True, cpp=True, shared=False):
+    if target is None:
+        if shared:
+            target = libname('main')
+        else:
+            target = exename('main')
     t = Link(sources=nodes(obj_files), targets=file(target).to_builddir())
     if use_default:
         spawner = find_cxx if cpp else find_cc

@@ -33,5 +33,6 @@ def compile(source_dir, langs=None):
             capnp = shell(cmd, sources=src, targets=tgt).require('capnp').use(':capnp/config')
             capnp.use(outp=ctx.builddir, srcdir=source_dir)
             tasks.append(capnp)
-    tasks.append(cpp.compile(schema_sources).use(':capnp/config', includes=ctx.builddir))
-    return group(tasks), schema_sources
+    schema_obj = cpp.compile(schema_sources).use(':capnp/config', includes=ctx.builddir)
+    tasks.append(schema_obj)
+    return group(tasks), schema_obj
