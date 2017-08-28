@@ -7,6 +7,7 @@ from .execution import execute, ParallelExecutor
 from .node import nodes
 from .argument import value
 from . import _recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators, Directory
+from . import osinfo
 from .util import is_iterable
 from .signature import FileSignature
 
@@ -18,6 +19,11 @@ import types
 
 BUILD_DIR = 'build'
 FILE_NAMES = ['build.py', 'build.user.py', 'BUILD', 'BUILD.user']
+
+if osinfo.windows:
+    FILE_NAMES.append('build.windows.py')
+elif osinfo.linux:
+    FILE_NAMES.append('build.linux.py')
 
 has_argcomplete = True
 try:
