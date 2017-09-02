@@ -51,8 +51,12 @@ def glob(*dirs, sources=True, headers=False, exclude=None):
 def libname(basename):
     basename = str(basename)
     if osinfo.linux:
+        if basename.endswith('.so'):
+            return basename
         return 'lib' + basename + '.so'
     elif osinfo.windows:
+        if basename.endswith('.lib'):
+            return basename
         return basename + '.lib'
     raise NotImplementedError
 
@@ -62,6 +66,8 @@ def exename(basename):
     if osinfo.linux:
         return basename
     elif osinfo.windows:
+        if basename.endswith('.exe'):
+            return basename
         return basename + '.exe'
     raise NotImplementedError
 
@@ -172,7 +178,7 @@ if osinfo.windows:
     DEFAULT_LINKER = 'msvc'
 
     MSVC_VARS = ['VS140COMNTOOLS', 'VS120COMNTOOLS', 'VS100COMNTOOLS', 'VS90COMNTOOLS', 'VS80COMNTOOLS']
-    RELEVANT_ENV_VARS = ['lib', 'include', 'path', 'libpath', 'systemroot']
+    RELEVANT_ENV_VARS = ['lib', 'include', 'path', 'libpath']
     ARCH_VCVARS_ARG = {'x86': 'x86', 'x64': 'amd64'}
     VSWHERE_PATH = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe'
 
@@ -578,11 +584,11 @@ def compile(sources, use_default=True):
 
 
 def link(obj_files, target=None, use_default=True, cpp=True, shared=False):
-    if target is None:
+    if use_default:
         if shared:
-            target = libname('main')
+            target = libname(target)
         else:
-            target = exename('main')
+            target = exename(target)
     t = Link(sources=nodes(obj_files), targets=file(target).to_builddir())
     if use_default:
         spawner = find_cxx if cpp else find_cc

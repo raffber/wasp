@@ -25,14 +25,17 @@ def compile(source_dir, langs=None):
     schema_sources = []
     tasks = []
     source_dir = directory(source_dir)
+    source_dir.to_builddir().mkdir() # create if it does not exst
     for src in source_dir.glob('.*\.capnp', recursive=False):
         for lang in langs:
-            cmd = '{capnp} compile -I{capnp_include} --src-prefix={srcdir} -o{' + lang + '}:{outp} {src}'
+            cmd = '{capnp} compile -I{capnp_include} --src-prefix={bd} -o{' + lang + '}:{bd} {src}'
             tgt = file(source_dir.to_builddir().join(src.basename)).append_extension('.c++')
             schema_sources.append(tgt)
             capnp = shell(cmd, sources=src, targets=tgt).require('capnp').use(':capnp/config')
-            capnp.use(outp=ctx.builddir, srcdir=source_dir)
+            capnp.use(bd=ctx.builddir, srcdir=source_dir)
             tasks.append(capnp)
     schema_obj = cpp.compile(schema_sources).use(':capnp/config', includes=ctx.builddir)
+    if osinfo.windows:
+        schema_obj.use(defines='CAPNP_LITE=1')
     tasks.append(schema_obj)
     return group(tasks), schema_obj

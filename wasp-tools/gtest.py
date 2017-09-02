@@ -1,4 +1,5 @@
-from wasp import tool, Directory, directory, log, CommandFailedError, node
+from wasp import tool, Directory, directory, log, CommandFailedError, node, file, shell
+from wasp import Logger, osinfo
 
 cpp = tool('cpp')
 
@@ -19,9 +20,17 @@ def compile(test_src):
     test_obj = cpp.compile(test_src).use(includes=gtest_include)
     return test_obj
 
-def link(objs, target='test-main'):
+
+def link(objs, target=None):
+    if target is None:
+        target = 'test-main' + ('.exe' if osinfo.windows else '')
     return cpp.link(objs, target=target)
 
-def run_all(target='test-main'):
-    pass
 
+def run_all(target=None):
+    if target is None:
+        target = 'test-main' + ('.exe' if osinfo.windows else '')
+    ret = shell(file(target).to_builddir().path)
+    ret.log = log.clone()
+    ret.log.configure(verbosity=Logger.INFO)
+    return ret

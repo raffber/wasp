@@ -1,6 +1,6 @@
 import re
 from wasp import nodes, shell, group, file, tool, Task, Argument, osinfo, directory, options, spawn
-from wasp import StringOption
+from wasp import StringOption, ctx
 from wasp.fs import FindTask
 
 _cpp = tool('cpp')
@@ -152,6 +152,8 @@ class Modules(object):
     qml = 'Qml'
     quick = 'Quick'
     quick_widgets = 'QuickWidgets'
+    svg = 'Svg'
+    network = 'Network'
 
     @classmethod
     def filename(cls, lib_dir, key):
@@ -241,3 +243,61 @@ def program(fs):
     ret.append(mocs)
     fs.extend(mocs.targets)
     ret.append(compile(fs))
+
+
+class CopyDlls(Task):
+    def __init__(self, modules, dest_dir = None):
+        if not osinfo.windows:
+            raise NotImplementedError('qt.CopyDlls: is only available (and only necessary) on windows')
+        modules = list(modules)
+        bd = ctx.builddir
+        self._dlls = ['Qt5' + m + '.dll' for m in modules]
+        self._dlls.extend(['d3dcompiler_47.dll', 'libEGL.dll', 'opengl32sw.dll', 'libGLESv2.dll'])
+        self._modules = modules
+        if dest_dir is None:
+            dest_dir = bd
+        self._dest_dir = directory(dest_dir)
+        targets = [self._dest_dir.join(x) for x in self._dlls]
+        targets.append(self._dest_dir.join('platforms'))
+        super().__init__(targets=targets, always=True)
+        self.require('bin_dir', 'base_dir')
+
+    def run(self):
+        bindir = self.arguments.value('bin_dir')
+        if bindir is None:
+            self.log.log_fatal('qt.CopyDlls: Error: Argument `qt_bin_dir` is empty.')
+            self.success = False
+            return
+        bindir = directory(bindir)
+        if not bindir.exists:
+            self.log.log_fatal('qt.CopyDlls: Error: Argument `qt_bin_dir` does not exist.')
+            self.success = False
+            return
+        self._dest_dir.mkdir()
+        for srcdll in self._dlls:
+            f = file(bindir.join(srcdll))
+            f.copy_to(self._dest_dir)
+        # copy platform plugins
+        basedir = self.arguments.value('base_dir')
+        if basedir is None:
+            self.log.log_fatal('qt.CopyDlls: Error: Argument `qt_bin_dir` is empty.')
+            self.success = False
+            return
+        basedir = directory(basedir)
+        if not basedir.exists:
+            self.log.log_fatal('qt.CopyDlls: Error: Argument `base_dir` does not exist.')
+            self.success = False
+            return
+        platform_dest = self._dest_dir.join('platforms')
+        platform_src = basedir.join('plugins').join('platforms')
+        platform_src.copy_to(platform_dest)
+        # and finish up
+        self.log.log_success('Successfully copied Qt dlls')
+        self.success = True
+
+
+def copy_dlls(modules, dest_dir=None, use_default=True):
+    ret = CopyDlls(modules, dest_dir=dest_dir)
+    if use_default:
+        ret.use(spawn(':qt/config', find_qt))
+    return ret
