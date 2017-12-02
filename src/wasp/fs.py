@@ -422,7 +422,7 @@ class Directory(Path):
             ret.append(self.join(fpath))
         return ret
 
-    def copy_to(self, target, recursive=True):
+    def copy_to(self, target):
         """
         Copies the directory to a ``target``. If ``recursive = True``, the directory is
         copied recursively.
@@ -436,10 +436,7 @@ class Directory(Path):
             target = target.join(self.basename)
         if target.exists:
             target.remove(recursive=True)
-        if recursive:
-            shutil.copytree(self.absolute.path, target.path)
-        else:
-            shutil.copy(self.absolute.path, target.path)
+        shutil.copytree(self.absolute.path, target.path)
         return directory(target)
 
 
@@ -892,11 +889,9 @@ class CopyTask(Task):
     :param fs: List of files to be copied. Accepts the same input as :func:`paths`.
     :param destination: Destination path. If it ends with ``os.pathsep`` the destination
         is considered a directory and a new file is created in the directory.
-    :param recursive: Determines whether directories are to be copied recursively.
     """
 
-    def __init__(self, fs, destination, recursive=False, mkdir=True):
-        self._recursive = recursive
+    def __init__(self, fs, destination, mkdir=True):
         if isinstance(destination, str):
             if destination.endswith(os.pathsep):
                 destination = Directory(destination)
@@ -916,16 +911,16 @@ class CopyTask(Task):
             destdir.ensure_exists()
         for f in self._files:
             if isinstance(f, Directory):
-                f.copy_to(destpath, recursive=self._recursive)
+                f.copy_to(destpath)
                 continue
             f.copy_to(destpath)
 
 
-def copy(source, destination, recursive=False, mkdir=True):
+def copy(source, destination, mkdir=True):
     """
     See :class:`CopyTask`. Accepts the same parameters.
     """
-    return CopyTask(source, destination, recursive=recursive, mkdir=mkdir)
+    return CopyTask(source, destination, mkdir=mkdir)
 
 
 class MoveTask(Task):
