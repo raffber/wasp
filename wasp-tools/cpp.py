@@ -584,6 +584,8 @@ def compile(sources, use_default=True):
 
 
 def link(obj_files, target=None, use_default=True, cpp=True, shared=False):
+    if target is None:
+        target = 'main'
     if use_default:
         if shared:
             target = libname(target)
