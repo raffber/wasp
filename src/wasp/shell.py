@@ -1,5 +1,7 @@
 import os
 import sys
+from threading import Thread
+
 from .task import Task
 from .node import FileNode
 from .argument import find_argumentkeys_in_string
@@ -353,25 +355,32 @@ def run(cmd, timeout=100, cwd=None, print=False, env=None):
     exit_code = None
     out = ProcessOut(print=print)
     try:
-        process = Popen(cmd, stdout=PIPE, stderr=PIPE,
-                        shell=True, cwd=cwd, universal_newlines=True, env=env)
-        # XXX: this is some proper hack, but it is quite unavoidable
-        # maybe use different library?!
-        time_running = 0
-        while process.poll() is None:
-            time_running += POLL_TIMEOUT
-            sleep(POLL_TIMEOUT)  # poll interval is 50ms
-            if time_running >= timeout:
-                raise TimeoutError
-            for line in process.stdout:
-                out.write(line.strip('\n'), stdout=True)
-            for line in process.stderr:
-                out.write(line.strip('\n'), stdout=False)
+        process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, cwd=cwd, universal_newlines=True, env=env)
+
+        def read_stdout():
+            while process.poll() is None:
+                sleep(POLL_TIMEOUT)
+                for line in process.stdout:
+                    out.write(line.strip('\n'), stdout=True)
+
+        def read_stderr():
+            while process.poll() is None:
+                sleep(POLL_TIMEOUT)
+                for line in process.stderr:
+                    out.write(line.strip('\n'), stdout=False)
+
+        stdout_thread = Thread(target=read_stdout)
+        stdout_thread.start()
+        stderr_thread = Thread(target=read_stderr)
+        stderr_thread.start()
+        stdout_thread.join()
+        stderr_thread.join()
         out.finished()
         exit_code = process.returncode
     except TimeoutError:
         pass
     return exit_code, out
+
 
 
 def quote(s):
