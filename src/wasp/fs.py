@@ -899,7 +899,7 @@ class CopyTask(Task):
                 destination = File(destination)
         assert isinstance(destination, Path)
         self._destination = destination
-        self._files = paths(fs, ignore=True)
+        self._files = fs
         self._mkdir = mkdir
         super().__init__(sources=fs, always=True)
 
@@ -907,12 +907,8 @@ class CopyTask(Task):
         self.success = True
         destpath = self._destination.path
         if self._mkdir:
-            destdir = directory(self._destination)
-            destdir.ensure_exists()
-        for f in self._files:
-            if isinstance(f, Directory):
-                f.copy_to(destpath)
-                continue
+            directory(self._destination).mkdir()
+        for f in paths(self._files, ignore=True):
             f.copy_to(destpath)
 
 
