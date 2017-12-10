@@ -373,7 +373,7 @@ class Directory(Path):
                 new_ret.append(File(x))
         return new_ret
 
-    def mkdir(self, name=None):
+    def mkdir(self, *args):
         """
         Create a child directory with ``name``. Or ensure
         that current directory exists (if name is None)
@@ -381,12 +381,12 @@ class Directory(Path):
         :param name: Name of the directory to be created or None
             if current directory should be created.
         """
-        if name is not None:
-            fpath = os.path.join(self.path, name)
-            d = Directory(fpath)
+        if len(args) != 0:
+            d = directory(self.join(*args))
             d.ensure_exists()
             return d
         self.ensure_exists()
+        return self
 
     def ensure_exists(self):
         """
