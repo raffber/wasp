@@ -97,7 +97,7 @@ class CompilerCli(object):
             return ' '.join(['/D"{0}"'.format(d) for d in defines])
         return ' '.join(['-D"{0}"'.format(d) for d in defines])
 
-    def default_flags(self, debug=False, arch=None):
+    def default_flags(self, cpp=False, debug=False, arch=None):
         if self._name == 'msvc':
             if arch == 'x64':
                 if debug:
@@ -107,7 +107,14 @@ class CompilerCli(object):
                 if debug:
                     return ['/nologo', '/Od', '/MDd', '/W3', '/Z7', '/D_DEBUG', '/EHsc']
                 return ['/nologo', '/Ox', '/MD', '/W3', '/DNDEBUG', '/EHsc']
-        return '-std=c++14 ' + ('-O0 -g' if debug else '-O3')
+        ret = []
+        if cpp:
+            ret += ['-std=c++17']
+        if debug:
+            ret += ['-O0', '-g']
+        else:
+            ret += ['-O3']
+        return ret
 
 
 class LinkerCli(object):
@@ -429,6 +436,7 @@ class CompileTask(ShellTask):
     extensions = []
 
     def __init__(self, *args, use_default=True, **kw):
+        self._cpp = False
         super().__init__(*args, **kw)
         self._use_default = use_default
 
@@ -455,6 +463,7 @@ class CompileTask(ShellTask):
             self.use(cflags=cli.position_independent_code)
             self.use(cflags=cli.enable_exceptions)
             self.use(cflags=cli.default_flags(
+                cpp=self._cpp,
                 debug=self.arguments.value('debug', False),
                 arch=self.arguments.value('arch', None)
             ))
@@ -496,6 +505,7 @@ class CxxCompile(CompileTask):
             return '{cxx} {cflags} {cxxflags} {includes} {defines} -c -o {tgt} {csource}'
 
     def _init(self):
+        self._cpp = True
         super()._init()
         self.require('cxx')
 
