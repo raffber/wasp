@@ -3,6 +3,5 @@
     "projectname": "wasp"
   },
   "verbosity": "info",
-  "default_command": "rebuild",
-  "extensions": ["templating"]
+  "default_command": "rebuild"
 }
