@@ -502,8 +502,6 @@ def run(dir_path):
         #
         # first and foremost, initialize logging
         log.configure(verbosity=retrieve_verbosity(), pretty=retrieve_pretty_printing())
-        # load first part of extensions
-        extensions.load_all('wasp.ext')
         # load configuration from current directory
         config = Config.load_from_directory(dir_path)
         extensions.api.config_loaded(config)
