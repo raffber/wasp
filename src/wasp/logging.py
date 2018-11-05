@@ -1,4 +1,4 @@
-from .terminal import Terminal
+from .terminal import Terminal, terminal_lock
 import sys
 
 
@@ -34,13 +34,15 @@ class LogStr(object):
         """
         if term is None:
             term = Terminal()
-        for s in self._strings:
-            if isinstance(s, LogStr):
-                s.write_to_terminal(term)
-            else:
-                term.write(s, fg=self._fg, style=self._style, endl=False)
-        if endl:
-            term.newline()
+        with terminal_lock:
+            for s in self._strings:
+                if isinstance(s, LogStr):
+                    s.write_to_terminal(term)
+                else:
+                    term.write(s, fg=self._fg, style=self._style, endl=False)
+            if endl:
+                term.newline()
+            term.flush()
 
     def __add__(self, other):
         """

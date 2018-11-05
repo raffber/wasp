@@ -1,6 +1,7 @@
 from .terminal import Color, Style
 import os
 import sys
+from .util import Lock
 
 
 # escape codes
@@ -72,8 +73,10 @@ class Cursor(object):
         self._term.print_noendl(CSI + str(y) + ';' + str(x) + 'H')
 
 
-class Terminal(object):
+terminal_lock = Lock()
 
+
+class Terminal(object):
     def __init__(self, file=None):
         if file is None:
             self._file = sys.stdout
@@ -136,3 +139,6 @@ class Terminal(object):
 
     def newline(self):
         print(file=self._file)
+
+    def flush(self):
+        self._file.flush()

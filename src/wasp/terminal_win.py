@@ -1,5 +1,6 @@
 import sys
 from .terminal import Color, Style
+from .util import Lock
 
 
 class Cursor(object):
@@ -20,6 +21,9 @@ class Cursor(object):
 
     def to_pos(self, x, y):
         pass
+
+
+terminal_lock = Lock()
 
 
 class Terminal(object):
@@ -66,3 +70,6 @@ class Terminal(object):
 
     def newline(self):
         print(file=self._file)
+
+    def flush(self):
+        self._file.flush()

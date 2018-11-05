@@ -445,3 +445,14 @@ class Proxy(object):
     def __repr__(self):
         data = object.__getattribute__(self, '_data')
         return repr(data['obj'])
+
+
+class Lock(object):
+    def __init__(self):
+        self._lock = threading.Lock()
+
+    def __enter__(self):
+        self._lock.acquire()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._lock.release()
