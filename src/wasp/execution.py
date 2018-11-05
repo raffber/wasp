@@ -24,7 +24,7 @@ class TaskContainer(object):
     evaluated at most oncea and return values are cached. Caching is
     deactiavted again by calling :meth:`thaw()`.
 
-    Also, the :class:`TaskContainer` keeps track of all depenedencies of
+    Also, the :class:`TaskContainer` keeps track of all dependencies of
     a task.
     """
     def __init__(self, task, ns=None):
@@ -116,15 +116,17 @@ class TaskContainer(object):
         return self._test_has_run()
 
     def _test_has_run(self):
-        # returns true if all source and target file signatures were unchanged
-        # from the last run and all child-tasks have successfully
-        # run.
-        # note that each task may change the file signatures
-        # of its targets, as such, it cannot be assumed
-        # that a task may still need to run even though at some
-        # point this function returned True, since other tasks may
-        # change the sources of this task and thus its signatures may
-        # change.
+        """
+        Returns true if all source and target file signatures were unchanged
+        from the last run and all child-tasks have successfully
+        run.
+        Note that each task may change the file signatures
+        of its targets, as such, it cannot be assumed
+        that a task may still need to run even though at some
+        point this function returned True, since other tasks may
+        change the sources of this task and thus its signatures may
+        change.
+        """
         if self._task.has_run:
             return True
         if self._task.always:

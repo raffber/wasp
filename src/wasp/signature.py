@@ -305,10 +305,7 @@ class FileSignature(Signature):
         if os.path.isdir(self.path):
             # TODO: think about this.... maybe use all the content?!
             # that would be useful for example when packaging a .tgz
-            # raise RuntimeError('FileSignature cannot be a directory')
-            self._value = 'directory'
-            self._valid = True
-            return self._value
+            raise RuntimeError('FileSignature cannot be a directory')
         with open(self.path, 'rb') as f:
             data = f.read()
         value = checksum(data)
@@ -318,6 +315,7 @@ class FileSignature(Signature):
 
     def clone(self):
         return FileSignature(self.path, value=self.value, valid=self.valid, discard=self.discard)
+
 
 factory.register(FileSignature)
 
