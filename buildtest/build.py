@@ -3,23 +3,13 @@ from wasp import Directory, nodes
 import wasp
 
 
-d = tool('d')
 latex = tool('latex')
 nodejs = tool('nodejs')
-rust = tool('rust')
 cpp = tool('cpp')
 qt = tool('qt')
 
 
 curdir = Directory(__file__)
-
-
-@wasp.build
-def main():
-    one = d.compile(curdir.join('one.d'))
-    two = d.compile(curdir.join('two.d'))
-    link = d.link(one, two)
-    yield group(one, two, link)
 
 
 @configure
@@ -28,11 +18,6 @@ def configure():
     c += nodejs.install('jsmin')
     c += nodejs.find_exe('jsmin').produce(':jsmin')
     yield c
-
-
-@wasp.command('rust')
-def _rust():
-    return rust.executable('buildtest/main.rs', 'main')
 
 
 @wasp.command('cpp')
