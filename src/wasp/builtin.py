@@ -142,7 +142,7 @@ class build(FunctionDecorator):
 
 class install(FunctionDecorator):
     """
-    Function decorator for registring an `install` command,
+    Function decorator for registering an `install` command,
     which depends on `build` and is supposed to install the project.
     """
     def __init__(self, f):
@@ -228,5 +228,5 @@ def _diff():
             new_sig = v.clone()
             new_sig.refresh()
             if v.value != new_sig.value:
-                thislog.log_info('Signature of `{0}` changed since last run.'.format(v.name))
+                thislog.log_info('Signature of `{0}` changed since last run.'.format(v.path))
 
