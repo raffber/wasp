@@ -1,7 +1,7 @@
 import traceback
 from multiprocessing import cpu_count
 
-from wasp.node import SpawningNode
+from .node import SpawningNode
 from .task import Task, TaskGroup, MissingArgumentError, TaskCollection, TaskFailedError
 from .util import EventLoop, Event, is_iterable, ThreadPool
 from . import log, ctx, extensions
