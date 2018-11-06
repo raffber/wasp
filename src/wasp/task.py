@@ -85,7 +85,6 @@ class Task(object):
         self._targets = nodes(targets)
         if len(self._sources) == 0 and len(self._targets) == 0:
             always = True
-        self._has_run = False
         self._always = always
         self._success = False
         self._arguments = ArgumentCollection()
@@ -298,18 +297,6 @@ class Task(object):
             if isinstance(node, SymbolicNode):
                 self.use(node)
         return self
-
-    def set_has_run(self, has_run):
-        self._has_run = has_run
-
-    def get_has_run(self):
-        return self._has_run
-
-    has_run = property(get_has_run, set_has_run)
-    """
-    This property is set by the execution engine and returns whether the
-    task was actually run.
-    """
 
     def set_success(self, suc):
         self._success = suc

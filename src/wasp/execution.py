@@ -34,8 +34,9 @@ class TaskContainer(object):
         self._frozen = False
         self._noop = None
         self._runnable = None
-        self._has_run = None
+        self._has_run = False
         self._finished = False
+        self._nodes_changed = True
         # if this would not be the case, the task would never be executed
         if len(task.sources) == 0 and len(task.targets) == 0:
             task.always = True
@@ -69,8 +70,8 @@ class TaskContainer(object):
         Deactivates caching.
         """
         self._noop = None
-        self._has_run = None
         self._runnable = None
+        self._nodes_changed = None
         self._frozen = False
 
     @property
@@ -108,14 +109,13 @@ class TaskContainer(object):
         Returns True if the task has already run successfully and does not
         need to be rerun again.
         """
-        if self._frozen and self._has_run is not None:
-            return self._has_run
-        elif self._frozen:
-            self._has_run = self._test_has_run()
-            return self._has_run
-        return self._test_has_run()
+        return self._has_run
 
-    def _test_has_run(self):
+    @has_run.setter
+    def has_run(self, value):
+        self._has_run = bool(value)
+
+    def _test_nodes_changed(self):
         """
         Returns true if all source and target file signatures were unchanged
         from the last run and all child-tasks have successfully
@@ -127,10 +127,6 @@ class TaskContainer(object):
         change the sources of this task and thus its signatures may
         change.
         """
-        if self._task.has_run:
-            return True
-        if self._task.always:
-            return False
         # check if all children have run
         for t in self.targets:
             if t.has_changed(ns=self._ns):
@@ -142,6 +138,15 @@ class TaskContainer(object):
         # Task was successfully run
         self.task.success = True
         return True
+
+    @property
+    def nodes_changed(self):
+        if self._frozen and self._nodes_changed is not None:
+            return self._nodes_changed
+        elif self._frozen:
+            self._nodes_changed = self._test_nodes_changed()
+            return self._nodes_changed
+        return self._test_nodes_changed()
 
     @property
     def runnable(self):
@@ -204,8 +209,7 @@ class DAG(object):
         :param new_tasks: Adds new tasks to the DAG.
         """
         # TODO: flatten the tasks here and clear dependencies upon recompute
-        tasks = []
-        tasks.extend(new_tasks)
+        tasks = list(new_tasks)
         if len(self._runnable_tasks) > 0:
             tasks.extend(self._runnable_tasks)
             self._runnable_tasks.clear()
@@ -249,10 +253,14 @@ class DAG(object):
         self._runnable_tasks = []
         new_waiting_tasks = []
         for task in self._waiting_tasks:
-            if task.runnable and not task.has_run:
+            if task.runnable and task.nodes_changed:
                 self._runnable_tasks.append(task)
             elif not task.runnable:
                 new_waiting_tasks.append(task)
+            else:
+                # task is runnable but no nodes have changed
+                # flag the task as run
+                task.has_run = True
         self._waiting_tasks = new_waiting_tasks
         for task in self._waiting_tasks:
             task.thaw()
@@ -306,12 +314,12 @@ class DAG(object):
         # add dependencies to every task, i.e. add all tasks producing each target --> O(m*n*p)
         for task in tasks:
             for source in task.task.sources:
-                if source.name in self._target_map:
-                    additional_deps = self._target_map[source.name]
-                    task.dependencies.extend(additional_deps)
-                    deps = set(task.dependencies)
-                    task.dependencies.clear()
-                    task.dependencies.extend(list(deps))
+                if source.name not in self._target_map:
+                    continue
+                deps = set(self._target_map[source.name])
+                deps = deps.union(set(task.dependencies))
+                task.dependencies.clear()
+                task.dependencies.extend(list(deps))
         self._waiting_tasks.extend(tasks)
 
     def has_finished(self):
@@ -400,7 +408,7 @@ class Executor(object):
         assert self._dag is not None, 'Call setup() first'
         self._executing_tasks.remove(task)
         self._executed_tasks.add(task.task)
-        task.task.has_run = True
+        task.has_run = True
         spawned = task.task.spawn()
         if spawned is not None:
             self._dag.insert(_flatten(spawned))
@@ -453,9 +461,7 @@ class Executor(object):
         consumed = set(x.name for x in self.consumed_nodes)
         produced = set(x.name for x in self.produced_nodes)
         to_update = consumed - produced
-        dict_consumed = {}
-        for x in self.consumed_nodes:
-            dict_consumed[x.name] = x
+        dict_consumed = {x.name: x for x in self.consumed_nodes}
         for k, v in dict_consumed.items():
             if k not in to_update:
                 continue
