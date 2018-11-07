@@ -394,11 +394,7 @@ class DependencyScan(Task):
         headers = set()
         self._scan(headers, self._f, 1)
         headers = set(str(x) for x in headers)
-        previous_headers = set(self._target_node.read().value('headers', []))
-        new_headers = headers - previous_headers
         self.result['headers'] = list(headers)
-        # make sure the new headers are included in the database
-        self.targets.extend(nodes(new_headers))
         self.success = True
 
     def _scan(self, headers, header, current_depth):

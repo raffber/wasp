@@ -36,11 +36,11 @@ def test_qtbuild():
     directory(topdir.join('build')).remove()
     exit_code, proc_out = run('./wasp qt', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
-    assert '[SUCC]  Command: `qt`' in out_lines
+    assert '[SUCC]  Command Completed: qt' in out_lines
     exit_code, proc_out = run('./wasp qt', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
     assert len(out_lines) == 3
-    assert '[SUCC]  Command: `qt`' in out_lines
+    assert '[SUCC]  Command Completed: qt' in out_lines
     bd = directory(topdir.join('build'))
     main_file = bd.join('buildtest/qtmain').absolute
     assert main_file.exists
