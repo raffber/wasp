@@ -222,10 +222,10 @@ def execute_tasks(name, tasks):
         executor = Executor(ns=name)
     execute(tasks, executor, produce=produce, ns=name)
     if not executor.success:
-        log.fatal(log.format_fail() + 'Command `{0}` failed.'.format(name))
+        log.fatal(log.format_fail() + 'Command Failed: {0}'.format(name))
         ctx.cache.prefix('commands')[name] = {'success': False}
         return False
-    log.info(log.format_success() + 'Command: `{0}`'.format(name))
+    log.info(log.format_success() + 'Command Completed: {0}'.format(name))
     ctx.cache.prefix('commands')[name] = {'success': True}
     return True
 
