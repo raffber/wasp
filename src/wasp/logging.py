@@ -39,14 +39,17 @@ class LogStr(object):
         if term is None:
             term = Terminal()
         with terminal_lock:
-            for s in self._strings:
-                if isinstance(s, LogStr):
-                    s.write_to_terminal(term)
-                else:
-                    term.write(s, fg=self._fg, style=self._style, endl=False)
+            self._print(term)
             if endl:
                 term.newline()
             term.flush()
+
+    def _print(self, term):
+        for s in self._strings:
+            if isinstance(s, LogStr):
+                s._print(term)
+            else:
+                term.write(s, fg=self._fg, style=self._style, endl=False)
 
     def __add__(self, other):
         """
