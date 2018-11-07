@@ -17,7 +17,7 @@ class DependencyCycleError(Exception):
     pass
 
 
-class InvalidTaskDependencies(Exception):
+class TargetProducedByMultipleTasksError(Exception):
     """
     Raised if a target is produced by multiple tasks.
     """
@@ -36,26 +36,40 @@ class TaskGraph(object):
         self.add_tasks(tasks)
         self._running_tasks = []
 
+    def _insert_task(self, t):
+        assert isinstance(t, Task)
+        self._tasks.append(t)
+        for target in t.targets:
+            if target.key in self._target_map:
+                raise TargetProducedByMultipleTasksError()
+            self._target_map[target.key] = t
+            if target.key in self._nodes:
+                continue
+            target.invalidate()
+            self._nodes[target.key] = target
+        for source in t.sources:
+            if source.key not in self._source_map:
+                self._source_map[source.key] = []
+            self._source_map[source.key].append(t)
+            if source.key in self._nodes:
+                continue
+            source.invalidate()
+            self._nodes[source.key] = source
+
     def add_tasks(self, tasks):
         for t in tasks:
-            assert isinstance(t, Task)
-            self._tasks.append(t)
-            for target in t.targets:
-                if target.key in self._target_map:
-                    raise InvalidTaskDependencies()
-                self._target_map[target.key] = t
-                if target.key in self._nodes:
-                    continue
-                target.invalidate()
-                self._nodes[target.key] = target
-            for source in t.sources:
-                if source.key not in self._source_map:
-                    self._source_map[source.key] = []
-                self._source_map[source.key].append(t)
-                if source.key in self._nodes:
-                    continue
-                source.invalidate()
-                self._nodes[source.key] = source
+            self._insert_task(t)
+        # fetch all spawning nodes and let them spawn new tasks if there is no task
+        # already producing this node
+        spawning_nodes = [n for n in self._nodes.values() if isinstance(n, SpawningNode)]
+        for n in spawning_nodes:
+            if n.key not in self._target_map:
+                spawned = n.spawn()
+                if not is_iterable(spawned):
+                    spawned = [spawned]
+                for t in spawned:
+                    self._insert_task(t)
+        # compute the leaf nodes where we start our execution
         self._leafs = set(self._nodes.keys()) - set(self._target_map.keys())
 
     def start(self):
@@ -92,6 +106,7 @@ class TaskGraph(object):
             # task does not need to be re-run
             toremove.append(task)
         for rm in toremove:
+            self._tasks.remove(rm)
             self.task_completed(rm)
         if ret is not None:
             self._tasks.remove(ret)
@@ -136,7 +151,8 @@ class Executor(object):
     def __init__(self, ns=None):
         self._ns = ns
         self._graph = None
-        self._log = Logger()
+        self._log = log.clone()
+        self._success = True
 
     def setup(self, graph):
         self._graph = graph
@@ -147,17 +163,22 @@ class Executor(object):
             task = self._graph.pop()
             if task is None:
                 break
-            task.log = self._log
+            if task.log is None:
+                task.log = self._log
             try:
                 task.check()
             except MissingArgumentError as e:
                 msg = log.format_fail(''.join(traceback.format_tb(e.__traceback__)),
                     '{0}: {1}'.format(type(e).__name__,  str(e)))
                 self._log.fatal(msg)
-                # self.task_failed(task)
+                self._success = False
                 break
             run_task(task, self._ns)
             self._graph.task_completed(task)
+
+    @property
+    def success(self):
+        return self._success
 
     @property
     def executed_tasks(self):
