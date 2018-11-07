@@ -133,7 +133,7 @@ class Executor(object):
     def __init__(self, ns=None):
         self._ns = ns
         self._graph = None
-        self._logger = Logger()
+        self._log = Logger()
 
     def setup(self, graph):
         self._graph = graph
@@ -144,7 +144,15 @@ class Executor(object):
             task = self._graph.pop()
             if task is None:
                 break
-            task.log = self._logger
+            task.log = self._log
+            try:
+                task.check()
+            except MissingArgumentError as e:
+                msg = log.format_fail(''.join(traceback.format_tb(e.__traceback__)),
+                    '{0}: {1}'.format(type(e).__name__,  str(e)))
+                self._log.fatal(msg)
+                # self.task_failed(task)
+                break
             run_task(task, self._ns)
             self._graph.task_completed(task)
 
