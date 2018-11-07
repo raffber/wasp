@@ -16,11 +16,11 @@ def test_cppbuild():
     directory(topdir.join('build')).remove()
     exit_code, proc_out = run('./wasp cpp', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
-    assert '[SUCC]  Command: `cpp`' in out_lines
+    assert '[SUCC]  Command Completed: cpp' in out_lines
     exit_code, proc_out = run('./wasp cpp', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
     assert len(out_lines) == 2
-    assert '[SUCC]  Command: `cpp`' in out_lines
+    assert '[SUCC]  Command Completed: cpp' in out_lines
     bd = directory(topdir.join('build'))
     main_file = bd.join('main').absolute
     assert main_file.exists
