@@ -1,21 +1,20 @@
-from .util import load_module_by_path
-from .config import Config
-from .task import Task, group, TaskCollection, TaskGroup
-from .tools import proxies as tool_proxies, NoSuchToolError
-from .option import StringOption
-from .execution import execute, Executor
-from .node import nodes
-from .argument import value
-from . import _recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators, Directory
-from . import osinfo
-from .util import is_iterable
-from .signature import FileSignature
-
 import argparse
 import os
 import sys
 import types
 
+from . import _recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators, Directory
+from . import osinfo
+from .argument import value
+from .config import Config
+from .execution import execute, ParallelExecutor
+from .node import nodes
+from .option import StringOption
+from .signature import FileSignature
+from .task import Task, group, TaskCollection, TaskGroup
+from .tools import proxies as tool_proxies, NoSuchToolError
+from .util import is_iterable
+from .util import load_module_by_path
 
 BUILD_DIR = 'build'
 FILE_NAMES = ['build.py', 'build.user.py', 'BUILD', 'BUILD.user']
@@ -219,7 +218,7 @@ def execute_tasks(name, tasks):
         produce = nodes(produce)
     executor = extensions.api.create_executor(name)
     if executor == NotImplemented:
-        executor = Executor(ns=name)
+        executor = ParallelExecutor(ns=name)
     execute(tasks, executor, produce=produce, ns=name)
     if not executor.success:
         log.fatal(log.format_fail() + 'Command Failed: {0}'.format(name))

@@ -8,6 +8,7 @@ from .util import EventLoop, Event, is_iterable, ThreadPool
 from . import log, ctx, extensions
 
 # TODO: task timeouts -> kill hanging tasks
+# TODO: limit selection to only a certain set of nodes
 
 
 class DependencyCycleError(Exception):
@@ -35,6 +36,9 @@ class TaskGraph(object):
         self._ns = ns
         self.add_tasks(tasks)
         self._running_tasks = []
+
+    def limit(self, target_nodes):
+        pass
 
     def _insert_task(self, t):
         assert isinstance(t, Task)
@@ -75,7 +79,7 @@ class TaskGraph(object):
     def start(self):
         self.referesh_leafs()
 
-    def pop(self):
+    def _find_runnable(self):
         ret = None
         toremove = []
         for task in self._tasks:
@@ -105,13 +109,22 @@ class TaskGraph(object):
                 break
             # task does not need to be re-run
             toremove.append(task)
-        for rm in toremove:
-            self._tasks.remove(rm)
-            self.task_completed(rm)
-        if ret is not None:
-            self._tasks.remove(ret)
-            self._running_tasks.append(ret)
-        if ret is None and len(toremove) == 0 and len(self._running_tasks) == 0 and len(self._tasks) != 0:
+        return ret, toremove
+
+    def pop(self):
+        while True:
+            ret, toremove = self._find_runnable()
+            for rm in toremove:
+                self._tasks.remove(rm)
+                self.task_completed(rm)
+            if ret is not None:
+                self._tasks.remove(ret)
+                self._running_tasks.append(ret)
+                break  # we found a task, let's return it
+            if len(toremove) == 0:
+                break  # we didn't accomplish anything...
+            # try to find a runnable task again
+        if ret is None and len(self._running_tasks) == 0 and len(self._tasks) != 0:
             raise DependencyCycleError()
         return ret
 
@@ -146,6 +159,14 @@ class TaskGraph(object):
             n = self._nodes[leaf_key]
             _ = n.signature()
 
+    @property
+    def running_tasks(self):
+        return self._running_tasks
+
+    @property
+    def completed(self):
+        return len(self._tasks) == 0 and len(self._running_tasks) == 0
+
 
 class Executor(object):
     def __init__(self, ns=None):
@@ -157,9 +178,60 @@ class Executor(object):
     def setup(self, graph):
         self._graph = graph
 
+    @property
+    def success(self):
+        return self._success
+
     def run(self):
+        raise NotImplementedError
+
+    def cancel(self):
+        raise NotImplementedError
+
+    def _start(self):
+        raise NotImplementedError
+
+    def task_success(self, task, start=True):
+        """
+        Must be called if a task has finished successfully.
+        """
+        assert self._graph is not None, 'Call setup() first'
+        self._graph.task_completed(task)
+        spawned = task.spawn()
+        if spawned is not None:
+            self._graph.add_tasks(_flatten(spawned))
+        if start:
+            self._start()
+
+    def task_failed(self, task):
+        """
+        Must be called if a task has failed.
+        """
+        self.cancel()
+        self._success = False
+        # invalidate the target nodes, such that this task is rerun
+        for t in task.targets:
+            t.invalidate(ns=self._ns)
+
+    def _post_run(self):
+        # TODO: what?!
+        pass
+
+
+class SingleThreadedExecutor(Executor):
+    def __init__(self, ns=None):
+        super().__init__(ns=ns)
+        self._cancel = False
+
+    def cancel(self):
+        self._cancel = True
+
+    def run(self):
+        self._start()
+
+    def _start(self):
         assert self._graph is not None
-        while True:
+        while not self._cancel:
             task = self._graph.pop()
             if task is None:
                 break
@@ -173,22 +245,88 @@ class Executor(object):
                 self._log.fatal(msg)
                 self._success = False
                 break
-            run_task(task, self._ns)
-            self._graph.task_completed(task)
+            success = run_task(task, self._ns)
+            if success:
+                self.task_success(task, start=False)
+            else:
+                self.task_failed(task)
+        self._post_run()
 
-    @property
-    def success(self):
-        return self._success
 
-    @property
-    def executed_tasks(self):
-        # TODO: ...
-        return []
+class ParallelExecutor(Executor):
+    class TaskRunner(object):
+        """
+        Callable class for executing a task.
+        :param task: The task to be executed.
+        :param on_success: An :class:`wasp.util.Event` object called upon success.
+        :param on_fail: A :class:`wasp.util.Event` object called upon failure.
+        """
 
-    @property
-    def success(self):
-        # TODO: ...
-        return True
+        def __init__(self, task, on_success, on_fail, ns):
+            self._on_success = on_success
+            self._on_fail = on_fail
+            self._task = task
+            self._ns = ns
+
+        def __call__(self):
+            try:
+                succ = run_task(self._task, ns=self._ns)
+                if not succ:
+                    self._on_fail.fire(self._task)
+                    return
+                self._on_success.fire(self._task)
+            except KeyboardInterrupt:
+                log.fatal(log.format_fail('Execution Interrupted!!'))
+                self._on_fail.fire(self._task)
+
+    def __init__(self, ns=None, jobs=None):
+        super().__init__(ns=ns)
+        if jobs is None:
+            jobs = cpu_count() * 2
+        self._loop = EventLoop()
+        self._success_event = Event(self._loop).connect(self.task_success)
+        self._failed_event = Event(self._loop).connect(self.task_failed)
+        self._startup_event = Event(self._loop).connect(self._start)
+        self._thread_pool = ThreadPool(self._loop, jobs)
+        self._loop.on_interrupt(self._thread_pool.cancel)
+        self._thread_pool.on_finished(self._loop.cancel)
+        self._loop.on_startup(self._start)
+
+    def cancel(self):
+        self._thread_pool.cancel()
+
+    def run(self):
+        self._thread_pool.start()
+        if not self._loop.run():
+            log.log_fail('Execution Interrupted!!')
+        self._post_run()
+
+    def _start(self):
+        assert self._graph is not None, 'Call setup() first'
+        while True:
+            if not self._loop.running and self._loop.started:
+                break
+            if self._graph.completed:
+                self._thread_pool.cancel()
+                break
+            # attempt to start new task
+            task = self._graph.pop()
+            if task is None:
+                if self._graph.completed:
+                    self._thread_pool.cancel()
+                break
+            if task.log is None:
+                task.log = self._log
+            try:
+                task.check()
+            except MissingArgumentError as e:
+                msg = log.format_fail(''.join(traceback.format_tb(e.__traceback__)),
+                                      '{0}: {1}'.format(type(e).__name__, str(e)))
+                log.fatal(msg)
+                self.task_failed(task)
+                break
+            runner = ParallelExecutor.TaskRunner(task, self._success_event, self._failed_event, self._ns)
+            self._thread_pool.submit(runner)
 
 
 def execute(tasks, executor, produce=None, ns=None):
@@ -210,14 +348,13 @@ def execute(tasks, executor, produce=None, ns=None):
         return TaskCollection()
     dag = TaskGraph(tasks, ns=ns)  # TODO: , produce=produce)
     if executor is None:
-        executor = Executor(ns=ns)
+        executor = SingleThreadedExecutor(ns=ns)
     assert isinstance(executor, Executor)
     executor.setup(dag)
     extensions.api.tasks_execution_started(tasks, executor, dag)
     executor.run()
     extensions.api.tasks_execution_finished(tasks, executor, dag)
     ctx.current_namespace = oldns
-    return executor.executed_tasks
 
 
 def run_task(task, ns):

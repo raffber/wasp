@@ -178,6 +178,7 @@ class EventLoop(object):
         self._start_id = None
         self._on_idle = None
         self._finished_handler = None
+        self._startup_handler = None
         self._lock = threading.Lock()
 
     def on_interrupt(self, interrupted):
@@ -205,12 +206,19 @@ class EventLoop(object):
         self._on_idle = callable_
 
     def on_finished(self, handler):
+        assert callable(handler) or handler is None
         self._finished_handler = handler
+
+    def on_startup(self, handler):
+        assert callable(handler) or handler is None
+        self._startup_handler = handler
 
     def run(self):
         self._start_id = threading.current_thread().ident
         self._started = True
         self._running = True
+        if self._startup_handler is not None:
+            self._startup_handler()
         try:
             while True:
                 self._threading_event.wait()
