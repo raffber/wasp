@@ -3,7 +3,7 @@ from .config import Config
 from .task import Task, group, TaskCollection, TaskGroup
 from .tools import proxies as tool_proxies, NoSuchToolError
 from .option import StringOption
-from .execution import execute, ParallelExecutor
+from .execution import execute, Executor
 from .node import nodes
 from .argument import value
 from . import _recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators, Directory
@@ -219,7 +219,7 @@ def execute_tasks(name, tasks):
         produce = nodes(produce)
     executor = extensions.api.create_executor(name)
     if executor == NotImplemented:
-        executor = ParallelExecutor(jobs=jobs, ns=name)
+        executor = Executor(ns=name)
     execute(tasks, executor, produce=produce, ns=name)
     if not executor.success:
         log.fatal(log.format_fail() + 'Command `{0}` failed.'.format(name))

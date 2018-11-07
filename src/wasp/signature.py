@@ -90,7 +90,7 @@ class SignatureProvider(object):
             self._d[ns] = {}
         signature = self._d[ns].get(key)
         if signature is None:
-            raise ValueError('Invalid key for signature')
+            return  # signature never read thus invalid
         signature.invalidate()
 
     @lock

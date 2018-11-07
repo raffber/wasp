@@ -1,13 +1,11 @@
 import traceback
 from multiprocessing import cpu_count
 
-from matplotlib.sphinxext.only_directives import only_base
-
+from wasp import Logger
 from .node import SpawningNode, Node
 from .task import Task, TaskGroup, MissingArgumentError, TaskCollection, TaskFailedError
 from .util import EventLoop, Event, is_iterable, ThreadPool
 from . import log, ctx, extensions
-import enum
 
 # TODO: task timeouts -> kill hanging tasks
 
@@ -18,29 +16,12 @@ class DependencyCycleError(Exception):
     """
     pass
 
+
 class InvalidTaskDependencies(Exception):
     """
     Raised if a target is produced by multiple tasks.
     """
     pass
-
-
-class ExeTask(object):
-    def __init__(self, task):
-        assert isinstance(task, Task)
-        self._task = task
-
-    @property
-    def task(self):
-        return self._task
-
-    @property
-    def targets(self):
-        return self._task.targets
-
-    @property
-    def sources(self):
-        return self._task.sources
 
 
 class TaskGraph(object):
@@ -58,7 +39,6 @@ class TaskGraph(object):
     def add_tasks(self, tasks):
         for t in tasks:
             assert isinstance(t, Task)
-            t = ExeTask(t)
             self._tasks.append(t)
             for target in t.targets:
                 if target.key in self._target_map:
@@ -85,12 +65,14 @@ class TaskGraph(object):
         ret = None
         toremove = []
         for task in self._tasks:
-            source_keys = [n.key() for n in task.sources]
+            source_keys = [n.key for n in task.sources]
             only_leafs = all(sk in self._leafs for sk in source_keys)
             if not only_leafs:
                 continue
-            # task is runnable
-            for n in task.sources:
+            if len(task.sources) == 0 or task.always:
+                ret = task
+                break
+            for n in task.targets:
                 assert isinstance(n, Node)
                 # TODO: parallelize and lock
                 if n.has_changed(ns=self._ns):
@@ -98,7 +80,8 @@ class TaskGraph(object):
                     break
             if ret is not None:
                 break
-            for n in task.targets:
+            # task is runnable
+            for n in task.sources:
                 assert isinstance(n, Node)
                 # TODO: parallelize and lock
                 if n.has_changed(ns=self._ns):
@@ -118,8 +101,11 @@ class TaskGraph(object):
         return ret
 
     def task_completed(self, task):
-        self._running_tasks.remove(task)
-        self.add_tasks(task.spawn())
+        if task in self._running_tasks:
+            self._running_tasks.remove(task)
+        spawned = task.spawn()
+        if spawned is not None:
+            self.add_tasks(spawned)
         # remove all source that are not sources to other tasks
         for s in task.sources:
             src_tasks = self._source_map[s.key]
@@ -129,7 +115,7 @@ class TaskGraph(object):
                 # node is not a source of any other task
                 del self._nodes[s.key]
         # promote all targets to leafs
-        self._leafs += set(tgt.key for tgt in task.targets)
+        self._leafs = self._leafs.union(set(tgt.key for tgt in task.targets))
         # remove these nodes from the target_map
         for tgt in task.targets:
             del self._target_map[tgt.key]
@@ -138,19 +124,16 @@ class TaskGraph(object):
 
     def referesh_leafs(self):
         # TODO: async
-        for leaf in self._leafs:
-            _ = leaf.signature()
-
-    @property
-    def executed_tasks(self):
-        # TODO: ...
-        return []
+        for leaf_key in self._leafs:
+            n = self._nodes[leaf_key]
+            _ = n.signature()
 
 
 class Executor(object):
     def __init__(self, ns=None):
         self._ns = ns
         self._graph = None
+        self._logger = Logger()
 
     def setup(self, graph):
         self._graph = graph
@@ -161,8 +144,19 @@ class Executor(object):
             task = self._graph.pop()
             if task is None:
                 break
-            run_task(task)
+            task.log = self._logger
+            run_task(task, self._ns)
             self._graph.task_completed(task)
+
+    @property
+    def executed_tasks(self):
+        # TODO: ...
+        return []
+
+    @property
+    def success(self):
+        # TODO: ...
+        return True
 
 
 def execute(tasks, executor, produce=None, ns=None):
@@ -194,11 +188,11 @@ def execute(tasks, executor, produce=None, ns=None):
     return executor.executed_tasks
 
 
-def run_task(task):
+def run_task(task, ns):
     """
     Runs a task and logs its result.
 
-    :param task: A :class:`TaskContainer` to be executed.
+    :param task: A :class:`ExeTask` to be executed.
     """
     ret = extensions.api.run_task(task)
     if ret != NotImplemented:
@@ -227,7 +221,7 @@ def run_task(task):
         task.success = False
     if task.success:
         for node in task.targets:
-            node.signature(task.ns).refresh()
+            node.signature(ns).refresh()
     for target in task.targets:
         target.after_run(target=True)
     for source in task.sources:
