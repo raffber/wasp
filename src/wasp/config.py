@@ -10,10 +10,10 @@ CONFIG_FILE_NAMES = ['wasprc.json', 'wasprc.user.json']
 Default file names for config files.
 """
 
+
 # TODO: document config keys and how they can be set
 
 class ConfigKey(object):
-
     def __init__(self, key, parser=None, merger=None):
         self._key = key
         self._parser = parser
@@ -49,7 +49,7 @@ VALID_VERBOSITY = ['debug', 'info', 'warn', 'error', 'fatal', 'quiet']
 
 def _parse_verbosity(instance, value):
     parse_assert(value in VALID_VERBOSITY,
-             'Invalid verbosity key. expected on of `{0}`'.format(VALID_VERBOSITY))
+                 'Invalid verbosity key. expected on of `{0}`'.format(VALID_VERBOSITY))
     value = value.lower().strip()
     ret = 3
     if value == 'debug':
@@ -209,5 +209,7 @@ class config(FunctionDecorator):
     precedence over previously defined config objects.
     See ``wasp.main.load_decorator_config``.
     """
+
     def __init__(self, f):
+        super().__init__(f)
         decorators.config.append(f)
