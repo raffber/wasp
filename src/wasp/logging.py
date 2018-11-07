@@ -1,5 +1,9 @@
 from .terminal import Terminal, terminal_lock
+from .util import Lock
 import sys
+
+
+print_lock = Lock()
 
 
 class LogStr(object):
@@ -219,12 +223,14 @@ class Logger(object):
             if sys.stdout.isatty():
                 msg.write_to_terminal(endl=True)
             else:
-                print(str_msg)
+                with print_lock:
+                    print(str_msg)
         else:
             if sys.stderr.isatty():
                 msg.write_to_terminal(endl=True, term=Terminal(file=sys.stderr))
             else:
-                print(str_msg, file=sys.stderr)
+                with print_lock:
+                    print(str_msg, file=sys.stderr)
 
     def configure(self, verbosity=None, pretty=None):
         """
