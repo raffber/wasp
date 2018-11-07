@@ -96,11 +96,12 @@ class TaskGraph(object):
         if ret is not None:
             self._tasks.remove(ret)
             self._running_tasks.append(ret)
-        if ret is None and len(self._running_tasks) == 0 and len(self._tasks) != 0:
+        if ret is None and len(toremove) == 0 and len(self._running_tasks) == 0 and len(self._tasks) != 0:
             raise DependencyCycleError()
         return ret
 
     def task_completed(self, task):
+        # TODO: inefficient
         if task in self._running_tasks:
             self._running_tasks.remove(task)
         spawned = task.spawn()
@@ -114,8 +115,10 @@ class TaskGraph(object):
             if len(src_tasks) == 0:
                 # node is not a source of any other task
                 del self._nodes[s.key]
+                # thus also no leaf
+                self._leafs.remove(s.key)
         # promote all targets to leafs
-        self._leafs = self._leafs.union(set(tgt.key for tgt in task.targets))
+        self._leafs = self._leafs | set(tgt.key for tgt in task.targets)
         # remove these nodes from the target_map
         for tgt in task.targets:
             del self._target_map[tgt.key]
