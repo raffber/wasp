@@ -9,3 +9,5 @@ env
 MANIFEST
 .cache
 tests/test-dir
+
+tests/tests/test-dir/

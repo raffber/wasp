@@ -3,7 +3,6 @@ import zlib
 import binascii
 from wasp.util import first
 from wasp import shell, tool, ctx, recurse
-from wasp.ext.watch import watch
 import wasp
 from wasp.fs import find_exe, Directory, files
 from wasp.task import TaskFailedError
@@ -16,11 +15,6 @@ recurse('buildtest')
 @wasp.command('doc', description='Build project documentation.')
 def doc():
     return sphinx.html('doc')
-
-
-@watch(dirs=['doc', 'src/wasp'], regexp='^[a-z-_]*\.(rst|py)$', command='watch-doc')
-def autorebuild_doc():
-    return doc()
 
 
 @wasp.command('test', description='Run unit and integration tests.')
