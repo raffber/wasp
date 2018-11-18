@@ -273,6 +273,10 @@ class Task(object):
         """
         return self._targets
 
+    @property
+    def new_nodes(self):
+        return None
+
     def produce(self, *args):
         """
         Adds target nodes to the task.

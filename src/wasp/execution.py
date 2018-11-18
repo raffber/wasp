@@ -2,7 +2,7 @@ import traceback
 from multiprocessing import cpu_count
 
 from wasp import Logger
-from .node import SpawningNode, Node
+from .node import SpawningNode, Node, node
 from .task import Task, TaskGroup, MissingArgumentError, TaskCollection, TaskFailedError
 from .util import EventLoop, Event, is_iterable, ThreadPool
 from . import log, ctx, extensions
@@ -36,6 +36,12 @@ class TaskGraph(object):
         self._ns = ns
         self.add_tasks(tasks)
         self._running_tasks = []
+        self._produced_signatures = set()
+        self._new_nodes = {}
+
+    @property
+    def produced_signatures(self):
+        return self._produced_signatures
 
     def limit(self, target_nodes):
         pass
@@ -76,9 +82,6 @@ class TaskGraph(object):
         # compute the leaf nodes where we start our execution
         self._leafs = set(self._nodes.keys()) - set(self._target_map.keys())
 
-    def start(self):
-        self.referesh_leafs()
-
     def _find_runnable(self):
         ret = None
         toremove = []
@@ -90,21 +93,24 @@ class TaskGraph(object):
             if len(task.sources) == 0 or task.always:
                 ret = task
                 break
-            for n in task.targets:
-                assert isinstance(n, Node)
-                # TODO: parallelize and lock
-                if n.has_changed(ns=self._ns):
-                    ret = task  # found a task to run
-                    break
-            if ret is not None:
-                break
             # task is runnable
+            # most likely case: A source has changed
             for n in task.sources:
                 assert isinstance(n, Node)
                 # TODO: parallelize and lock
                 if n.has_changed(ns=self._ns):
                     ret = task  # found a task to run
-                    break
+                    # don't break here as we want all sources to be re-checked
+                    # as we need those signature in the DB for the next run
+            if ret is not None:
+                break
+            # somewhat unlikely: A target has changed e.g. it was delted
+            for n in task.targets:
+                assert isinstance(n, Node)
+                # TODO: parallelize and lock
+                if n.has_changed(ns=self._ns):
+                    ret = task  # found a task to run
+                    break  # break here as we will referesh target signatures anyways
             if ret is not None:
                 break
             # task does not need to be re-run
@@ -134,30 +140,48 @@ class TaskGraph(object):
             self._running_tasks.remove(task)
         spawned = task.spawn()
         if spawned is not None:
+            if not is_iterable(spawned):
+                spawned = [spawned]
             self.add_tasks(spawned)
         # remove all source that are not sources to other tasks
         for s in task.sources:
             src_tasks = self._source_map[s.key]
             assert isinstance(src_tasks, list)
             src_tasks.remove(task)
+            if not s.discard:
+                self._produced_signatures.add(s.key)
             if len(src_tasks) == 0:
                 # node is not a source of any other task
                 del self._nodes[s.key]
                 # thus also no leaf
                 self._leafs.remove(s.key)
         # promote all targets to leafs
-        self._leafs = self._leafs | set(tgt.key for tgt in task.targets)
+        touched = task.touched()
+        new_leafs = set(tgt.key for tgt in touched)
+        self._leafs = self._leafs | new_leafs
         # remove these nodes from the target_map
         for tgt in task.targets:
+            if not tgt.discard:
+                self._produced_signatures.add(tgt.key)
             del self._target_map[tgt.key]
-        # start running refresh on all leafs
-        self.referesh_leafs()
+        # determine if there are new nodes to be inserted
+        # into the database
+        new_nodes = task.new_nodes
+        if new_nodes is not None:
+            if not is_iterable(new_nodes):
+                new_nodes = [new_nodes]
+            new_nodes = [node(x) for x in new_nodes]
+            new_nodes = [n for n in new_nodes if n.key not in self._nodes]
+            for n in new_nodes:
+                self._new_nodes[n.key] = n
+        # referesh all node that were touched by the task
+        for leaf in touched:
+            leaf.signature(ns=self._ns).refresh()
 
-    def referesh_leafs(self):
-        # TODO: async
-        for leaf_key in self._leafs:
-            n = self._nodes[leaf_key]
-            _ = n.signature()
+    def post_run(self):
+        for n in self._new_nodes.values():
+            assert isinstance(n, Node)
+            n.signature(ns=self._ns).refresh()
 
     @property
     def running_tasks(self):
@@ -214,8 +238,7 @@ class Executor(object):
             t.invalidate(ns=self._ns)
 
     def _post_run(self):
-        # TODO: what?!
-        pass
+        self._graph.post_run()
 
 
 class SingleThreadedExecutor(Executor):
@@ -390,7 +413,7 @@ def run_task(task, ns):
         task.success = False
     if task.success:
         for node in task.targets:
-            node.signature(ns).refresh()
+            node.signature(ns=ns).refresh()
     for target in task.targets:
         target.after_run(target=True)
     for source in task.sources:
