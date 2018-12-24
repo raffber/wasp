@@ -97,24 +97,17 @@ class CompilerCli(object):
             return ' '.join(['/D"{0}"'.format(d) for d in defines])
         return ' '.join(['-D"{0}"'.format(d) for d in defines])
 
-    def default_flags(self, cpp=False, debug=False, arch=None):
+    def default_flags(self, debug=False, arch=None, cxx=False):
         if self._name == 'msvc':
             if arch == 'x64':
                 if debug:
-                    return ['/nologo', '/Od', '/MDd', '/W3', '/GS-', '/Z7', '/D_DEBUG', '/EHsc', '/permissive-']
-                return ['/nologo', '/Ox', '/MD', '/W3', '/GS-', '/DNDEBUG', '/EHsc', '/permissive-']
+                    return ['/nologo', '/Od', '/MDd', '/W3', '/GS-', '/Z7', '/D_DEBUG', '/EHsc']
+                return ['/nologo', '/Ox', '/MD', '/W3', '/GS-', '/DNDEBUG', '/EHsc']
             else:  # x86 or else
                 if debug:
                     return ['/nologo', '/Od', '/MDd', '/W3', '/Z7', '/D_DEBUG', '/EHsc']
                 return ['/nologo', '/Ox', '/MD', '/W3', '/DNDEBUG', '/EHsc']
-        ret = []
-        if cpp:
-            ret += ['-std=c++17']
-        if debug:
-            ret += ['-O0', '-g']
-        else:
-            ret += ['-O3']
-        return ret
+        return ('-std=c++14 ' if cxx else '') + ('-O0 -g' if debug else '-O3')
 
 
 class LinkerCli(object):
@@ -357,27 +350,27 @@ class DependencyScan(Task):
     """
     Scans header file dependencies for a *.c or *.cpp file. The paths of the
     headers files are written as a list of strings to the 'headers' field.
-    By default, the target node :cpp/headers/<source-path> is used.
-    In order to limit the complexity of this task, only one level of header file
-    is scanned, i.e. the dependencies are limited to the directly included files
-    from the source file.
 
     :param source: The source file to be scanned.
-    :param target: The target node where the result should be written to. If
-        None, :cpp/<source-path> is used.
+    :param target_obj_file: The object file which the source file is going to be compiled to.
     """
 
     NUM_LINES = 200
     DEPTH = 10
 
-    def __init__(self, source, target=None):
+    def __init__(self, source, target_obj_file, scan_ignore=None):
         f = file(source)
-        if target is None:
-            target = node(':cpp/{0}'.format(str(f)))
+        target = node(':cpp/{0}'.format(str(target_obj_file)))
         super().__init__(sources=f, targets=target)
         self._target_node = target
         self._f = f
+        if scan_ignore is not None:
+            if not is_iterable(scan_ignore):
+                scan_ignore = [scan_ignore]
+            scan_ignore = [re.compile(x) for x in scan_ignore]
+        self._scan_ignore = scan_ignore
         self.arguments.add(includes=[])
+        self._new_headers = set()
 
     def use_arg(self, arg):
         if arg.key == 'includes':
@@ -394,6 +387,8 @@ class DependencyScan(Task):
         headers = set()
         self._scan(headers, self._f, 1)
         headers = set(str(x) for x in headers)
+        previous_headers = set(self._target_node.read().value('headers', []))
+        self._new_headers = headers - previous_headers
         self.result['headers'] = list(headers)
         self.success = True
 
@@ -421,18 +416,30 @@ class DependencyScan(Task):
             if directory(path).isabs:
                 continue
             f = directory(path).join(include_filepath)
-            if f.exists and not f.isdir:
-                if f.path in headers:
-                    return
-                headers.add(f.path)
-                self._scan(headers, f, current_depth+1)
+            if not f.exists or f.isdir:
+                continue
+            path = f.path
+            do_break = False
+            if self._scan_ignore is not None:
+                for ignore_re in self._scan_ignore:
+                    m = ignore_re.match(path)
+                    if m:
+                        do_break = True
+                        break
+            if do_break:
+                break
+            headers.add(f.path)
+            self._scan(headers, f, current_depth+1)
+
+    @property
+    def new_nodes(self):
+        return self._new_headers
 
 
 class CompileTask(ShellTask):
     extensions = []
 
     def __init__(self, *args, use_default=True, **kw):
-        self._cpp = False
         super().__init__(*args, **kw)
         self._use_default = use_default
 
@@ -458,11 +465,6 @@ class CompileTask(ShellTask):
             cli = CompilerCli(self._compilername)
             self.use(cflags=cli.position_independent_code)
             self.use(cflags=cli.enable_exceptions)
-            self.use(cflags=cli.default_flags(
-                cpp=self._cpp,
-                debug=self.arguments.value('debug', False),
-                arch=self.arguments.value('arch', None)
-            ))
 
     def use_arg(self, arg):
         if arg.key in ['cflags', 'includes', 'defines']:
@@ -493,6 +495,16 @@ class CompileTask(ShellTask):
 class CxxCompile(CompileTask):
     extensions = ['cxx', 'cpp', 'c++', 'cc']
 
+    def _prepare(self):
+        super()._prepare()
+        if self._use_default:
+            cli = CompilerCli(self._compilername)
+            self.use(cflags=cli.default_flags(
+                debug=self.arguments.value('debug', False),
+                arch=self.arguments.value('arch', None),
+                cxx=True
+            ))
+
     @property
     def cmd(self):
         if self._compilername == 'msvc':
@@ -501,13 +513,22 @@ class CxxCompile(CompileTask):
             return '{cxx} {cflags} {cxxflags} {includes} {defines} -c -o {tgt} {csource}'
 
     def _init(self):
-        self._cpp = True
         super()._init()
         self.require('cxx')
 
 
 class CCompile(CompileTask):
     extensions = ['c']
+
+    def _prepare(self):
+        super()._prepare()
+        if self._use_default:
+            cli = CompilerCli(self._compilername)
+            self.use(cflags=cli.default_flags(
+                debug=self.arguments.value('debug', False),
+                arch=self.arguments.value('arch', None),
+                cxx=False
+            ))
 
     @property
     def cmd(self):
@@ -540,7 +561,7 @@ class Link(ShellTask):
         if self._linkername == 'msvc':
             return '{ld} {ldflags} {libraries} {src} {static_libs} /OUT:{lnk_tgt}'
         else:
-            return '{ld} {ldflags} {libraries} -o {tgt} {src} {static_libs}'
+            return '{ld} {ldflags} -o {tgt} {src} {static_libs} {libraries}'
 
     def use_arg(self, arg):
         if arg.key in ['ldflags', 'libraries', 'static_libraries']:
@@ -561,12 +582,15 @@ class Link(ShellTask):
         return kw
 
 
-def compile(sources, use_default=True):
+def compile(sources, bd_path=None, use_default=True, scan=True, scan_ignore=None):
     ret = []
     for source in nodes(sources):
         if not isinstance(source, FileNode):
             continue
-        target = source.to_file().to_builddir().append_extension('.o')
+        if bd_path is None:
+            target = source.to_file().to_builddir().append_extension('.o')
+        else:
+            target = file(bd_path.join(source)).append_extension('.o')
         if source.to_file().extension.lower() == 'c':
             task = CCompile(sources=source, targets=target, use_default=use_default)
             if use_default:
@@ -579,13 +603,14 @@ def compile(sources, use_default=True):
             if use_default:
                 task.use(spawn(':cpp/cxx', find_cxx))
         ret.append(task)
-        dep_scan = DependencyScan(source)
-        assert len(dep_scan.targets) >= 1
-        header_dep_node = dep_scan.targets[0]
-        task.use(header_dep_node)
-        for header in header_dep_node.read().value('headers', []):
-            task.depends(header)
-        ret.append(dep_scan)
+        if scan:
+            dep_scan = DependencyScan(source, target, scan_ignore=scan_ignore)
+            assert len(dep_scan.targets) >= 1
+            header_dep_node = dep_scan.targets[0]
+            task.use(header_dep_node)
+            for header in header_dep_node.read().value('headers', []):
+                task.depends(header)
+            ret.append(dep_scan)
     return group(ret)
 
 
