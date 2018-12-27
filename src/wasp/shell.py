@@ -7,7 +7,7 @@ from .node import FileNode
 from .argument import find_argumentkeys_in_string
 from .logging import LogStr
 from .fs import Directory, top_dir, Path
-from . import ctx, osinfo
+from . import ctx, osinfo, log
 from .util import UnusedArgFormatter
 
 from collections import Iterable
@@ -37,7 +37,7 @@ class ShellTask(Task):
         or sources have changed.
     :param cwd: Set the working directory from which the shell command should be run.
     """
-    def __init__(self, sources=None, targets=None, cmd='', always=False, cwd=None):
+    def __init__(self, sources=None, targets=None, cmd='', always=False, cwd=None, pretty=True):
         self._cmd = cmd
         self._printer = None
         if cwd is None:
@@ -47,6 +47,8 @@ class ShellTask(Task):
         self._out = None
         self._commandstring = None
         super().__init__(sources=sources, targets=targets, always=always)
+        if not pretty:
+            self.log = log.clone().configure(pretty=False)
 
     @property
     def commandstring(self):
@@ -260,11 +262,11 @@ class ShellTaskPrinter(object):
             log.info(out)
 
 
-def shell(cmd, sources=None, targets=None, always=False, cwd=None):
+def shell(cmd, sources=None, targets=None, always=False, cwd=None, pretty=True):
     """
     Equivalent to ``ShellTask(...)``.
     """
-    return ShellTask(sources=sources, targets=targets, cmd=cmd, always=always, cwd=cwd)
+    return ShellTask(sources=sources, targets=targets, cmd=cmd, always=always, cwd=cwd, pretty=pretty)
 
 
 class ProcessOut(object):
