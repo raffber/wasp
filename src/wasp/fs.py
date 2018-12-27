@@ -32,7 +32,7 @@ def sanitize_path(fpath):
     :return: standardized path representation
     """
     assert isinstance(fpath, str), 'Path must be given as string.'
-    fpath = os.path.realpath(os.path.expanduser(fpath))
+    fpath = os.path.abspath(os.path.expanduser(fpath))
     top_dir = os.getcwd()
     is_subpath = os.path.commonprefix([fpath, top_dir]) == top_dir
     if is_subpath:
@@ -70,11 +70,11 @@ class Path(Serializable):
         if isinstance(path, Path) or isinstance(path, FileNode):
             path = path.path
         if relto is not None and not os.path.isabs(relto):
-            relto = os.path.realpath(relto)
+            relto = os.path.abspath(relto)
         if make_absolute:
             if relto is not None and not os.path.isabs(path):
                 path = os.path.join(relto, path)
-            path = os.path.realpath(os.path.expanduser(path))
+            path = os.path.abspath(os.path.expanduser(path))
         elif relto is None:
             path = sanitize_path(path)
         self._path = path
@@ -135,7 +135,7 @@ class Path(Serializable):
         assert isinstance(relto, str), 'Expected either `Path` or `str` for argument relto.'
         if skip_if_abs and self.isabs:
             return Path(self, make_absolute=True)
-        abspath = os.path.realpath(self._path)
+        abspath = os.path.abspath(self._path)
         return Path(os.path.relpath(abspath, start=relto), relto=relto)
 
     @property
