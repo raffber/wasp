@@ -1,4 +1,4 @@
-from wasp import TaskGroup, tool, Task, shell, file, ctx
+from wasp import TaskGroup, tool, Task, shell, file, ctx, quote, directory, files
 from wasp.util import is_iterable
 import json
 
@@ -27,7 +27,11 @@ def add_compile_db(t):
 
 class CollectCompileDb(Task):
 
-    def _init(self):
+    def __init__(self, dbname):
+        self._dir = directory(ctx.builddir.join(dbname))
+        self._dbfile = self._dir.join('compile_commands.json')
+        super().__init__(targets=self._dbfile, always=True)
+        
         self.arguments['compiledb'] = []
 
     def use_arg(self, arg):
@@ -39,8 +43,13 @@ class CollectCompileDb(Task):
 
     def run(self):
         self.log.debug('reading compile db')
-        with open('compile_commands.json') as f:
-            current_db = json.load(f)
+        if not self._dir.exists:
+            self._dir.mkdir()
+        if self._dbfile.exists:
+            with open(self._dbfile.path) as f:
+                current_db = json.load(f)
+        else:
+            current_db = []
         data = self.arguments.value('compiledb')
         d_data = {d['file']: d for d in data}
         for v in current_db:
@@ -48,17 +57,13 @@ class CollectCompileDb(Task):
             if fpath not in d_data:
                 d_data[fpath] = v
         self.log.debug('writing compile db')
-        with open('compile_commands.json', 'w') as f:
+        with open(self._dbfile.path, 'w') as f:
             json.dump(list(d_data.values()), f)
-        self.log.log_success('Successfully updated compile db')
+        self.log.log_success('Updated compile db: ' + self._dbfile.path)
         self.success = True
 
 
-def compile_db(tasks):
-    compile_db = file('compile_commands.json')
-    if not compile_db.exists:
-        with open(compile_db.path, 'w') as f:
-            f.write('[]')
+def compile_db(tasks, dbname):
     if not is_iterable(tasks):
         tasks = [tasks]
     tasks = _flatten(*tasks)
@@ -68,15 +73,17 @@ def compile_db(tasks):
             continue
         task.run.append(add_compile_db)
         compile_tasks.append(task)
-    collector = CollectCompileDb(always=True, targets=compile_db)
+    collector = CollectCompileDb(dbname)
     collector.use(compile_tasks)
-    return collector.produce(':clang/compiledb')
+    return collector
 
 
-CHECKS = '*,-llvm-header-guard,-cppcoreguidelines-pro-type-union-access,-google-runtime-int'
+CHECKS = '*,-llvm-header-guard,-cppcoreguidelines-pro-type-union-access'
 
 
-def tidy(src, directory):
-    return shell('clang-tidy -checks=' + CHECKS + ' -fix -header-filter="src/.*" {src}',
-                    sources=[src, 'compile_commands.json']).use(
-                    ':clang/compiledb', dir=directory)
+def tidy(sources, dbname):
+    dirname = directory(ctx.builddir.join(dbname))
+    return shell('clang-tidy -checks=' + CHECKS + ' -fix '
+            '-header-filter=".*" -p {build_dir} {src}',
+            sources=files(sources), always=True
+        ).use(build_dir=dirname)
