@@ -55,7 +55,6 @@ class TaskGraph(object):
             self._target_map[target.key] = t
             if target.key in self._nodes:
                 continue
-            target.invalidate()
             self._nodes[target.key] = target
         for source in t.sources:
             if source.key not in self._source_map:
@@ -63,7 +62,6 @@ class TaskGraph(object):
             self._source_map[source.key].append(t)
             if source.key in self._nodes:
                 continue
-            source.invalidate()
             self._nodes[source.key] = source
 
     def add_tasks(self, tasks):
@@ -104,7 +102,7 @@ class TaskGraph(object):
                     # as we need those signature in the DB for the next run
             if ret is not None:
                 break
-            # somewhat unlikely: A target has changed e.g. it was delted
+            # somewhat unlikely: A target has changed e.g. it was deleted
             for n in task.targets:
                 assert isinstance(n, Node)
                 # TODO: parallelize and lock
@@ -174,9 +172,6 @@ class TaskGraph(object):
             new_nodes = [n for n in new_nodes if n.key not in self._nodes]
             for n in new_nodes:
                 self._new_nodes[n.key] = n
-        # referesh all node that were touched by the task
-        for leaf in touched:
-            leaf.signature(ns=self._ns).refresh()
 
     def post_run(self):
         for n in self._new_nodes.values():

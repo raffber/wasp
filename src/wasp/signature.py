@@ -274,13 +274,9 @@ class FileSignature(Signature):
     :param path: Path of the :class:`wasp.node.FileNode`, which is
         set as key.
     """
-    def __init__(self, path, value=None, valid=True, discard=False):
+    def __init__(self, path, value=None, valid=False, discard=False):
         assert path is not None, 'Path must be given for file signature'
-        if not os.path.exists(path):
-            valid = False
         self.path = path
-        if value is None and valid:
-            value = self.refresh()
         super().__init__(value, valid=valid, key=path, discard=discard)
 
     def to_json(self):

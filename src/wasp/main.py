@@ -470,6 +470,7 @@ def check_script_signatures(loaded_files):
             changed = True
             break
         old_sig = d[f]
+        cur_sig.refresh()
         if cur_sig != old_sig:
             changed = True
             break
