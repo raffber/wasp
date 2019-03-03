@@ -19,7 +19,6 @@ def test_cppbuild():
     assert '[SUCC]  Command Completed: cpp' in out_lines
     exit_code, proc_out = run('./wasp cpp', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
-    assert len(out_lines) == 2
     assert '[SUCC]  Command Completed: cpp' in out_lines
     bd = directory(topdir.join('build'))
     main_file = bd.join('main').absolute
@@ -39,7 +38,6 @@ def test_qtbuild():
     assert '[SUCC]  Command Completed: qt' in out_lines
     exit_code, proc_out = run('./wasp qt', cwd=topdir.path)
     out_lines = proc_out.stdout.split('\n')
-    assert len(out_lines) == 3
     assert '[SUCC]  Command Completed: qt' in out_lines
     bd = directory(topdir.join('build'))
     main_file = bd.join('buildtest/qtmain').absolute
