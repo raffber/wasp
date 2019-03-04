@@ -83,8 +83,6 @@ class Task(object):
     def __init__(self, sources=None, targets=None, always=False, fun=None):
         self._sources = nodes(sources)
         self._targets = nodes(targets)
-        if len(self._sources) == 0 and len(self._targets) == 0:
-            always = True
         self._has_run = False
         self._always = always
         self._success = False
