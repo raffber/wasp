@@ -36,6 +36,19 @@ def json_checksum(data):
     return ret
 
 
+def unique(data, ordered=True):
+    if not ordered:
+        return list(set(x for x in data))
+    seen = {}
+    result = []
+    for item in data:
+        if item in seen:
+            continue
+        seen[item] = 1
+        result.append(item)
+    return result
+
+
 class Factory(object):
     def __init__(self):
         self.d = {}
