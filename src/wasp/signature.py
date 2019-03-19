@@ -295,9 +295,9 @@ class FileSignature(Signature):
             self._valid = True
             return value
         if not os.path.exists(self.path):
-            self._valid = False
+            self._valid = True
             self._value = None
-            return
+            return None
         if os.path.isdir(self.path):
             # TODO: think about this.... maybe use all the content?!
             # that would be useful for example when packaging a .tgz
@@ -352,7 +352,7 @@ class CacheSignature(Signature):
             self._cache = ctx.cache.prefix(self._prefix)
         data = self._cache.get(self._cache_key, None)
         if data is None:
-            self._valid = False
+            self._valid = True
             self._value = None
             return None
         jsonarr = factory.to_json(data)
