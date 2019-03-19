@@ -107,25 +107,7 @@ class CompilerCli(object):
                 if debug:
                     return ['/nologo', '/Od', '/MDd', '/W3', '/Z7', '/D_DEBUG', '/EHsc']
                 return ['/nologo', '/Ox', '/MD', '/W3', '/DNDEBUG', '/EHsc']
-        return ('-std=c++14 ' if cxx else '') + ('-O0 -g' if debug else '-O3')
-
-
-class LinkerCli(object):
-
-    def __init__(self, linkername):
-        self._name = linkername
-
-    def link(self, library):
-        library = str(library)
-        if self._name == 'gcc' or self._name == 'clang':
-            if '/' in library or library.startswith('lib'):
-                # use the file name directly
-                return library
-            else:
-                # file name is squashed already
-                return '-l' + library
-        elif self._name == 'msvc':
-            return library
+        return ('-std=c++17 ' if cxx else '') + ('-O0 -g' if debug else '-O3')
 
 
 class CppPrinter(ShellTaskPrinter):
@@ -346,104 +328,30 @@ elif osinfo.linux:
         return t
 
 
-class DependencyScan(Task):
-    """
-    Scans header file dependencies for a *.c or *.cpp file. The paths of the
-    headers files are written as a list of strings to the 'headers' field.
+class CompileTask(ShellTask):
+    extensions = []
+    require_keys = []
 
-    :param source: The source file to be scanned.
-    :param target_obj_file: The object file which the source file is going to be compiled to.
-    """
-
-    NUM_LINES = 200
-    DEPTH = 10
-
-    def __init__(self, source, target_obj_file, scan_ignore=None):
-        f = file(source)
-        target = node(':cpp/{0}'.format(str(target_obj_file)))
-        super().__init__(sources=f, targets=target)
-        self._target_node = target
-        self._f = f
+    def __init__(self, source=None, target=None, scan_ignore=None, use_default=True, scan=True):
+        super().__init__(sources=source, targets=target)
+        self._use_default = use_default
+        self._depfile = None
+        self._new_headers = set()
+        self._old_headers = set()
         if scan_ignore is not None:
             if not is_iterable(scan_ignore):
                 scan_ignore = [scan_ignore]
             scan_ignore = [re.compile(x) for x in scan_ignore]
+        else:
+            scan_ignore = [re.compile('/usr/include.*?')]
         self._scan_ignore = scan_ignore
-        self.arguments.add(includes=[])
-        self._new_headers = set()
-
-    def use_arg(self, arg):
-        if arg.key == 'includes':
-            if is_iterable(arg.value):
-                for v in arg.value:
-                    self.arguments.value('includes').append(v)
-            else:
-                v = str(arg.value)
-                self.arguments.value('includes').append(v)
-            return
-        super().use_arg(arg)
-
-    def _run(self):
-        headers = set()
-        self._scan(headers, self._f, 1)
-        headers = set(str(x) for x in headers)
-        previous_headers = set(self._target_node.read().value('headers', []))
-        self._new_headers = headers - previous_headers
-        self.result['headers'] = list(headers)
-        self.success = True
-
-    def _scan(self, headers, header, current_depth):
-        if current_depth > self.DEPTH:
-            return set()
-        include_re = re.compile('^\s*#include *[<"](?P<include>[0-9a-zA-Z\-_\. /]+)[>"]\s*$')
-        num_lines = 0
-        if not header.exists:
-            return
-        with open(str(header), 'r') as f:
-            for line in f:
-                num_lines += 1
-                if num_lines > self.NUM_LINES:
-                    break
-                m = include_re.match(line)
-                if m:
-                    include_filepath = m.group('include')
-                    self.include_found(header, headers, include_filepath, current_depth)
-
-    def include_found(self, header, headers, include_filepath, current_depth):
-        include_paths = list(self.arguments.value('includes', []))
-        include_paths.append(directory(header))
-        for path in include_paths:
-            if directory(path).isabs:
-                continue
-            f = directory(path).join(include_filepath)
-            if not f.exists or f.isdir:
-                continue
-            path = f.path
-            do_break = False
-            if self._scan_ignore is not None:
-                for ignore_re in self._scan_ignore:
-                    m = ignore_re.match(path)
-                    if m:
-                        do_break = True
-                        break
-            if do_break:
-                break
-            headers.add(f.path)
-            self._scan(headers, f, current_depth+1)
-
-    @property
-    def new_nodes(self):
-        return self._new_headers
-
-
-class CompileTask(ShellTask):
-    extensions = []
-
-    def __init__(self, *args, use_default=True, **kw):
-        super().__init__(*args, **kw)
-        self._use_default = use_default
-
-    def _init(self):
+        self._scan = scan
+        tgt_files = files(self._targets)
+        if len(tgt_files) == 0:
+            raise ValueError('CompileTask: Must be given an object file as compile target')
+        self._obj = tgt_files[0]
+        for req in self.require_keys:
+            self.require(req)
         self._compilername = DEFAULT_COMPILER
         if self._compilername == 'msvc':
             self._printer = MsvcCompilerPrinter(self)
@@ -452,12 +360,18 @@ class CompileTask(ShellTask):
         for src in self.sources:
             if not isinstance(src, FileNode):
                 continue
+            src = file(src)
             is_csrc = [str(src).endswith(ext) for ext in self.extensions]
             if any(is_csrc):
                 self.arguments['csource'] = str(src)
-                headers = node(':cpp/{0}'.format(src)).read().value('headers', [])
-                self.sources.extend(nodes(headers))
-                return
+                self._depfile = file(self._obj.directory().join(src.basename + '.d'))
+                header_node = node(':cpp/{0}'.format(src.path))
+                self._headers = header_node.read().value('headers', [])
+                self._old_headers = set(str(x) for x in self._headers)
+                self.sources.extend(nodes(self._headers))
+                if self._scan:
+                    self.targets.append(header_node)
+                break
 
     def _prepare(self):
         self._compilername = self.arguments.value('compilername', DEFAULT_COMPILER)
@@ -486,14 +400,47 @@ class CompileTask(ShellTask):
             raise TaskFailedError('No sources recognized. Are your source files '
                                   'using the right extensions? Expected one of [{}]'
                                   .format(', '.join(self.extensions)))
-        kw['csource'] = csource
+        kw['csource'] = quote(csource)
         defines = self.arguments.value('defines', [])
         kw['defines'] = cli.defines(set(defines))
+        kw['obj'] = quote(self._obj.path)
         return kw
+
+    def _read_depfile(self):
+        with open(self._depfile.path) as f:
+            deps = f.read()
+        deps = deps.replace('\\\n', ' ')
+        splits = re.split(r'(?<!\\)\s+', deps)
+        splits = splits[1:]  # ignore make rule
+        headers = set()
+        for hdr in splits:
+            if hdr == '':
+                continue
+            ignore = False
+            for ignore_re in self._scan_ignore:
+                m = ignore_re.match(hdr)
+                if m:
+                    ignore = True
+                    break
+            if ignore:
+                continue
+            headers.add(hdr)
+        self._new_headers = headers - self._old_headers
+        self.result['headers'] = list(sorted(headers))
+
+    def _on_success(self):
+        if self._scan:
+            self._read_depfile()
+        super()._on_success()
+
+    @property
+    def new_nodes(self):
+        return self._new_headers
 
 
 class CxxCompile(CompileTask):
     extensions = ['cxx', 'cpp', 'c++', 'cc']
+    require_keys = ['cxx']
 
     def _prepare(self):
         super()._prepare()
@@ -508,17 +455,14 @@ class CxxCompile(CompileTask):
     @property
     def cmd(self):
         if self._compilername == 'msvc':
-            return '{cxx} {cflags} {cxxflags} {includes} {defines} /c /Fo{tgt} /Tp{csource}'
+            return '{cxx} {cflags} {cxxflags} {includes} {defines} /c /Fo{obj} /Tp{csource}'
         else:
-            return '{cxx} {cflags} {cxxflags} {includes} {defines} -c -o {tgt} {csource}'
-
-    def _init(self):
-        super()._init()
-        self.require('cxx')
+            return '{cxx} {cflags} {cxxflags} {includes} {defines} -MMD -c -o {obj} {csource}'
 
 
 class CCompile(CompileTask):
     extensions = ['c']
+    require_keys = ['cc']
 
     def _prepare(self):
         super()._prepare()
@@ -535,16 +479,16 @@ class CCompile(CompileTask):
         if self._compilername == 'msvc':
             return '{cc} {cflags} {includes} {defines} /c /Fo{tgt} /Tc{csource}'
         else:
-            return '{cc} {cflags} {includes} {defines} -c -o {tgt} {csource}'
+            return '{cc} {cflags} {includes} {defines} -MMD -c -o {tgt} {csource}'
 
-    def _init(self):
-        super()._init()
-        self.require('cc')
+    def postprocess(self):
+        pass
 
 
 class Link(ShellTask):
-    def _init(self):
-        super()._init()
+
+    def __init__(self, sources=None, target=None):
+        super().__init__(sources=sources, targets=target)
         self._linkername = DEFAULT_LINKER
         if self._linkername == 'msvc':
             self._printer = MsvcLinkerPrinter(self)
@@ -555,13 +499,18 @@ class Link(ShellTask):
     def _prepare(self):
         super()._prepare()
         self._linkername = self.arguments.value('linkername', DEFAULT_LINKER)
+        libraries = []
+        for t in self.targets:
+            if isinstance(t, FileNode):
+                libraries.append(t.to_file().path)
+        self.result['libraries'] = libraries
 
     @property
     def cmd(self):
         if self._linkername == 'msvc':
             return '{ld} {ldflags} {libraries} {src} {static_libs} /OUT:{lnk_tgt}'
         else:
-            return '{ld} {ldflags} -o {tgt} {src} {static_libs} {libraries}'
+            return '{ld} {ldflags} {lib_includes} -o {tgt} {src} {static_libs} {libraries}'
 
     def use_arg(self, arg):
         if arg.key in ['ldflags', 'libraries', 'static_libraries']:
@@ -571,18 +520,33 @@ class Link(ShellTask):
 
     def _process_args(self):
         kw = super()._process_args()
-        libraries = self.arguments.value('libraries', [])
-        cli = LinkerCli(self._linkername)
-        libs_cmdline = [cli.link(x) for x in libraries]
+        lib_includes = set()
+        libraries = []
+        for lib in self.arguments.value('libraries', []):
+            lib = str(lib)
+            if '/' in lib:
+                libfile = file(lib)
+                libdir = file(libfile.absolute).directory()
+                lib_includes.add(libdir.path)
+                lib = libfile.basename
+            if lib.startswith('lib') and '.so.' not in lib:
+                # if .so.x.y.z then link absolute
+                # else link directly with -l
+                if lib.endswith('.so'):
+                    lib = lib[:-3]
+                libraries.append('-l' + lib[3:])
+            else:
+                libraries.append('-l:' + lib)
         static_libs = self.arguments.value('static_libraries', [])
-        kw['libraries'] = ' '.join([quote(l) for l in libs_cmdline])
+        kw['lib_includes'] = ' '.join('-L' + quote(include) for include in lib_includes)
+        kw['libraries'] = ' '.join(quote(l) for l in libraries)
         kw['ldflags'] = ' '.join(set(self.arguments.value('ldflags', [])))
         kw['static_libs'] = ' '.join(str(x) for x in static_libs)
-        kw['lnk_tgt'] = kw['tgt'].replace('.lib', '.dll')
+        kw['lnk_tgt'] = kw['tgt'].replace('.lib', '.dll')  # TODO: not nice...
         return kw
 
 
-def compile(sources, bd_path=None, use_default=True, scan=True, scan_ignore=None):
+def compile(sources, bd_path=None, use_default=True, scan_ignore=None, scan=True):
     ret = []
     for source in nodes(sources):
         if not isinstance(source, FileNode):
@@ -592,25 +556,17 @@ def compile(sources, bd_path=None, use_default=True, scan=True, scan_ignore=None
         else:
             target = file(bd_path.join(source)).append_extension('.o')
         if source.to_file().extension.lower() == 'c':
-            task = CCompile(sources=source, targets=target, use_default=use_default)
+            task = CCompile(source=source, target=target, use_default=use_default, scan_ignore=scan_ignore, scan=scan)
             if use_default:
                 task.use(spawn(':cpp/cc', find_cc))
         else:
             # make sure we are a bit failsafe and we just compile unkown
             # file endings with a cxx compiler. There are a lot of
             # esoteric file extensions for cpp out there.
-            task = CxxCompile(sources=source, targets=target, use_default=use_default)
+            task = CxxCompile(source=source, target=target, use_default=use_default, scan_ignore=scan_ignore, scan=scan)
             if use_default:
                 task.use(spawn(':cpp/cxx', find_cxx))
         ret.append(task)
-        if scan:
-            dep_scan = DependencyScan(source, target, scan_ignore=scan_ignore)
-            assert len(dep_scan.targets) >= 1
-            header_dep_node = dep_scan.targets[0]
-            task.use(header_dep_node)
-            for header in header_dep_node.read().value('headers', []):
-                task.depends(header)
-            ret.append(dep_scan)
     return group(ret)
 
 
@@ -622,11 +578,15 @@ def link(obj_files, target=None, use_default=True, cpp=True, shared=False):
             target = libname(target)
         else:
             target = exename(target)
-    t = Link(sources=nodes(obj_files), targets=file(target).to_builddir())
+    sources = []
+    for src in nodes(obj_files):
+        if isinstance(src, FileNode) and file(src).extension == 'o':
+            sources.append(src)
+    t = Link(sources=sources, target=file(target).to_builddir())
     if use_default:
         spawner = find_cxx if cpp else find_cc
         if osinfo.linux:
-            t.use(libraries=['stdc++', 'c', 'pthread'])
+            t.use(libraries=['libstdc++', 'libc', 'libpthread'])
         ldnode = spawn(':cpp/cxx' if cpp else ':cpp/cc', spawner)
         t.use(ldnode)
     if shared:
