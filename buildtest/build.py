@@ -1,10 +1,8 @@
-from wasp import group, shell, tool, configure, chain
-from wasp import Directory, nodes
 import wasp
-
+from wasp import Directory, nodes, shell
+from wasp import tool
 
 latex = tool('latex')
-nodejs = tool('nodejs')
 cpp = tool('cpp')
 qt = tool('qt')
 
@@ -12,25 +10,11 @@ qt = tool('qt')
 curdir = Directory(__file__)
 
 
-@configure
-def configure():
-    c = chain()
-    c += nodejs.install('jsmin')
-    c += nodejs.find_exe('jsmin').produce(':jsmin')
-    yield c
-
-
 @wasp.command('cpp')
 def _cpp():
     t = cpp.compile('buildtest/main.cpp')
     yield t
     yield cpp.link(t)
-
-
-@wasp.command('nodejs', depends='configure')
-def _nodejs():
-    for f in curdir.glob('.*?.js$', exclude='build/.*'):
-        yield shell('{jsmin} {SRC} > {TGT}', sources=f, targets=f.to_builddir()).use(':jsmin')
 
 
 @wasp.command('qt')
