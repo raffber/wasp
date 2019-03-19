@@ -1,11 +1,11 @@
 import traceback
 from multiprocessing import cpu_count
 
-from wasp import Logger
+from . import log, ctx, extensions
 from .node import SpawningNode, Node, node
 from .task import Task, TaskGroup, MissingArgumentError, TaskCollection, TaskFailedError
 from .util import EventLoop, Event, is_iterable, ThreadPool
-from . import log, ctx, extensions
+
 
 # TODO: task timeouts -> kill hanging tasks
 # TODO: limit selection to only a certain set of nodes
@@ -71,6 +71,11 @@ class TaskGraph(object):
         # already producing this node
         spawning_nodes = [n for n in self._nodes.values() if isinstance(n, SpawningNode)]
         for n in spawning_nodes:
+            sig = n.signature(ns=self._ns)
+            if not sig.valid:
+                sig.refresh()
+            if sig.value is not None:
+                continue
             if n.key not in self._target_map:
                 spawned = n.spawn()
                 if not is_iterable(spawned):
