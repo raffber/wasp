@@ -464,13 +464,14 @@ def check_script_signatures(loaded_files):
     d = ctx.cache.prefix('script-signatures')
     current_signatures = {}
     for f in loaded_files:
-        current_signatures[f] = FileSignature(f)
+        cur_sig = FileSignature(f)
+        cur_sig.refresh()
+        current_signatures[f] = cur_sig
     for f, cur_sig in current_signatures.items():
         if f not in d.keys():
             changed = True
             break
         old_sig = d[f]
-        cur_sig.refresh()
         if cur_sig != old_sig:
             changed = True
             break
@@ -481,10 +482,8 @@ def check_script_signatures(loaded_files):
             # don't issue warning if wasp was never run before
             log.info(log.format_info('Build scripts have changed since last execution!',
                        'All previous configurations have been cleared!'))
-    d.clear()
-    # fetch dict again in case cache was cleared => this would lead to d not
-    # being bound to ctx.cache.prefix('script-signatures') anymore
     d = ctx.cache.prefix('script-signatures')
+    d.clear()
     d.update(current_signatures)
 
 
