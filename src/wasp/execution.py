@@ -93,7 +93,9 @@ class TaskGraph(object):
             only_leafs = all(sk in self._leafs for sk in source_keys)
             if not only_leafs:
                 continue
-            if (len(task.sources) == 0 and len(task.targets) == 0) or task.always:
+            non_discard_sources = [x for x in task.sources if not x.discard]
+            non_discard_targets = [x for x in task.targets if not x.discard]
+            if (len(non_discard_sources) == 0 and len(non_discard_targets) == 0) or task.always:
                 ret = task
                 break
             # task is runnable

@@ -1,5 +1,5 @@
 from uuid import uuid4 as generate_uuid
-from .signature import FileSignature, CacheSignature, DummySignature
+from .signature import FileSignature, CacheSignature, UnchangedSignature
 from .argument import ArgumentCollection, collection
 from .util import is_iterable
 
@@ -73,7 +73,7 @@ class Node(object):
         """
         from . import ctx
         if self._discard:
-            return DummySignature(discard=True)
+            return UnchangedSignature(discard=True)
         signature = ctx.signatures.get(self.key, ns=ns)
         if signature is None:
             signature = self._make_signature()

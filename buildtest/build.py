@@ -17,7 +17,7 @@ def _cpp():
     yield cpp.link(t)
 
 
-@wasp.command('qt')
+@wasp.command('qt', depends='cpp')
 def _qt():
     headers = [curdir.join('qtmain.h')]
     sources = [curdir.join('qtmain.cpp')]
@@ -30,12 +30,3 @@ def _qt():
     yield mocs
     yield objs
     yield cpp.link(objs, target=curdir.join('qtmain')).use(modules)
-
-
-@wasp.build
-def build():
-    def run_always(t):
-        print('hia!')
-        t.success = True
-    yield Task(fun=run_always)
-

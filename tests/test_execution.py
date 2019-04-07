@@ -1,6 +1,6 @@
 from wasp import node, Node
 from wasp.execution import TaskGraph
-from wasp.signature import Signature
+from wasp.signature import UnchangedSignature
 from wasp.task import Task
 from tests import setup_context
 
@@ -10,34 +10,9 @@ class DummyTask(Task):
         self.success = True
 
 
-class UnchancedSignature(Signature):
-    def __init__(self):
-        super().__init__('unchanged')
-
-    def to_json(self):
-        return None
-
-    @classmethod
-    def from_json(cls, d):
-        return cls()
-
-    def __eq__(self, other):
-        return True
-
-    def __ne__(self, other):
-        return False
-
-    def clone(self):
-        return UnchancedSignature()
-
-    def refresh(self, value=None):
-        self._valid = True
-        self._value = value
-
-
 class UnchangedNode(Node):
     def _make_signature(self):
-        return UnchancedSignature()
+        return UnchangedSignature()
 
 
 def test_always():
