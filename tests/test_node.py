@@ -13,10 +13,9 @@ def test_file_node():
     node = FileNode(testfile)
     node.signature().refresh()
     assert node.signature().value is None
-    assert not node.signature().valid
+    assert node.signature().valid
     with open(testfile, 'w') as f:
         f.write('asdf')
-    assert not node.signature().valid
     node.signature().refresh()
     assert node.signature().valid
     v = node.signature().value
@@ -39,7 +38,7 @@ def test_symbolic_node():
     node = SymbolicNode('asdf')
     data = node.read()
     node.signature().refresh()
-    assert not node.signature().valid
+    assert node.signature().valid
     assert node.signature().value is None
     assert isinstance(data, ArgumentCollection)
     data.update(x=3)
@@ -52,7 +51,6 @@ def test_symbolic_node():
     node2 = SymbolicNode('asdf')
     assert node2.read()['x'].value == 3
     assert node2.signature().value == v
-
 
 
 if __name__ == '__main__':

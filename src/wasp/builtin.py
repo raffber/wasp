@@ -140,26 +140,6 @@ class build(FunctionDecorator):
                     raise CommandFailedError
 
 
-class install(FunctionDecorator):
-    """
-    Function decorator for registering an `install` command,
-    which depends on `build` and is supposed to install the project.
-    """
-    def __init__(self, f):
-        super().__init__(f)
-        produce = ':def/' + f.__name__
-        decorators.commands.append(Command('install', f, description='Installs the project', depends='build', produce=produce))
-        found_build = False
-        for com in decorators.commands:
-            if com.name == 'build':
-                found_build = True
-                break
-        if not found_build:
-            @build
-            def _build():
-                return None
-
-
 class configure(FunctionDecorator):
     """
     Function decorator for registring a `configure` command.

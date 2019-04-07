@@ -123,55 +123,53 @@ class OptionHandler(object):
         return self._argparse
 
 
-def retrieve_command_tasks(name, as_dependency=False):
+def retrieve_command_tasks(name):
     """
     Retrieves tasks from the command ``name``.
 
     :param name: Name of the command.
     :return: An object of type TaskCollection() populated with tasks.
     """
-    found = False
-    tasks_col = TaskCollection()
     if name not in ctx.commands:
         raise NoSuchCommandError('No command with name `{0}` found!'.format(name))
+    found = False
+    tasks_col = {}
     for command in ctx.commands[name]:
-        tasks = command.run(as_dependency=as_dependency)
+        tasks_col[str(command.produce)] = []
+    for command in ctx.commands[name]:
+        produced_name = str(command.produce)
+        tasks = command.run()
         if isinstance(tasks, types.GeneratorType):
             tasks = list(tasks)
-            if command.produce is not None:
-                tasks = group(tasks).produce(command.produce)
-            tasks_col.add(tasks)
+            tasks_col[produced_name].extend(tasks)
         elif is_iterable(tasks):
-            if command.produce is not None:
-                tasks = group(tasks).produce(command.produce)
-            tasks_col.add(tasks)
+            tasks_col[produced_name].extend(list(tasks))
         elif isinstance(tasks, Task):
-            if command.produce is not None:
-                tasks.produce(command.produce)
-            tasks_col.add(tasks)
+            tasks_col[produced_name].append(tasks)
         elif isinstance(tasks, TaskGroup):
-            if command.produce is not None:
-                tasks.produce(command.produce)
-            tasks_col.add(tasks.tasks)
+            tasks_col[produced_name].extend(tasks.tasks)
         elif tasks is not None:
             assert False, 'Unrecognized return value from {0}'.format(name)
         # else tasks is None, thats fine
         found = True
-    for generator in ctx.generators(name).values():
-        found = True
-        tasks = generator.run()
-        if is_iterable(tasks):
-            tasks_col.add(tasks)
-        elif isinstance(tasks, Task):
-            tasks_col.add(tasks)
-        elif tasks is not None:
-            assert False, 'Unrecognized return value from {0}'.format(name)
+    ret = TaskCollection()
+    produced = set()
+    for command in ctx.commands[name]:
+        produce_name = str(command.produce)
+        if produce_name in produced:
+            continue
+        produced.add(produce_name)
+        tasks = tasks_col[produce_name]
+        if len(tasks) == 0:
+            continue
+        tasks = group(tasks)
+        ret.add(tasks.produce(command.produce))
     if not found:
         raise NoSuchCommandError('No command with name `{0}` found!'.format(name))
-    return tasks_col
+    return ret
 
 
-def run_command_dependencies(name, executed_commands=[]):
+def run_command_dependencies(name, executed_commands=None):
     """
     Runs all commands which are dependencies of the command with ``name``.
 
@@ -189,7 +187,7 @@ def run_command_dependencies(name, executed_commands=[]):
         # run all dependencies automatically
         # if they fail, this command fails as well
         for dependency in command.depends:
-            succ = run_command(dependency, executed_commands=executed_commands, as_dependency=True)
+            succ = run_command(dependency, executed_commands=executed_commands)
             if not succ:
                 return False
     return True
@@ -229,14 +227,13 @@ def execute_tasks(name, tasks):
     return True
 
 
-def run_command(name, executed_commands=None, as_dependency=False):
+def run_command(name, executed_commands=None):
     """
     Runs a command specified by name. All dependencies of the command are
     executed, if they have not successfully executed before.
 
     :param name: The name of the command in question.
     :param executed_commands: List of commands that have already been executed.
-    :param as_dependency: Defines whether the command is run as a dependency of another command.
     :return: True if the executed is successful, False otherwise
     """
     ret = extensions.api.run_command(name)
@@ -248,7 +245,7 @@ def run_command(name, executed_commands=None, as_dependency=False):
         return False
     # now run the commands
     try:
-        tasks_col = retrieve_command_tasks(name, as_dependency=as_dependency)
+        tasks_col = retrieve_command_tasks(name)
         extensions.api.tasks_collected(tasks_col)
         # now execute all tasks
         ret = execute_tasks(name, tasks_col)

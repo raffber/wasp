@@ -5,7 +5,6 @@ from .argument import ArgumentCollection
 from .environment import Environment
 from .fs import Directory, File
 from .config import Config
-from .generator import GeneratorCollection
 from .metadata import Metadata
 from .tools import ToolsCollection
 from .commands import CommandCollection
@@ -23,7 +22,6 @@ class Context(object):
         self.reset()
 
     def reset(self):
-        self._generators = {}
         self._tools = ToolsCollection('wasp-tools')
         self._arguments = ArgumentCollection()
         # initialize options
@@ -113,11 +111,6 @@ class Context(object):
         """
         return self._tools
 
-    def generators(self, commandname):
-        if commandname not in self._generators:
-            self._generators[commandname] = GeneratorCollection()
-        return self._generators[commandname]
-
     @property
     def topdir(self):
         """
@@ -176,9 +169,6 @@ class Context(object):
         """
         self.signatures.save(self._cache)
         self._cache.prefix('g')['last_run'] = self._g
-        d = self.cache.prefix('generators')
-        for key, generator_collection in self._generators.items():
-            d[key] = generator_collection
         self.cache.save()
 
     def load(self):
@@ -189,8 +179,6 @@ class Context(object):
         self._cache.prefix('ctx')['topdir'] = self.topdir.path
         self._g = self._cache.prefix('g').get('last_run', Namespace())
         self.produced_signatures.load(self._cache)
-        for key, generator_collection in self._cache.prefix('generators').items():
-            self._generators[key] = generator_collection
 
     @property
     def cache(self):

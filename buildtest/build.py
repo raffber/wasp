@@ -1,5 +1,5 @@
 import wasp
-from wasp import Directory, nodes, shell
+from wasp import Directory, nodes, shell, chain, Task
 from wasp import tool
 
 latex = tool('latex')
@@ -30,3 +30,12 @@ def _qt():
     yield mocs
     yield objs
     yield cpp.link(objs, target=curdir.join('qtmain')).use(modules)
+
+
+@wasp.build
+def build():
+    def run_always(t):
+        print('hia!')
+        t.success = True
+    yield Task(fun=run_always)
+

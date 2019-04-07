@@ -20,7 +20,6 @@ from .node import FileNode
 from .task import Task
 from .util import Serializable, is_iterable
 from . import factory
-from .generator import Generator
 from .argument import find_argumentkeys_in_string
 
 
@@ -943,52 +942,3 @@ def move(source, destination):
     See :class:`MoveTask`. Accepts the same parameters.
     """
     return MoveTask(source, destination)
-
-
-class FileInstallGenerator(Generator):
-
-    def __init__(self, fpaths, destination='{PREFIX}/share/{PROJECTID}', permissions=DEFAULT_PERMSSIONS):
-        self._destination = Directory(destination)
-        self._permissions = permissions
-        self._files = files(fpaths)
-
-    @property
-    def key(self):
-        return '-'.join([str(x) for x in self._files])
-
-    @property
-    def destination(self):
-        return self._destination
-
-    @property
-    def permissions(self):
-        return self._permissions
-
-    def run(self):
-        ret = []
-        require = find_argumentkeys_in_string(str(self.destination))
-        for f in self._files:
-            cp = copy(f, self._destination.join(f.basename())).require(require)
-            ret.append(cp)
-        return ret
-
-    @classmethod
-    def from_json(cls, d):
-        return cls(factory.from_json(d['files'])
-                   , permissions=d['permissions']
-                   , destination=factory.from_json(d['destination']))
-
-    def to_json(self):
-        d = super().to_json()
-        d['files'] = factory.to_json(self._files)
-        d['permissions'] = self.permissions
-        d['destination'] = self._destination.to_json()
-        return d
-
-
-factory.register(FileInstallGenerator)
-
-
-def defer_install(file, destination='{PREFIX}/share/{PROJECTID}', permissions=DEFAULT_PERMSSIONS, command='install'):
-    from wasp import ctx
-    ctx.generators(command).add(FileInstallGenerator(file, destination=destination, permissions=permissions))

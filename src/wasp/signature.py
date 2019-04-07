@@ -373,7 +373,7 @@ factory.register(CacheSignature)
 class DummySignature(Signature):
     """
     A dummy signature which never changes (i.e. comparing it
-    to another dummy signature for equality always returns True).
+    to another dummy signature for equality always returns False).
     """
 
     def to_json(self):
@@ -384,10 +384,10 @@ class DummySignature(Signature):
         return cls()
 
     def __eq__(self, other):
-        return True
+        return False
 
     def __ne__(self, other):
-        return False
+        return True
 
     def clone(self):
         return DummySignature()

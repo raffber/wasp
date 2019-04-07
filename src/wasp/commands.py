@@ -35,10 +35,9 @@ class Command(object):
     :param produce: An argument to :func:``wasp.Node.node``. The resulting node is
         produced upon command completion.
     :param option_alias: The name of another command, this command is an alias of.
-    :param skip_as_depenency: Command is not rerun if it is a depenency of another task
     """
     def __init__(self, name, fun, description=None, depends=None
-                 , produce=None, option_alias=None, skip_as_depenency=False):
+                 , produce=None, option_alias=None):
         self._depends = [] if depends is None else depends
         if isinstance(self._depends, str):
             self._depends = [self._depends]
@@ -48,7 +47,6 @@ class Command(object):
         self._description = description or name
         self._produce = node(produce)
         self._option_alias = option_alias
-        self._skip_as_dependency = skip_as_depenency
 
     @property
     def depends(self):
@@ -58,12 +56,7 @@ class Command(object):
     def name(self):
         return self._name
 
-    def run(self, as_dependency=False):
-        from wasp import ctx
-        command_cache = ctx.cache.prefix('commands')
-        previous_succ = self.name in command_cache and command_cache[self.name].get('success', False)
-        if self._skip_as_dependency and as_dependency and previous_succ:
-            return None
+    def run(self):
         return self._fun()
 
     @property
