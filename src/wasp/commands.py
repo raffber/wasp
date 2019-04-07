@@ -1,5 +1,5 @@
 from . import decorators
-from wasp.node import node
+from wasp.node import node, SymbolicNode
 
 
 class CommandFailedError(Exception):
@@ -32,8 +32,7 @@ class Command(object):
     :param fun: Handler function of the command. It should return a task or a list thereof.
     :param description: Description of the command which may be shown to the user.
     :param depends: List of command names which should run prior to this command.
-    :param produce: An argument to :func:``wasp.Node.node``. The resulting node is
-        produced upon command completion.
+    :param produce: The name of a symbolic node to be produced
     :param option_alias: The name of another command, this command is an alias of.
     """
     def __init__(self, name, fun, description=None, depends=None
@@ -45,7 +44,7 @@ class Command(object):
         self._name = name
         self._fun = fun
         self._description = description or name
-        self._produce = node(produce)
+        self._produce = SymbolicNode(produce, discard=True)
         self._option_alias = option_alias
 
     @property

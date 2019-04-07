@@ -14,3 +14,4 @@ def setup_context():
     Directory(__file__).join('c4che.json').remove()
     wasp.ctx.reset()
     init_context(Directory(__file__))
+    return wasp.ctx

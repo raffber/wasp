@@ -185,6 +185,7 @@ class Signature(Serializable):
     :param value: Value of the signature.
     :param valid: Defines whether the signature has a meaningful value.
     :param key: Key to identify the signature. If None, a uuid is assigned.
+    :param discard: Determines whether the signature value is discareded after running a command
     """
 
     def __init__(self, value=None, valid=False, key=None, discard=False):
@@ -254,9 +255,7 @@ class Signature(Serializable):
         """
         Changes the value of the singature.
         """
-        if value is not None:
-            self._value = value
-        return value
+        raise NotImplementedError
 
     def clone(self):
         raise NotImplementedError
@@ -391,6 +390,10 @@ class DummySignature(Signature):
 
     def clone(self):
         return DummySignature()
+
+    def refresh(self, value=None):
+        self._valid = True
+        self._value = value
 
 
 factory.register(DummySignature)
