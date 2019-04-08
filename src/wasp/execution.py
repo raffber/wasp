@@ -1,3 +1,4 @@
+import multiprocessing.dummy
 import traceback
 from multiprocessing import cpu_count
 
@@ -5,6 +6,10 @@ from . import log, ctx, extensions
 from .node import SpawningNode, Node, node
 from .task import Task, TaskGroup, MissingArgumentError, TaskCollection, TaskFailedError
 from .util import EventLoop, Event, is_iterable, ThreadPool
+
+
+REFRESH_THREADS = 10
+thread_pool = multiprocessing.dummy.Pool(REFRESH_THREADS)
 
 
 # TODO: task timeouts -> kill hanging tasks
@@ -45,6 +50,12 @@ class TaskGraph(object):
 
     def limit(self, target_nodes):
         pass
+
+    def _scan_changes(self, task):
+        nodes = list(task.sources)
+        nodes.extend(task.targets)
+        changes = thread_pool.map(lambda n: n.has_changed(self._ns), nodes)
+        return any(changes)
 
     def _insert_task(self, t):
         assert isinstance(t, Task)
@@ -104,24 +115,8 @@ class TaskGraph(object):
                 ret = task
                 break
             # task is runnable
-            # most likely case: A source has changed
-            for n in task.sources:
-                assert isinstance(n, Node)
-                # TODO: parallelize and lock
-                if n.has_changed(ns=self._ns):
-                    ret = task  # found a task to run
-                    # don't break here as we want all sources to be re-checked
-                    # as we need those signature in the DB for the next run
-            if ret is not None:
-                break
-            # somewhat unlikely: A target has changed e.g. it was delted
-            for n in task.targets:
-                assert isinstance(n, Node)
-                # TODO: parallelize and lock
-                if n.has_changed(ns=self._ns):
-                    ret = task  # found a task to run
-                    break  # break here as we will referesh target signatures anyways
-            if ret is not None:
+            if self._scan_changes(task):
+                ret = task
                 break
             # task does not need to be re-run
             toremove.append(task)
