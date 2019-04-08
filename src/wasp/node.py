@@ -89,10 +89,10 @@ class Node(object):
         sig = ctx.produced_signatures.get(self.key, ns=ns)
         if sig is None:
             return True
-        current_sig = self.signature(ns=ns)
-        if not current_sig.valid:
-            current_sig.refresh()
-        if sig != current_sig:
+        cur_sig = self.signature(ns=ns)
+        if not cur_sig.valid:
+            cur_sig.refresh()
+        if sig != cur_sig:
             return True
         return False
 

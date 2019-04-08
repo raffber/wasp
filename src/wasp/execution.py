@@ -83,7 +83,12 @@ class TaskGraph(object):
                 for t in spawned:
                     self._insert_task(t)
         # compute the leaf nodes where we start our execution
+        old_leafs = self._leafs
         self._leafs = set(self._nodes.keys()) - set(self._target_map.keys())
+        # invalidate all leaf nodes that were added to ensure we refresh them
+        # when we check for runnable tasks
+        for leaf in self._leafs - old_leafs:
+            self._nodes[leaf].invalidate()
 
     def _find_runnable(self):
         ret = None
@@ -109,7 +114,7 @@ class TaskGraph(object):
                     # as we need those signature in the DB for the next run
             if ret is not None:
                 break
-            # somewhat unlikely: A target has changed e.g. it was deleted
+            # somewhat unlikely: A target has changed e.g. it was delted
             for n in task.targets:
                 assert isinstance(n, Node)
                 # TODO: parallelize and lock
@@ -127,7 +132,7 @@ class TaskGraph(object):
             ret, toremove = self._find_runnable()
             for rm in toremove:
                 self._tasks.remove(rm)
-                self.task_completed(rm)
+                self.task_completed(rm, False)
             if ret is not None:
                 self._tasks.remove(ret)
                 self._running_tasks.append(ret)
@@ -139,7 +144,7 @@ class TaskGraph(object):
             raise DependencyCycleError()
         return ret
 
-    def task_completed(self, task):
+    def task_completed(self, task, has_run):
         # TODO: inefficient
         if task in self._running_tasks:
             self._running_tasks.remove(task)
@@ -179,9 +184,17 @@ class TaskGraph(object):
             new_nodes = [n for n in new_nodes if n.key not in self._nodes]
             for n in new_nodes:
                 self._new_nodes[n.key] = n
+        if not has_run:
+            return
+        # referesh all node that were touched by the task
+        for leaf in touched:
+            leaf.signature(ns=self._ns).refresh()
 
     def post_run(self):
-        for n in self._new_nodes.values():
+        # rescan all new nodes but only the ones which we didn't already produce
+        new_nodes = set(self._new_nodes.keys()) - set(self._produced_signatures)
+        for key in new_nodes:
+            n = self._new_nodes[key]
             assert isinstance(n, Node)
             n.signature(ns=self._ns).refresh()
 
@@ -222,7 +235,7 @@ class Executor(object):
         Must be called if a task has finished successfully.
         """
         assert self._graph is not None, 'Call setup() first'
-        self._graph.task_completed(task)
+        self._graph.task_completed(task, True)
         spawned = task.spawn()
         if spawned is not None:
             self._graph.add_tasks(_flatten(spawned))
