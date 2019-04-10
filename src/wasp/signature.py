@@ -70,8 +70,7 @@ class SignatureProvider(object):
         for ns, signatures in self._d.items():
             curd = {}
             for key, signature in signatures.items():
-                if not signature.discard:
-                    curd[key] = signature
+                curd[key] = signature
             newd[ns] = curd
         cache.prefix('signaturedb').update(newd)
 
@@ -185,13 +184,11 @@ class Signature(Serializable):
     :param value: Value of the signature.
     :param valid: Defines whether the signature has a meaningful value.
     :param key: Key to identify the signature. If None, a uuid is assigned.
-    :param discard: Determines whether the signature value is discareded after running a command
     """
 
-    def __init__(self, value=None, valid=False, key=None, discard=False):
+    def __init__(self, value=None, valid=False, key=None):
         self._value = value
         self._valid = valid
-        self._discard = discard
         if key is not None:
             self._key = key
         else:
@@ -203,16 +200,6 @@ class Signature(Serializable):
         Returns the key of the signature for identifying it in storage.
         """
         return self._key
-
-    @property
-    def discard(self):
-        """
-        Determines whether the signature is to be saved to the cache.
-        If the signature represents the signature of a temporary object,
-        it should not be saved to the cache, since this will clutter the cache
-        (and make it grow forever each time you run ``wasp``)
-        """
-        return self._discard
 
     @property
     def value(self):
@@ -244,7 +231,7 @@ class Signature(Serializable):
 
     def to_json(self):
         d = super().to_json()
-        d.update({'value': self._value, 'valid': self.valid, 'key': self.key, 'discard': self.discard})
+        d.update({'value': self._value, 'valid': self.valid, 'key': self.key})
         return d
 
     @classmethod
@@ -273,10 +260,10 @@ class FileSignature(Signature):
     :param path: Path of the :class:`wasp.node.FileNode`, which is
         set as key.
     """
-    def __init__(self, path, value=None, valid=False, discard=False):
+    def __init__(self, path, value=None, valid=False):
         assert path is not None, 'Path must be given for file signature'
         self.path = path
-        super().__init__(value, valid=valid, key=path, discard=discard)
+        super().__init__(value, valid=valid, key=path)
 
     def to_json(self):
         d = super().to_json()
@@ -309,7 +296,7 @@ class FileSignature(Signature):
         return value
 
     def clone(self):
-        return FileSignature(self.path, value=self.value, valid=self.valid, discard=self.discard)
+        return FileSignature(self.path, value=self.value, valid=self.valid)
 
 
 factory.register(FileSignature)
@@ -323,8 +310,8 @@ class CacheSignature(Signature):
     :param key: Key for identifying the signature.
     :param prefix: Cache prefix. See :class:`wasp.cache.Cache`.
     """
-    def __init__(self, key, prefix=None, cache_key=None, value=None, valid=True, discard=False):
-        super().__init__(value, valid=valid, key=key, discard=discard)
+    def __init__(self, key, prefix=None, cache_key=None, value=None, valid=True):
+        super().__init__(value, valid=valid, key=key)
         self._cache = None
         self._prefix = prefix
         self._cache_key = cache_key
@@ -339,7 +326,7 @@ class CacheSignature(Signature):
     @classmethod
     def from_json(cls, d):
         return cls(d['key'], cache_key=d['key'], prefix=d['prefix']
-                   , value=d['value'], valid=d['valid'], discard=d['discard'])
+                   , value=d['value'], valid=d['valid'])
 
     @lock
     def refresh(self, value=None):
@@ -363,7 +350,7 @@ class CacheSignature(Signature):
     def clone(self):
         return CacheSignature(
             self.key, prefix=self._prefix, cache_key=self._cache_key,
-            value=self.value, valid=self.valid, discard=self.discard)
+            value=self.value, valid=self.valid)
 
 
 factory.register(CacheSignature)

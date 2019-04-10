@@ -373,7 +373,7 @@ class Task(object):
             elif isinstance(a, Node):
                 self.sources.append(a)
             elif isinstance(a, Task):
-                x = SymbolicNode(discard=True)
+                x = SymbolicNode()
                 a.produce(x)
                 self._used_nodes.append(x)
                 self.sources.append(x)

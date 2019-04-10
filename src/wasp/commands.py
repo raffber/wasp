@@ -44,7 +44,7 @@ class Command(object):
         self._name = name
         self._fun = fun
         self._description = description or name
-        self._produce = SymbolicNode(produce, discard=True)
+        self._produce = SymbolicNode(produce)
         self._option_alias = option_alias
 
     @property

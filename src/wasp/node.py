@@ -1,4 +1,5 @@
 from uuid import uuid4 as generate_uuid
+
 from .signature import FileSignature, CacheSignature, UnchangedSignature
 from .argument import ArgumentCollection, collection
 from .util import is_iterable
@@ -24,24 +25,13 @@ class Node(object):
 
     :param key: The key of the node. Expects ``str`` or ``None``. If ``None`` is
         given, a key based on a uuid is generated.
-    :param discard: Bool which defines whether the node should only live during
-        the execution of ``wasp`` and be discareded afterwards.
     """
-    def __init__(self, key=None, discard=False):
+    def __init__(self, key=None):
         if key is None:
             key = str(generate_uuid())
         else:
             assert isinstance(key, str), 'Identifier for Node must be a string'
         self._key = key
-        self._discard = discard
-
-    @property
-    def discard(self):
-        """
-        Defines whether the node should only live during
-        the execution of ``wasp`` and be discareded afterwards.
-        """
-        return self._discard
 
     def _make_signature(self):
         """
@@ -72,8 +62,6 @@ class Node(object):
         :param ns: The namespace for which the signature should be returned.
         """
         from . import ctx
-        if self._discard:
-            return UnchangedSignature(discard=True)
         signature = ctx.signatures.get(self.key, ns=ns)
         if signature is None:
             signature = self._make_signature()
@@ -175,24 +163,20 @@ class SymbolicNode(Node):
         n = node(':cpp/compiler')
 
     :param key: The name of the node.
-    :param discard: Defines whether the content of the node should be
-        discareded after each execution of ``wasp``.
     """
-    def __init__(self, key=None, discard=False):
-        super().__init__(key=key, discard=discard)
-        self._cache = None
+    def __init__(self, key=None):
+        from . import ctx
+        if key is None:
+            key = ctx.generate_name()
+        super().__init__(key=key)
 
     def _make_signature(self):
-        return CacheSignature(self.key, prefix='symblic-nodes', cache_key=self.key, discard=self._discard)
+        return CacheSignature(self.key, prefix='symblic-nodes', cache_key=self.key)
 
     def read(self):
         """
         Returns the content of the node in form of an ArgumentCollection.
         """
-        if self.discard:
-            if self._cache is None:
-                return ArgumentCollection()
-            return self._cache
         from . import ctx
         arg_col = ctx.cache.prefix('symblic-nodes').get(self.key, None)
         if arg_col is None:
@@ -217,9 +201,6 @@ class SymbolicNode(Node):
         col = collection(*args, **kw)
         if col.isempty():
             return
-        if self.discard:
-            self._cache = col
-            return
         from . import ctx
         ctx.cache.prefix('symblic-nodes')[self.key] = col
 
@@ -240,8 +221,8 @@ class SymbolicNode(Node):
 
 
 class SpawningNode(SymbolicNode):
-    def __init__(self, key=None, discard=False):
-        super().__init__(key=key, discard=discard)
+    def __init__(self, key=None):
+        super().__init__(key=key)
         self._spawn = None
 
     @property
@@ -321,7 +302,7 @@ def node(arg=None):
     from .fs import Path
     from .task import Task, TaskGroup
     if arg is None:
-        return SymbolicNode(discard=True)
+        return SymbolicNode()
     elif isinstance(arg, str):
         if is_symbolic_node_string(arg):
             return SymbolicNode(arg)

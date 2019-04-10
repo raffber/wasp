@@ -109,9 +109,7 @@ class TaskGraph(object):
             only_leafs = all(sk in self._leafs for sk in source_keys)
             if not only_leafs:
                 continue
-            non_discard_sources = [x for x in task.sources if not x.discard]
-            non_discard_targets = [x for x in task.targets if not x.discard]
-            if (len(non_discard_sources) == 0 and len(non_discard_targets) == 0) or task.always:
+            if (len(task.sources) == 0 and len(task.targets) == 0) or task.always:
                 ret = task
                 break
             # task is runnable
@@ -153,8 +151,7 @@ class TaskGraph(object):
             src_tasks = self._source_map[s.key]
             assert isinstance(src_tasks, list)
             src_tasks.remove(task)
-            if not s.discard:
-                self._produced_signatures.add(s.key)
+            self._produced_signatures.add(s.key)
             if len(src_tasks) == 0:
                 # node is not a source of any other task
                 del self._nodes[s.key]
@@ -166,8 +163,7 @@ class TaskGraph(object):
         self._leafs = self._leafs | new_leafs
         # remove these nodes from the target_map
         for tgt in task.targets:
-            if not tgt.discard:
-                self._produced_signatures.add(tgt.key)
+            self._produced_signatures.add(tgt.key)
             del self._target_map[tgt.key]
         # determine if there are new nodes to be inserted
         # into the database

@@ -40,6 +40,11 @@ class Context(object):
         self._cache = None
         self._g = Namespace()
         self._current_ns = None
+        self._unnamed_node_idx = 0
+
+    def generate_name(self):
+        self._unnamed_node_idx += 1
+        return ':__unnamed__{}'.format(self._unnamed_node_idx)
 
     @property
     def g(self):
@@ -54,6 +59,7 @@ class Context(object):
         return self._current_ns
 
     def set_current_namespace(self, ns=None):
+        self._unnamed_node_idx = 0
         self._current_ns = ns
 
     current_namespace = property(get_current_namespace, set_current_namespace)
