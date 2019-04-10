@@ -59,6 +59,8 @@ class TaskGraph(object):
 
     def _insert_task(self, t):
         assert isinstance(t, Task)
+        if t.disabled:
+            return
         self._tasks.append(t)
         for target in t.targets:
             if target.key in self._target_map:

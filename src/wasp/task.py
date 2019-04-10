@@ -107,6 +107,19 @@ class Task(object):
         self._required_arguments = []
         self._init()
         self._noop = False
+        self._disabled = False
+
+    def disable(self):
+        self._disabled = True
+        return self
+
+    @property
+    def disabled(self):
+        return self._disabled
+
+    @disabled.setter
+    def disabled(self, value):
+        self._disabled = bool(value)
 
     def get_noop(self):
         return self._noop
@@ -501,7 +514,11 @@ class TaskGroup(object):
     def __init__(self, tasks, target_task=None):
         assert is_iterable(tasks), 'tasks argument to TaskGroup() is expected to be iterable.'
         self._tasks = list(tasks)
-        self._target_task = None
+        self._target_task = target_task
+
+    def disable(self):
+        for t in self._tasks:
+            t.disable()
 
     @property
     def target_task(self):
