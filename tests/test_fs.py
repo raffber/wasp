@@ -7,10 +7,10 @@ def prepare():
     testdir = directory(curdir.join('test-dir'))
     testdir.remove(recursive=True)
     assert not testdir.exists
-    testdir.ensure_exists()
+    testdir.mkdir()
     for f in ['a.txt', 'dira/dirb/b.txt', 'c.txt']:
         f = file(testdir.join(f))
-        directory(f).ensure_exists()
+        directory(f).mkdir()
         assert directory(f).exists
         with open(f.path, 'w') as fwrite:
             fwrite.write('asdf')

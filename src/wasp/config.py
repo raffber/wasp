@@ -69,7 +69,8 @@ def _parse_verbosity(instance, value):
 
 def _merge_extensions(instance, hp):
     if instance.extension is not None:
-        instance.extensions.extend(hp)
+        for ext in hp:
+            instance.extensions.add(ext)
     else:
         instance.extensions = set()
 
@@ -175,7 +176,7 @@ class Config(object):
         return config
 
     @classmethod
-    def load_from_directory(cls, fpath, fnames=CONFIG_FILE_NAMES):
+    def load_from_directory(cls, fpath, fnames=None):
         """
         Load mulitple files from a directory referenced by ``fpath``.
         The files are loaded in the precedence they are given in ``fnames`` and
@@ -186,6 +187,8 @@ class Config(object):
         :param fpath: Path of the directory.
         :param fnames: List of file names to be loaded.
         """
+        if fnames is None:
+            fnames = CONFIG_FILE_NAMES
         ret = []
         for fname in fnames:
             path = str(Directory(fpath).join(fname))

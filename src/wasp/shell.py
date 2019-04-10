@@ -384,7 +384,6 @@ def run(cmd, timeout=100, cwd=None, print=False, env=None):
     return exit_code, out
 
 
-
 def quote(s):
     """
     Ensures that a shell command is properly quoted.

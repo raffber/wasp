@@ -382,19 +382,10 @@ class Directory(Path):
         """
         if len(args) != 0:
             d = directory(self.join(*args))
-            d.ensure_exists()
+            d.mkdir()
             return d
-        self.ensure_exists()
-        return self
-
-    def ensure_exists(self):
-        """
-        Create the directory tree up to and including this directory.
-        Equivalent to create().
-
-        **TODO:** remove!
-        """
         os.makedirs(self._path, exist_ok=True)
+        return self
 
     def to_builddir(self):
         """
@@ -505,6 +496,7 @@ class File(Path):
         return ``c``.
         """
         return os.path.splitext(self._path)[1][1:]
+
 
 factory.register(File)
 

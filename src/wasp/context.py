@@ -19,9 +19,6 @@ class Context(object):
     """
 
     def __init__(self):
-        self.reset()
-
-    def reset(self):
         self._tools = ToolsCollection('wasp-tools')
         self._arguments = ArgumentCollection()
         # initialize options
@@ -128,7 +125,7 @@ class Context(object):
 
     def set_builddir(self, builddir):
         assert isinstance(builddir, Directory)
-        builddir.ensure_exists()
+        builddir.mkdir()
         self._builddir = builddir
         self._cache = Cache(File(self._builddir.join(CACHE_FILE)))
 

@@ -1,5 +1,5 @@
+from wasp.node import SymbolicNode
 from . import decorators
-from wasp.node import node, SymbolicNode
 
 
 class CommandFailedError(Exception):

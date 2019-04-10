@@ -8,7 +8,7 @@ def test_file_node():
     curdir = directory(__file__)
     testdir = curdir.join('test-dir')
     testdir.remove()
-    testdir.ensure_exists()
+    testdir.mkdir()
     testfile = testdir.join('test-file.txt').path
     node = FileNode(testfile)
     node.signature().refresh()

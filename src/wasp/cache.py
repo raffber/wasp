@@ -57,7 +57,7 @@ class Cache(dict):
         # that should not fail, since we ensured the existance
         # of self._cachedir
         jsonified = factory.to_json(self)
-        self._cachefile.directory().ensure_exists()
+        self._cachefile.directory().mkdir()
         with open(self._cachefile.path, 'w') as f:
             if debug:
                 json.dump(jsonified, f, indent=4, separators=(',', ': '))

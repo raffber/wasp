@@ -56,7 +56,7 @@ class ToolsCollection(dict):
         if isinstance(tooldir, str):
             tooldir = Directory(tooldir)
         assert isinstance(tooldir, Directory), 'tooldir must either be a path to a directory or a WaspDirectory'
-        tooldir.ensure_exists()
+        tooldir.mkdir()
         self._tooldir = tooldir
 
     tooldir = property(get_tooldir, set_tooldir)
