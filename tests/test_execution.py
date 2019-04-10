@@ -48,14 +48,14 @@ def test_simple_dependencies():
     tasks = [t1, t2, t3]
     graph = TaskGraph(tasks, ns='foons')
     p1 = graph.pop()
-    graph.task_completed(p1)
+    graph.task_completed(p1, True)
     assert p1 == t1 or p1 == t2
     p1 = graph.pop()
-    graph.task_completed(p1)
+    graph.task_completed(p1, True)
     assert p1 == t1 or p1 == t2
     p3 = graph.pop()
     assert p3 == t3
-    graph.task_completed(p3)
+    graph.task_completed(p3, True)
 
 
 if __name__ == '__main__':

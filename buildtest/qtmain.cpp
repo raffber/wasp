@@ -10,4 +10,5 @@ int main(int argc, char** argv) {
     QApplication app(argc, argv);
     std::cout << "hello from qt" << std::endl;
     TestObject stuff;
+    return 0;
 }
