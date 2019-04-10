@@ -206,6 +206,7 @@ class Executor(object):
         self._graph = None
         self._log = log.clone()
         self._success = True
+        self._invalidate_nodes = []
 
     def setup(self, graph):
         self._graph = graph
@@ -215,6 +216,12 @@ class Executor(object):
         return self._success
 
     def run(self):
+        self._run()
+        for node in self._invalidate_nodes:
+            assert isinstance(node, Node)
+            node.invalidate(ns=self._ns)
+
+    def _run(self):
         raise NotImplementedError
 
     def cancel(self):
@@ -241,9 +248,8 @@ class Executor(object):
         """
         self.cancel()
         self._success = False
-        # invalidate the target nodes, such that this task is rerun
-        for t in task.targets:
-            t.invalidate(ns=self._ns)
+        self._invalidate_nodes.extend(task.targets)
+
 
     def _post_run(self):
         self._graph.post_run()
@@ -257,7 +263,7 @@ class SingleThreadedExecutor(Executor):
     def cancel(self):
         self._cancel = True
 
-    def run(self):
+    def _run(self):
         self._start()
 
     def _start(self):
@@ -326,7 +332,7 @@ class ParallelExecutor(Executor):
     def cancel(self):
         self._thread_pool.cancel()
 
-    def run(self):
+    def _run(self):
         self._thread_pool.start()
         if not self._loop.run():
             log.log_fail('Execution Interrupted!!')
