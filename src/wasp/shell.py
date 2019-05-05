@@ -11,7 +11,7 @@ from . import ctx, osinfo, log
 from .util import UnusedArgFormatter
 
 from collections import Iterable
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, call
 import shlex
 from time import sleep
 
@@ -47,8 +47,7 @@ class ShellTask(Task):
         self._out = None
         self._commandstring = None
         super().__init__(sources=sources, targets=targets, always=always)
-        if not pretty:
-            self.log = log.clone().configure(pretty=False)
+        self._pretty = pretty
 
     @property
     def commandstring(self):
@@ -95,7 +94,6 @@ class ShellTask(Task):
         {'CC': 'gcc', 'SRC': 'main.c'} would result in 'gcc main.c' being executed.
         By default, this function injects 'SRC' with a list of all sources and 'TGT' with
         a list of all targets. Additionally each used argument is accessible by its key as well.
-        (in lowercase as well as in uppercase).
         """
         src_list = []
         for s in self.sources:
@@ -147,9 +145,7 @@ class ShellTask(Task):
         kw = self._process_args()
         s = UnusedArgFormatter().format(self.cmd, **kw)
         post_format_repl = {
-            'BUILDDIR': str(ctx.builddir),
             'builddir': str(ctx.builddir),
-            'TOPDIR': str(ctx.topdir),
             'topdir': str(ctx.topdir)
         }
         return UnusedArgFormatter().format(s, **post_format_repl)
@@ -179,11 +175,15 @@ class ShellTask(Task):
         Formats, executes the shell command and postprocesses its output.
         """
         self._commandstring = self._format_cmd()
-        exit_code, out = run(self._commandstring, cwd=self._cwd, print=not self.log.pretty, env=self._make_env())
-        self._out = out
-        self._finished(exit_code, out.stdout, out.stderr)
-        self.printer.print(stdout=out.stdout, stderr=out.stderr,
-                           exit_code=exit_code)
+        if self._pretty:
+            exit_code, out = run(self._commandstring, cwd=self._cwd, env=self._make_env())
+            self._out = out
+            self._finished(exit_code, out.stdout, out.stderr)
+            self.printer.print(stdout=out.stdout, stderr=out.stderr,
+                               exit_code=exit_code)
+        else:
+            exit_code = call(self._commandstring, cwd=self._cwd, env=self._make_env(), shell=True)
+            self._finished(exit_code, None, None)
 
     def use_arg(self, arg):
         if arg.name == 'env':
@@ -273,20 +273,16 @@ class ProcessOut(object):
     """
     Storage object for returning the ouptput (stdout and stderr) of
     a task.
-
-    :param print: If True, everything written to ``write()`` is directly printed
-        to stdout or stderr.
     """
     ERR = 1
     OUT = 0
 
-    def __init__(self, print=False):
+    def __init__(self):
         self._out = []
         self._stdout_cache = None
         self._stderr_cache = None
         self._merged_cache = None
         self._finished = False
-        self._print = print
 
     def write(self, msg, stdout=True):
         """
@@ -299,12 +295,6 @@ class ProcessOut(object):
             self._out.append((msg, self.OUT))
         else:
             self._out.append((msg, self.ERR))
-        if self._print and stdout:
-            print(msg, file=sys.stdout)
-            sys.stdout.flush()
-        elif self._print:
-            print(msg, file=sys.stderr)
-            sys.stderr.flush()
 
     def finished(self):
         """
@@ -343,19 +333,17 @@ class ProcessOut(object):
         return self._merged_cache
 
 
-def run(cmd, timeout=100, cwd=None, print=False, env=None):
+def run(cmd, timeout=100, cwd=None, env=None):
     """
     Executes a command ``cmd`` with the given ``timeout``.
 
     :param cmd: The command to be executed.
     :param timeout: The maximum time the command can take before it is interrupted.
     :param cwd: The working directory from which the command should be executed.
-    :param print: Determines if the output of the command should be printed directly to
-        stderr and stdout.
     :return: Tuple of ``exit_code`` and :class:`ProcessOut`.
     """
     exit_code = None
-    out = ProcessOut(print=print)
+    out = ProcessOut()
     try:
         process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, cwd=cwd, universal_newlines=True, env=env)
 
