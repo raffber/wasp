@@ -243,6 +243,8 @@ def run_command(name, executed_commands=None):
     # run all dependencies of this task
     if not run_command_dependencies(name, executed_commands=executed_commands):
         return False
+    old_namespace = ctx.current_namespace
+    ctx.current_namespace = name
     # now run the commands
     try:
         tasks_col = retrieve_command_tasks(name)
@@ -253,6 +255,8 @@ def run_command(name, executed_commands=None):
     except CommandFailedError as e:
         log.fatal(log.format_fail('Command `{0}` failed: {1}'.format(name, str(e))))
         return False
+    finally:
+        ctx.current_namespace = old_namespace
     return ret
 
 

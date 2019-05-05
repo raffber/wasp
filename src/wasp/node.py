@@ -1,7 +1,7 @@
 from uuid import uuid4 as generate_uuid
 
-from .signature import FileSignature, CacheSignature, UnchangedSignature
 from .argument import ArgumentCollection, collection
+from .signature import FileSignature, CacheSignature
 from .util import is_iterable
 
 
