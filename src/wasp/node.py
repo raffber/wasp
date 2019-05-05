@@ -199,8 +199,6 @@ class SymbolicNode(Node):
         and writes it to the nodes storage.
         """
         col = collection(*args, **kw)
-        if col.isempty():
-            return
         from . import ctx
         ctx.cache.prefix('symblic-nodes')[self.key] = col
 
