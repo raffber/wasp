@@ -403,14 +403,20 @@ class Directory(Path):
             return self.copy()
         return Directory(ctx.builddir.join(self._path))
 
-    def list(self):
+    def list(self, recursive=False):
         """
         Return a list of path objects that are contained in this directory.
         """
         ret = []
-        for fpath in os.listdir(self.path):
-            ret.append(self.join(fpath))
+        if not recursive:
+            for fpath in os.listdir(self.path):
+                ret.append(self.join(fpath))
+        else:
+            for dirpath, dirnames, filenames in os.walk(self._path):
+                for f in filenames:
+                    ret.append(os.path.join(dirpath, f))
         return ret
+
 
     def copy_to(self, target):
         """
