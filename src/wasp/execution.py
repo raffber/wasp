@@ -250,7 +250,6 @@ class Executor(object):
         self._success = False
         self._invalidate_nodes.extend(task.targets)
 
-
     def _post_run(self):
         self._graph.post_run()
 
@@ -328,9 +327,11 @@ class ParallelExecutor(Executor):
         self._loop.on_interrupt(self._thread_pool.cancel)
         self._thread_pool.on_finished(self._loop.cancel)
         self._loop.on_startup(self._start)
+        self._cancel = False
 
     def cancel(self):
         self._thread_pool.cancel()
+        self._cancel = True
 
     def _run(self):
         self._thread_pool.start()
@@ -341,6 +342,8 @@ class ParallelExecutor(Executor):
     def _start(self):
         assert self._graph is not None, 'Call setup() first'
         while True:
+            if self._cancel:
+                break
             if not self._loop.running and self._loop.started:
                 break
             if self._graph.completed:

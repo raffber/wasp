@@ -80,7 +80,7 @@ class Node(object):
         cur_sig = self.signature(ns=ns)
         if not cur_sig.valid:
             cur_sig.refresh()
-        if sig != cur_sig:
+        if sig != cur_sig or sig.value is None:
             return True
         return False
 
