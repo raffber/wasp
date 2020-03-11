@@ -16,6 +16,22 @@ into its namespace and defines all global variables. At the momemnt, these are:
 """
 
 
+# workaround to unbuffer stdout and stderr
+# based on https://bugs.python.org/issue17404
+def _unbuffer():
+    # monkey-patch sys.stdout and sys.stderr
+    import os, sys, io
+    binstdout = os.fdopen(sys.stdout.fileno(), 'wb', 0)
+    unbuffered_stdout = io.TextIOWrapper(binstdout, encoding=sys.stdout.encoding, write_through=True)
+    sys.stdout = unbuffered_stdout
+    binstderr = os.fdopen(sys.stderr.fileno(), 'wb', 0)
+    unbuffered_stderr = io.TextIOWrapper(binstderr, encoding=sys.stderr.encoding, write_through=True)
+    sys.stderr = unbuffered_stderr
+
+
+_unbuffer()
+
+
 class Version(object):
     """
     Object representing the version of wasp.
