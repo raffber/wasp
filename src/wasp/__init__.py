@@ -18,6 +18,9 @@ into its namespace and defines all global variables. At the momemnt, these are:
 
 # workaround to unbuffer stdout and stderr
 # based on https://bugs.python.org/issue17404
+import traceback
+
+
 def _unbuffer():
     # monkey-patch sys.stdout and sys.stderr
     import os, sys, io
@@ -98,7 +101,40 @@ class FatalError(Exception):
     Exception which is thrown if a fatal error occurs during the execution
     of the application.
     """
-    pass
+    def __init__(self, msg=None, inner=None):
+        super().__init__(msg)
+        self._inner = inner
+        if msg is None:
+            self._msg = str(inner)
+        else:
+            self._msg = str(msg)
+
+    def print(self):
+        if self.inner is not None:
+            traceback.print_exception(None, self.inner, self.inner.__traceback__)
+        else:
+            traceback.print_exception(None, self, self.__traceback__)
+        log.log_fail('Fatal error occured: `{}`'.format(self.message))
+
+    @classmethod
+    def from_exception(cls, exception):
+        return FatalError(inner=exception)
+
+    @classmethod
+    def from_msg(cls, msg):
+        return FatalError(msg=msg)
+
+    @property
+    def message(self):
+        return self._msg
+
+    @property
+    def inner(self):
+        return self._inner
+
+    @inner.setter
+    def inner(self, value):
+        self._inner = value
 
 
 from .decorator_store import DecoratorStore

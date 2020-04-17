@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 import types
+import traceback
 
 from . import _recurse_files, ctx, log, extensions, FatalError, CommandFailedError, decorators, Directory
 from . import osinfo
@@ -498,6 +499,7 @@ def run(dir_path):
     :param dir_path: The directory from which is used as TOPDIR
     :return: True if a build file was found in `dir_path`, False otherwise
     """
+    success = False
     try:
         #
         # first and foremost, initialize logging
@@ -529,7 +531,11 @@ def run(dir_path):
         # initialize the context
         init_context(Directory(retrieve_builddir()))
         extensions.api.context_created()
-    except FatalError:
+    except FatalError as e:
+        e.print()
+        return False
+    except Exception as e:
+        traceback.print_exception(None, e, e.__traceback__)
         return False
     try:
         check_script_signatures(loaded_files)
@@ -549,7 +555,10 @@ def run(dir_path):
             run_command('clean')
         options.handle_options()
         success = handle_commands(options)
-    except FatalError:
+    except FatalError as e:
+        e.print()
         success = False
+    except Exception as e:
+        traceback.print_exception(None, e, e.__traceback__)
     ctx.save()
     return success
