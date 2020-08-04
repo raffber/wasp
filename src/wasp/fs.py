@@ -900,9 +900,9 @@ class CopyTask(Task):
         tgts = []
         for f in self._files:
             if isinstance(destination, Directory):
-                target = destination.join(f.basename)
+                target = file(destination.join(f.basename))
             else:
-                target = destination
+                target = file(destination)
             tgts.append(target)
         self._mkdir = mkdir
         super().__init__(sources=nodes(self._files), targets=nodes(tgts), always=True)
@@ -910,7 +910,7 @@ class CopyTask(Task):
     def _run(self):
         self.success = True
         destpath = self._destination.path
-        if self._mkdir:
+        if self._mkdir and isinstance(self._destination, Directory):
             directory(self._destination).mkdir()
         for f in paths(self._files, ignore=True):
             f.copy_to(destpath)
