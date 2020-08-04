@@ -27,7 +27,9 @@ class TargetProducedByMultipleTasksError(Exception):
     """
     Raised if a target is produced by multiple tasks.
     """
-    pass
+    def __init__(self, node):
+        assert isinstance(node, Node)
+        super().__init__('Target produced by multiple tasks: `{}`'.format(node.key))
 
 
 class TaskGraph(object):
@@ -64,7 +66,7 @@ class TaskGraph(object):
         self._tasks.append(t)
         for target in t.targets:
             if target.key in self._target_map:
-                raise TargetProducedByMultipleTasksError()
+                raise TargetProducedByMultipleTasksError(target)
             self._target_map[target.key] = t
             if target.key in self._nodes:
                 continue

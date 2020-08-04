@@ -16,7 +16,7 @@ import os
 import re
 import shutil
 
-from .node import FileNode
+from .node import FileNode, nodes
 from .task import Task
 from .util import Serializable, is_iterable
 from . import factory
@@ -896,9 +896,16 @@ class CopyTask(Task):
                 destination = File(destination)
         assert isinstance(destination, Path)
         self._destination = destination
-        self._files = fs
+        self._files = paths(fs)
+        tgts = []
+        for f in self._files:
+            if isinstance(destination, Directory):
+                target = destination.join(f.basename)
+            else:
+                target = destination
+            tgts.append(target)
         self._mkdir = mkdir
-        super().__init__(sources=fs, always=True)
+        super().__init__(sources=nodes(self._files), targets=nodes(tgts), always=True)
 
     def _run(self):
         self.success = True
