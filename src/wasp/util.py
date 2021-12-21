@@ -391,7 +391,7 @@ def load_module_by_name(name):
 
 
 def is_iterable(arg):
-    return isinstance(arg, collections.Iterable) and not isinstance(arg, str)
+    return isinstance(arg, collections.abc.Iterable) and not isinstance(arg, str)
 
 
 def is_json_primitive(arg):

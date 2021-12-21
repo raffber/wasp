@@ -10,7 +10,7 @@ from .fs import Directory, top_dir, Path
 from . import ctx, osinfo, log
 from .util import UnusedArgFormatter
 
-from collections import Iterable
+from collections.abc import Iterable
 from subprocess import Popen, PIPE, call
 import shlex
 from time import sleep
